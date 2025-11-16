@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn, createActiveItemPlugin, createHistoryPlugin, type CheckInItem } from '@/vue-checkin/composables/useCheckIn';
+import PluginListItem from './PluginListItem.vue';
 
 // Type pour les items
 interface ListItem {
@@ -32,6 +33,29 @@ type DeskWithPlugins = typeof desk & {
 
 const deskWithPlugins = desk as DeskWithPlugins;
 
+// State pour gérer les items
+const itemsData = ref<Array<{
+  id: string;
+  name: string;
+  description: string;
+}>>([
+  {
+    id: 'item-1',
+    name: 'Premier item',
+    description: 'Ceci est le premier item de la liste',
+  },
+  {
+    id: 'item-2',
+    name: 'Deuxième item',
+    description: 'Ceci est le deuxième item',
+  },
+  {
+    id: 'item-3',
+    name: 'Troisième item',
+    description: 'Ceci est le troisième item',
+  },
+]);
+
 // Computed pour les items et l'item actif
 const items = computed(() => desk.getAll());
 const activeId = computed(() => deskWithPlugins.activeId?.value);
@@ -41,9 +65,10 @@ const history = computed(() => deskWithPlugins.getHistory?.() || []);
 // Ajouter un item
 const addItem = () => {
   const id = `item-${Date.now()}`;
-  desk.checkIn(id, {
-    name: `Item ${items.value.length + 1}`,
-    description: `Description de l'item ${items.value.length + 1}`,
+  itemsData.value.push({
+    id,
+    name: `Item ${itemsData.value.length + 1}`,
+    description: `Description de l'item ${itemsData.value.length + 1}`,
   });
   
   // Activer automatiquement le nouvel item
@@ -57,7 +82,10 @@ const selectItem = (id: string | number) => {
 
 // Retirer un item
 const removeItem = (id: string | number) => {
-  desk.checkOut(id);
+  const index = itemsData.value.findIndex(item => item.id === id);
+  if (index !== -1) {
+    itemsData.value.splice(index, 1);
+  }
 };
 
 // Revenir en arrière dans l'historique
@@ -70,14 +98,14 @@ const redo = () => {
   deskWithPlugins.redo?.();
 };
 
-// Pré-remplir avec quelques items
+// Activer le premier item au montage
 onMounted(() => {
-  desk.checkIn('item-1', {
-    name: 'Premier item',
-    description: 'Ceci est le premier item de la liste',
-  });
-  desk.checkIn('item-2', {
-    name: 'Deuxième item',
+  const firstItem = itemsData.value[0];
+  if (firstItem) {
+    deskWithPlugins.setActive?.(firstItem.id);
+  }
+});
+</script>
     description: 'Ceci est le deuxième item',
   });
   desk.checkIn('item-3', {
@@ -122,27 +150,19 @@ onMounted(() => {
     <div class="content-grid">
       <!-- Liste des items -->
       <div class="items-panel">
-        <h3>Items ({{ items.length }})</h3>
+        <h3>Items ({{ itemsData.length }})</h3>
         <ul class="item-list">
-          <li
-            v-for="item in items"
+          <PluginListItem
+            v-for="item in itemsData"
+            :id="item.id"
             :key="item.id"
-            class="item"
-            :class="{ active: item.id === activeId }"
-            @click="selectItem(item.id)"
-          >
-            <div class="item-content">
-              <strong>{{ item.data.name }}</strong>
-              <span class="item-id">ID: {{ item.id }}</span>
-            </div>
-            <UButton
-              size="xs"
-              color="error"
-              variant="ghost"
-              icon="i-heroicons-trash"
-              @click.stop="removeItem(item.id)"
-            />
-          </li>
+            :name="item.name"
+            :description="item.description"
+            :is-active="item.id === activeId"
+            :desk="desk"
+            @select="selectItem"
+            @remove="removeItem"
+          />
         </ul>
       </div>
 

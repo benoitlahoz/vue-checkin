@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '@/vue-checkin/composables/useCheckIn';
+import TabItem from './TabItem.vue';
 
 // Type pour un onglet
 interface TabItem {
@@ -18,6 +19,33 @@ const { desk } = createDesk('tabsDesk', {
   debug: false,
 });
 
+// State pour gérer les onglets
+const tabsData = ref<Array<{
+  id: string;
+  label: string;
+  content: string;
+  icon?: string;
+}>>([
+  {
+    id: 'tab-1',
+    label: 'Accueil',
+    content: 'Bienvenue dans la démo des onglets !',
+    icon: 'i-heroicons-home',
+  },
+  {
+    id: 'tab-2',
+    label: 'Paramètres',
+    content: 'Configuration de l\'application',
+    icon: 'i-heroicons-cog-6-tooth',
+  },
+  {
+    id: 'tab-3',
+    label: 'Profil',
+    content: 'Informations utilisateur',
+    icon: 'i-heroicons-user',
+  },
+]);
+
 // Computed pour les onglets
 const tabs = computed(() => desk.getAll({ sortBy: 'timestamp', order: 'asc' }));
 
@@ -29,9 +57,10 @@ const selectTab = (id: string | number) => {
 // Ajouter un onglet dynamiquement
 const addTab = () => {
   const id = `tab-${Date.now()}`;
-  desk.checkIn(id, {
-    label: `Onglet ${tabs.value.length + 1}`,
-    content: `Contenu de l'onglet ${tabs.value.length + 1}`,
+  tabsData.value.push({
+    id,
+    label: `Onglet ${tabsData.value.length + 1}`,
+    content: `Contenu de l'onglet ${tabsData.value.length + 1}`,
     icon: 'i-heroicons-document-text',
   });
   selectTab(id);
@@ -39,13 +68,16 @@ const addTab = () => {
 
 // Fermer un onglet
 const closeTab = (id: string | number) => {
-  if (tabs.value.length <= 1) return; // Garder au moins un onglet
+  if (tabsData.value.length <= 1) return; // Garder au moins un onglet
 
-  desk.checkOut(id);
+  const index = tabsData.value.findIndex(t => t.id === id);
+  if (index !== -1) {
+    tabsData.value.splice(index, 1);
+  }
 
   // Si l'onglet actif est fermé, sélectionner le premier disponible
-  if (activeTabId.value === id && tabs.value.length > 0) {
-    const firstTab = tabs.value[0];
+  if (activeTabId.value === id && tabsData.value.length > 0) {
+    const firstTab = tabsData.value[0];
     if (firstTab) {
       activeTabId.value = firstTab.id;
     }
@@ -54,27 +86,8 @@ const closeTab = (id: string | number) => {
 
 // Contenu de l'onglet actif
 const activeTabContent = computed(() => {
-  const tab = desk.get(activeTabId.value);
-  return tab?.data.content || '';
-});
-
-// Pré-remplir avec quelques onglets
-onMounted(() => {
-  desk.checkIn('tab-1', {
-    label: 'Accueil',
-    content: 'Bienvenue dans la démo des onglets !',
-    icon: 'i-heroicons-home',
-  });
-  desk.checkIn('tab-2', {
-    label: 'Paramètres',
-    content: 'Configuration de l\'application',
-    icon: 'i-heroicons-cog-6-tooth',
-  });
-  desk.checkIn('tab-3', {
-    label: 'Profil',
-    content: 'Informations utilisateur',
-    icon: 'i-heroicons-user',
-  });
+  const tab = tabsData.value.find(t => t.id === activeTabId.value);
+  return tab?.content || '';
 });
 </script>
 
@@ -87,24 +100,19 @@ onMounted(() => {
 
     <div class="tabs-header">
       <div class="tabs-list">
-        <button
-          v-for="tab in tabs"
+        <TabItem
+          v-for="tab in tabsData"
+          :id="tab.id"
           :key="tab.id"
-          class="tab"
-          :class="{ active: tab.id === activeTabId }"
-          @click="selectTab(tab.id)"
-        >
-          <UIcon v-if="tab.data.icon" :name="tab.data.icon" class="tab-icon" />
-          <span>{{ tab.data.label }}</span>
-          <UButton
-            v-if="tabs.length > 1"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            icon="i-heroicons-x-mark"
-            @click.stop="closeTab(tab.id)"
-          />
-        </button>
+          :label="tab.label"
+          :content="tab.content"
+          :icon="tab.icon"
+          :is-active="tab.id === activeTabId"
+          :can-close="tabsData.length > 1"
+          :desk="desk"
+          @select="selectTab"
+          @close="closeTab"
+        />
       </div>
       <UButton size="sm" icon="i-heroicons-plus" @click="addTab">
         Nouvel onglet
@@ -116,7 +124,7 @@ onMounted(() => {
     </div>
 
     <div class="debug-info">
-      <strong>Debug:</strong> {{ tabs.length }} onglet(s),
+      <strong>Debug:</strong> {{ tabsData.length }} onglet(s),
       Actif: {{ activeTabId }}
     </div>
   </div>
@@ -149,35 +157,6 @@ onMounted(() => {
   gap: 0.25rem;
   flex: 1;
   overflow-x: auto;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: transparent;
-  border-radius: 0.375rem 0.375rem 0 0;
-  cursor: pointer;
-  color: var(--ui-text-secondary);
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.tab:hover {
-  background: var(--ui-bg-secondary);
-  color: var(--ui-text-primary);
-}
-
-.tab.active {
-  background: var(--ui-bg-primary);
-  color: var(--ui-text-primary);
-  border-bottom: 2px solid var(--ui-primary);
-}
-
-.tab-icon {
-  font-size: 1rem;
 }
 
 .tabs-content {

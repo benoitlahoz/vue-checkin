@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '@/vue-checkin/composables/useCheckIn';
+import TodoItem from './TodoItem.vue';
 
 // Type pour les items de la liste
 interface TodoItem {
@@ -19,6 +20,13 @@ const { desk } = createDesk('todoDesk', {
   },
 });
 
+// State pour gérer les todos
+const todos = ref<Array<{
+  id: number;
+  label: string;
+  done: boolean;
+}>>([]);
+
 // Computed pour afficher les items
 const items = computed(() => desk.getAll());
 const itemCount = computed(() => desk.registry.value.size);
@@ -26,7 +34,8 @@ const itemCount = computed(() => desk.registry.value.size);
 // Ajouter un item manuellement
 const addItem = () => {
   const id = Date.now();
-  desk.checkIn(id, {
+  todos.value.push({
+    id,
     label: `Tâche ${id}`,
     done: false,
   });
@@ -34,19 +43,23 @@ const addItem = () => {
 
 // Basculer l'état done d'un item
 const toggleItem = (id: string | number) => {
-  const item = desk.get(id);
-  if (item) {
-    desk.update(id, { done: !item.data.done });
+  const todo = todos.value.find(t => t.id === id);
+  if (todo) {
+    todo.done = !todo.done;
   }
 };
 
 // Retirer un item
 const removeItem = (id: string | number) => {
-  desk.checkOut(id);
+  const index = todos.value.findIndex(t => t.id === id);
+  if (index !== -1) {
+    todos.value.splice(index, 1);
+  }
 };
 
 // Tout effacer
 const clearAll = () => {
+  todos.value = [];
   desk.clear();
 };
 </script>
@@ -76,27 +89,21 @@ const clearAll = () => {
       </UBadge>
     </div>
 
-    <div v-if="items.length === 0" class="empty-state">
+    <div v-if="todos.length === 0" class="empty-state">
       <p>Aucune tâche. Cliquez sur "Ajouter une tâche" pour commencer.</p>
     </div>
 
     <ul v-else class="item-list">
-      <li v-for="item in items" :key="item.id" class="item">
-        <UCheckbox
-          :model-value="item.data.done"
-          @update:model-value="toggleItem(item.id)"
-        />
-        <span :class="{ done: item.data.done }">
-          {{ item.data.label }}
-        </span>
-        <UButton
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-heroicons-x-mark"
-          @click="removeItem(item.id)"
-        />
-      </li>
+      <TodoItem
+        v-for="todo in todos"
+        :id="todo.id"
+        :key="todo.id"
+        :label="todo.label"
+        :done="todo.done"
+        :desk="desk"
+        @toggle="toggleItem"
+        @remove="removeItem"
+      />
     </ul>
   </div>
 </template>
@@ -137,30 +144,5 @@ const clearAll = () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: var(--ui-bg-primary);
-  border: 1px solid var(--ui-border-primary);
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-}
-
-.item:hover {
-  background: var(--ui-bg-secondary);
-}
-
-.item span {
-  flex: 1;
-  transition: all 0.2s;
-}
-
-.item span.done {
-  text-decoration: line-through;
-  opacity: 0.6;
 }
 </style>

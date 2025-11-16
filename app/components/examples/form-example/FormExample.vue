@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useCheckIn, createValidationPlugin } from '@/vue-checkin/composables/useCheckIn';
+import FormField from './FormField.vue';
 
 // Type pour un champ de formulaire
-interface FormField {
+interface FieldData {
   label: string;
   value: string;
   type: 'text' | 'email' | 'number';
@@ -10,8 +11,8 @@ interface FormField {
 }
 
 // Plugin de validation personnalisé
-const validationPlugin = createValidationPlugin<FormField>({
-  validate: (data: FormField) => {
+const validationPlugin = createValidationPlugin<FieldData>({
+  validate: (data: FieldData) => {
     // Vérifier si le champ est requis
     if (data.required && !data.value) {
       return 'Ce champ est requis';
@@ -30,7 +31,7 @@ const validationPlugin = createValidationPlugin<FormField>({
 });
 
 // Créer un desk avec validation
-const { createDesk } = useCheckIn<FormField>();
+const { createDesk } = useCheckIn<FieldData>();
 const { desk } = createDesk('formDesk', {
   debug: true,
   plugins: [validationPlugin],
@@ -44,23 +45,56 @@ type DeskWithValidation = typeof desk & {
 
 const deskWithValidation = desk as DeskWithValidation;
 
-// Computed pour les champs
-const fields = computed(() => desk.getAll({ sortBy: 'timestamp', order: 'asc' }));
+// État des champs
+const fieldsData = ref<Array<{
+  id: string;
+  label: string;
+  value: string;
+  type: 'text' | 'email' | 'number';
+  required: boolean;
+}>>([
+  {
+    id: 'name',
+    label: 'Nom',
+    value: '',
+    type: 'text',
+    required: true,
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    value: '',
+    type: 'email',
+    required: true,
+  },
+  {
+    id: 'age',
+    label: 'Âge',
+    value: '',
+    type: 'number',
+    required: false,
+  },
+]);
+
+// Computed pour la validation
 const isFormValid = computed(() => deskWithValidation.isValid?.value ?? false);
 const errors = computed(() => deskWithValidation.getErrors?.() || {});
 
 // Mettre à jour la valeur d'un champ
-const updateFieldValue = (id: string | number, value: string) => {
-  desk.update(id, { value });
+const updateFieldValue = (id: string, value: string) => {
+  const field = fieldsData.value.find(f => f.id === id);
+  if (field) {
+    field.value = value;
+  }
 };
 
 // Soumettre le formulaire
 const submitForm = () => {
   if (isFormValid.value) {
-    const formData = fields.value.reduce((acc, field) => {
-      acc[field.id] = field.data.value;
+    const formData = fieldsData.value.reduce((acc, field) => {
+      acc[field.id] = field.value;
       return acc;
-    }, {} as Record<string | number, string>);
+    }, {} as Record<string, string>);
 
     alert('Formulaire soumis avec succès!\n\n' + JSON.stringify(formData, null, 2));
   } else {
@@ -70,34 +104,10 @@ const submitForm = () => {
 
 // Réinitialiser le formulaire
 const resetForm = () => {
-  fields.value.forEach((field) => {
-    desk.update(field.id, { value: '' });
+  fieldsData.value.forEach((field) => {
+    field.value = '';
   });
 };
-
-// Pré-remplir avec des champs
-onMounted(() => {
-  desk.checkIn('name', {
-    label: 'Nom',
-    value: '',
-    type: 'text',
-    required: true,
-  });
-
-  desk.checkIn('email', {
-    label: 'Email',
-    value: '',
-    type: 'email',
-    required: true,
-  });
-
-  desk.checkIn('age', {
-    label: 'Âge',
-    value: '',
-    type: 'number',
-    required: false,
-  });
-});
 </script>
 
 <template>
@@ -108,22 +118,18 @@ onMounted(() => {
     </p>
 
     <form class="form" @submit.prevent="submitForm">
-      <div v-for="field in fields" :key="field.id" class="form-field">
-        <label :for="String(field.id)" class="label">
-          {{ field.data.label }}
-          <span v-if="field.data.required" class="required">*</span>
-        </label>
-        <UInput
-          :id="String(field.id)"
-          :model-value="field.data.value"
-          :type="field.data.type"
-          :placeholder="`Entrez ${field.data.label.toLowerCase()}`"
-          @update:model-value="updateFieldValue(field.id, $event)"
-        />
-        <span v-if="errors[field.id]" class="error">
-          {{ errors[field.id] }}
-        </span>
-      </div>
+      <FormField
+        v-for="field in fieldsData"
+        :id="field.id"
+        :key="field.id"
+        :label="field.label"
+        :value="field.value"
+        :type="field.type"
+        :required="field.required"
+        :error="errors[field.id]"
+        :desk="desk"
+        @update="updateFieldValue"
+      />
 
       <div class="form-actions">
         <UButton
