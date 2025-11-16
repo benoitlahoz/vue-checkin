@@ -1,72 +1,75 @@
-# Docus Default Starter
+````mdc
+# Vue CheckIn
 
-> A beautiful, minimal starter for creating documentation with Docus
+A monorepo containing the **vue-checkin** library and its documentation.
 
-This is the default Docus starter template that provides everything you need to build beautiful documentation sites with Markdown and Vue components.
+## Project Structure
 
-> [!TIP]
-> If you're looking for i18n support, check out the [i18n starter](https://github.com/nuxt-themes/docus/tree/main/.starters/i18n).
+```
+vue-checkin/
+├── lib/                    # Library package
+│   ├── src/               # Library source code
+│   ├── dist/              # Built library (generated)
+│   ├── package.json       # Library package.json
+│   └── vite.config.ts     # Build configuration
+├── content/               # Documentation content (Markdown)
+├── public/                # Documentation static assets
+├── package.json           # Documentation package.json
+└── nuxt.config.ts         # Documentation config
+```
 
-## ✨ Features
+## Library Development
 
-- 🎨 **Beautiful Design** - Clean, modern documentation theme
-- 📱 **Responsive** - Mobile-first responsive design  
-- 🌙 **Dark Mode** - Built-in dark/light mode support
-- 🔍 **Search** - Full-text search functionality
-- 📝 **Markdown Enhanced** - Extended markdown with custom components
-- 🎨 **Customizable** - Easy theming and brand customization
-- ⚡ **Fast** - Optimized for performance with Nuxt 4
-- 🔧 **TypeScript** - Full TypeScript support
-
-## 🚀 Quick Start
+The library is located in the `lib/` directory and has its own independent package.json.
 
 ```bash
-# Install dependencies
-npm install
+# Install library dependencies
+yarn lib:install
 
-# Start development server
-npm run dev
+# Build the library
+yarn lib:build
+
+# Clean library build
+yarn lib:clean
 ```
 
-Your documentation site will be running at `http://localhost:3000`
+Or work directly in the lib directory:
 
-## 📁 Project Structure
-
+```bash
+cd lib
+yarn install
+yarn build
 ```
-my-docs/
-├── content/              # Your markdown content
-│   ├── index.md         # Homepage
-│   ├── 1.getting-started/  # Getting started section
-│   └── 2.essentials/    # Essential documentation
-├── public/              # Static assets
-└── package.json         # Dependencies and scripts
+
+## Documentation
+
+The documentation is built with Nuxt + Docus and lives in the root directory.
+
+```bash
+# Install documentation dependencies
+yarn install
+
+# Start documentation dev server
+yarn dev
+
+# Build documentation
+yarn build
+
+# Clean documentation cache
+yarn clean
 ```
 
 ## ⚡ Built with
 
-This starter comes pre-configured with:
+- **Library**: [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Documentation**: [Nuxt 4](https://nuxt.com) + [Docus](https://docus.dev) + [Nuxt UI](https://ui.nuxt.com)
 
-- [Nuxt 4](https://nuxt.com) - The web framework
-- [Nuxt Content](https://content.nuxt.com/) - File-based CMS
-- [Nuxt UI](https://ui.nuxt.com) - UI components
-- [Nuxt Image](https://image.nuxt.com/) - Optimized images
-- [Tailwind CSS 4](https://tailwindcss.com/) - Utility-first CSS
-- [Docus Layer](https://www.npmjs.com/package/docus) - Documentation theme
+## Publishing
 
-## 📖 Documentation
-
-For detailed documentation on customizing your Docus project, visit the [Docus Documentation](https://docus.dev)
-
-## 🚀 Deployment
-
-Build for production:
-
-```bash
-npm run build
-```
-
-The built files will be in the `.output` directory, ready for deployment to any hosting provider that supports Node.js.
+The library (`lib/` directory) is published to npm as `vue-checkin`.
+The documentation is separate and not included in the npm package.
 
 ## 📄 License
 
 [MIT License](https://opensource.org/licenses/MIT) 
+```` 

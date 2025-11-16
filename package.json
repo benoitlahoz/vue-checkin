@@ -1,9 +1,17 @@
 {
-  "name": "docus-starter",
+  "name": "vue-checkin-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Documentation for vue-checkin library",
+  "author": "Benoit Lahoz",
+  "license": "MIT",
   "scripts": {
-    "dev:docs": "nuxt dev --extends docus",
-    "build:docs": "nuxt build --extends docus",
-    "clean:docs": "rimraf .nuxt"
+    "dev": "nuxt dev --extends docus",
+    "build": "nuxt build --extends docus",
+    "clean": "rimraf .nuxt",
+    "lib:install": "cd lib && yarn",
+    "lib:build": "cd lib && yarn build",
+    "lib:clean": "cd lib && yarn clean"
   },
   "dependencies": {
     "@nuxt/content": "3.8.2",

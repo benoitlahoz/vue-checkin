@@ -841,4 +841,4 @@ export {
   type LoggerOptions,
   type HistoryOptions,
   type HistoryEntry,
-} from './plugins';
+} from '../plugins';
