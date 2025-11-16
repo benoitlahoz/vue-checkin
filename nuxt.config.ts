@@ -7,6 +7,9 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/vue-checkin/',
   },
+  alias: {
+    '@/vue-checkin': './lib/src',
+  },
   modules: ["@nuxt/content", "@nuxt/eslint", "@nuxt/ui"],
   robots: {
     robotsTxt: false,
