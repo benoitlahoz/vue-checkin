@@ -446,12 +446,21 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
    * @alias createDesk
    */
   const createDesk = (
-    injectionKey: string = 'checkInDesk',
+    injectionKey: string | InjectionKey<CheckInDesk<T, TContext> & TContext> = 'checkInDesk',
     options?: CheckInDeskOptions<T, TContext>
   ) => {
-    const DeskInjectionKey = Symbol(`CheckInDesk:${injectionKey}`) as InjectionKey<
-      CheckInDesk<T, TContext> & TContext
-    >;
+    let DeskInjectionKey: InjectionKey<CheckInDesk<T, TContext> & TContext>;
+    
+    // Si c'est déjà une InjectionKey, on l'utilise directement
+    if (typeof injectionKey === 'symbol') {
+      DeskInjectionKey = injectionKey;
+    } else {
+      // Sinon on crée un Symbol depuis la string
+      DeskInjectionKey = Symbol(`CheckInDesk:${injectionKey}`) as InjectionKey<
+        CheckInDesk<T, TContext> & TContext
+      >;
+    }
+    
     const deskContext = createDeskContext<T, TContext>(options);
 
     const fullContext = {
@@ -460,17 +469,20 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
     } as CheckInDesk<T, TContext> & TContext;
 
     provide(DeskInjectionKey, fullContext);
-    // Provide également avec la clé string pour faciliter l'accès
-    provide(injectionKey, DeskInjectionKey);
-
-    if (options?.debug) {
-      Debug('Desk opened with injection key:', injectionKey);
+    
+    // Provide également avec la clé string pour faciliter l'accès (seulement si c'est une string)
+    if (typeof injectionKey === 'string') {
+      provide(injectionKey, DeskInjectionKey);
     }
 
-    // Return the desk and the simple injection key
+    if (options?.debug) {
+      Debug('Desk opened with injection key:', typeof injectionKey === 'symbol' ? injectionKey.description : injectionKey);
+    }
+
+    // Return the desk and the injection key
     return {
       desk: fullContext,
-      injectionKey,
+      injectionKey: DeskInjectionKey,
     };
   };
 
