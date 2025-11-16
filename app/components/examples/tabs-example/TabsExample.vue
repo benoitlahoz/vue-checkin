@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCheckIn } from '@/vue-checkin/composables/useCheckIn';
+import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import TabItem from './TabItem.vue';
 import { TABS_DESK_KEY } from './index';
 

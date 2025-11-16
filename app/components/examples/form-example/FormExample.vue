@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCheckIn, createValidationPlugin } from '@/vue-checkin/composables/useCheckIn';
+import { useCheckIn, createValidationPlugin } from '#vue-checkin/composables/useCheckIn';
 import FormField from './FormField.vue';
 import { FORM_DESK_KEY } from './index';
 

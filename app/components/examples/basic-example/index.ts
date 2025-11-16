@@ -1,5 +1,5 @@
 import type { InjectionKey } from 'vue';
-import type { CheckInDesk } from '@/vue-checkin/composables/useCheckIn';
+import type { CheckInDesk } from '#vue-checkin/composables/useCheckIn';
 
 interface TodoItem {
   label: string;

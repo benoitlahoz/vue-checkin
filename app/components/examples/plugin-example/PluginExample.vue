@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCheckIn, createActiveItemPlugin, createHistoryPlugin, type CheckInItem } from '@/vue-checkin/composables/useCheckIn';
+import { useCheckIn, createActiveItemPlugin, createHistoryPlugin, type CheckInItem } from '#vue-checkin/composables/useCheckIn';
 import PluginListItem from './PluginListItem.vue';
 import { PLUGIN_DESK_KEY } from './index';
 
@@ -58,7 +58,6 @@ const itemsData = ref<Array<{
 ]);
 
 // Computed pour les items et l'item actif
-const items = computed(() => desk.getAll());
 const activeId = computed(() => deskWithPlugins.activeId?.value);
 const activeItem = computed(() => deskWithPlugins.getActive?.());
 const history = computed(() => deskWithPlugins.getHistory?.() || []);
@@ -105,17 +104,6 @@ onMounted(() => {
   if (firstItem) {
     deskWithPlugins.setActive?.(firstItem.id);
   }
-});
-</script>
-    description: 'Ceci est le deuxième item',
-  });
-  desk.checkIn('item-3', {
-    name: 'Troisième item',
-    description: 'Ceci est le troisième item',
-  });
-  
-  // Activer le premier item
-  deskWithPlugins.setActive?.('item-1');
 });
 </script>
 
