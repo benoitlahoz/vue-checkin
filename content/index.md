@@ -1,19 +1,17 @@
 ---
 seo:
-  title: Write beautiful docs with Markdown
-  description: Ship fast, flexible, and SEO-optimized documentation with beautiful
-    design out of the box. Docus brings together the best of the Nuxt ecosystem.
-    Powered by Nuxt UI.
+  title: VueCheckIn - Generic Parent-Child Registration System
+  description: A flexible, type-safe Vue 3 composable for managing parent-child component registration patterns with plugin support.
 ---
 
 ::u-page-hero
 #title
-Write beautiful docs with Markdown
+VueCheckIn
 
 #description
-Ship fast, flexible, and SEO-optimized documentation with beautiful design out of the box.
+A generic check-in system for parent/child component registration pattern in Vue 3.
 
-Docus brings the best of the Nuxt ecosystem into one CLI.
+Like an airport check-in desk: parent components provide a check-in counter where child components register themselves with their data.
 
 #links
   :::u-button
@@ -31,7 +29,7 @@ Docus brings the best of the Nuxt ecosystem into one CLI.
   color: neutral
   icon: simple-icons-github
   size: xl
-  to: https://github.com/nuxt-content/docus
+  to: https://github.com/benoitlahoz/vue-checkin
   variant: outline
   ---
   Star on GitHub
@@ -40,84 +38,72 @@ Docus brings the best of the Nuxt ecosystem into one CLI.
 
 ::u-page-section
 #title
-Shipped with many features
+Core Features
 
 #features
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://nuxt.com
+  icon: i-lucide-check-circle
   ---
   #title
-  Built with [Nuxt 4]{.text-primary}
+  [Type-Safe Registration]{.text-primary}
   
   #description
-  Optimized by the most famous Vue framework. Docus gives you everything you need to build fast, performant, and SEO-friendly websites.
+  Full TypeScript support with generic types for your data. Safely register and retrieve child components with complete type inference.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://ui.nuxt.com/
+  icon: i-lucide-plug
   ---
   #title
-  Powered by [Nuxt UI]{.text-primary}
+  [Extensible Plugin System]{.text-primary}
   
   #description
-  Beautiful out of the box, minimal by design but highly customizable. Docus leverages Nuxt UI to give you the best docs writing experience with zero boilerplate, just focus on your content.
+  Extend functionality with plugins. Built-in plugins include active item tracking, history logging, validation, and debug logging.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://content.nuxt.com
+  icon: i-lucide-refresh-cw
   ---
   #title
-  Enhanced Markdown syntax by [Nuxt Content]{.text-primary}
+  [Reactive by Design]{.text-primary}
   
   #description
-  The only thing you need to take care about is writing your content. Write your pages in Markdown and extend with MDC syntax to embed Nuxt UI or custom Vue components. Structure, routing, and rendering are handled for you.
+  Built on Vue 3's reactivity system. Automatically track check-ins, check-outs, and updates with full reactivity support.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://nuxt.com/docs/guide/directory-structure/app-config
+  icon: i-lucide-box
   ---
   #title
-  Customize with [Nuxt App Config]{.text-primary}
+  [Dependency Injection]{.text-primary}
   
   #description
-  Update colors, social links, header logos and component styles globally using the `app.config.ts`, no direct code modifications required.
+  Uses Vue's provide/inject pattern for seamless communication between parent and child components across any depth.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://content.nuxt.com/studio
+  icon: i-lucide-radio
   ---
   #title
-  Collaborate on [Nuxt Studio]{.text-primary}
+  [Event System]{.text-primary}
   
   #description
-  Write and manage your content visually, with zero Markdown knowledge required. Let your non technical colleagues collaborate on the documentation and integrate Vue components without code skills.
+  Subscribe to check-in, check-out, update, and clear events. Perfect for implementing custom behaviors and side effects.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://ui.nuxt.com/components/content-search
+  icon: i-lucide-package
   ---
   #title
-  Built-in navigation and [full-text search]{.text-primary}
+  [Batch Operations]{.text-primary}
   
   #description
-  Only focus on ordering your content, Docus handles the search modal and auto-generates the side navigation for you.
+  Efficiently handle multiple items at once with checkInMany, checkOutMany, and updateMany methods for optimal performance.
   :::
 ::
