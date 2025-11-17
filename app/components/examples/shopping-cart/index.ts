@@ -10,5 +10,5 @@ export interface CartItem {
 
 export const CART_DESK_KEY: InjectionKey<DeskCore<CartItem>> = Symbol('cartDesk');
 
-export { default as ShoppingCartExample } from './ShoppingCartExample.vue';
+export { default as ShoppingCart } from './ShoppinCart.vue';
 export { default as ProductCard } from './ProductCard.vue';

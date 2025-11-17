@@ -2,7 +2,7 @@
 import { useCheckIn, createValidationPlugin } from '#vue-checkin/composables/useCheckIn';
 import type { ValidationError } from '#vue-checkin/plugins/validation';
 import FormField from './FormField.vue';
-import { FORM_DESK_KEY } from '.';
+import { type FieldData, FORM_DESK_KEY } from '.';
 
 /**
  * Form Example - Validation Plugin
@@ -14,14 +14,6 @@ import { FORM_DESK_KEY } from '.';
  * - Form submission with validation
  * - Error cache management
  */
-
-// Type definition for form fields
-interface FieldData {
-  label: string;
-  value: string;
-  type: 'text' | 'email' | 'number';
-  required: boolean;
-}
 
 // Create custom validation plugin
 const validationPlugin = createValidationPlugin<FieldData>({

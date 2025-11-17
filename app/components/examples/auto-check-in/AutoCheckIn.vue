@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { AUTO_DESK_KEY } from '.';
+import { type DemoData, AUTO_DESK_KEY } from '.';
 
 /**
  * Demo Child Component
@@ -8,12 +8,6 @@ import { AUTO_DESK_KEY } from '.';
  * Automatically registers to the parent desk on mount and
  * keeps its data synchronized through watchData.
  */
-
-interface ChildData {
-  name: string;
-  status: 'active' | 'inactive' | 'pending';
-  count: number;
-}
 
 const props = defineProps<{
   id: string;
@@ -30,7 +24,7 @@ const emit = defineEmits<{
 
 // Automatically check in to the parent desk with data watching enabled
 // This ensures the component is registered when mounted and unregistered when unmounted
-const { checkIn } = useCheckIn<ChildData>();
+const { checkIn } = useCheckIn<DemoData>();
 checkIn(AUTO_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,

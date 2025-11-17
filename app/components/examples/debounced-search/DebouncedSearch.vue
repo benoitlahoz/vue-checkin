@@ -2,7 +2,7 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { createDebouncePlugin } from '#vue-checkin/plugins';
 import SearchResultItem from './SearchResultItem.vue';
-import { SEARCH_DESK_KEY } from '.';
+import { type SearchResult, SEARCH_DESK_KEY } from '.';
 
 /**
  * Debounce Plugin Example - Search Results
@@ -14,13 +14,6 @@ import { SEARCH_DESK_KEY } from '.';
  * - Pending operations tracking
  * - Manual flush/cancel operations
  */
-
-// Type definition for search results
-interface SearchResult {
-  title: string;
-  description: string;
-  category: string;
-}
 
 // Create debounce plugin with 500ms delay
 const debouncePlugin = createDebouncePlugin<SearchResult>({

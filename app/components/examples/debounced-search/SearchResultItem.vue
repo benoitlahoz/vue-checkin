@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { checkInToDesk } from '#vue-checkin/composables/desk-child';
-import { SEARCH_DESK_KEY } from '.';
+import { type SearchResult, SEARCH_DESK_KEY } from '.';
 
-interface Props {
+interface Props extends SearchResult {
   id: string;
-  title: string;
-  description: string;
-  category: string;
 }
 
 const props = defineProps<Props>();

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { FORM_DESK_KEY } from '.';
+import { type FieldData, FORM_DESK_KEY } from '.';
 
 /**
  * Form Field Component
@@ -8,13 +8,6 @@ import { FORM_DESK_KEY } from '.';
  * Individual form field that automatically checks in to the form desk
  * and watches value changes for validation.
  */
-
-interface FormField {
-  label: string;
-  value: string;
-  type: 'text' | 'email' | 'number';
-  required: boolean;
-}
 
 const props = defineProps<{
   id: string | number;
@@ -29,8 +22,8 @@ const emit = defineEmits<{
   'update:value': [value: string];
 }>();
 
-// Automatically check in to the form desk with data watching
-useCheckIn<FormField>().checkIn(FORM_DESK_KEY, {
+// Automatically check in to the desk with data watching enabled
+useCheckIn<FieldData>().checkIn(FORM_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
   watchData: true,

@@ -1,21 +1,13 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import TodoItem from './TodoItem.vue';
-import { TODO_DESK_KEY } from '.';
-
-/**
- * Type definition for todo items
- */
-interface TodoItem {
-  label: string;
-  done: boolean;
-}
+import { type TodoItem as TodoItemData, TODO_DESK_KEY } from '.';
 
 /**
  * Create a desk to manage todo items
  * The desk acts as a central registry where child TodoItem components check in
  */
-const { createDesk } = useCheckIn<TodoItem>();
+const { createDesk } = useCheckIn<TodoItemData>();
 const { desk } = createDesk(TODO_DESK_KEY, {
   debug: true,
   onCheckIn: (id, data) => {

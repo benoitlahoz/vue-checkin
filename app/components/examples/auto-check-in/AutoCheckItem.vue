@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { AUTO_DESK_KEY } from '.';
+import { type DemoData, AUTO_DESK_KEY } from '.';
 
 /**
  * Auto Check-in Example - Dynamic Component Registration
@@ -12,15 +12,8 @@ import { AUTO_DESK_KEY } from '.';
  * - Real-time registry updates
  */
 
-// Type definition for child component data
-interface ChildData {
-  name: string;
-  status: 'active' | 'inactive' | 'pending';
-  count: number;
-}
-
 // Create parent desk for child components
-const { createDesk } = useCheckIn<ChildData>();
+const { createDesk } = useCheckIn<DemoData>();
 const { desk } = createDesk(AUTO_DESK_KEY, {
   debug: true,
 });

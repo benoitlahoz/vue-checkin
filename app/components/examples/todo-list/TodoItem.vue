@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { TODO_DESK_KEY } from '.';
-
-interface TodoItem {
-  label: string;
-  done: boolean;
-}
+import { type TodoItem, TODO_DESK_KEY } from '.';
 
 const props = defineProps<{
   id: string | number;

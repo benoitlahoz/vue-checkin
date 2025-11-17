@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue';
 import type { DeskCore } from '#vue-checkin/composables/useCheckIn';
 
-interface TodoItem {
+export interface TodoItem {
   label: string;
   done: boolean;
 }

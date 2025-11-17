@@ -9,5 +9,5 @@ export interface TabItemData {
 
 export const TABS_DESK_KEY: InjectionKey<DeskCore<TabItemData>> = Symbol('tabsDesk');
 
-export { default as TabsExample } from './TabsExample.vue';
+export { default as Tabs } from './Tabs.vue';
 export { default as TabItem } from './TabItem.vue';
