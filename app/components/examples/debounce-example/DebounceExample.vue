@@ -185,7 +185,7 @@ const removeResult = (id: string) => {
 </script>
 
 <template>
-  <div class="demo-container">
+  <div>
     <h2>Debounce Plugin Example - Search</h2>
     <p class="description">
       Search-as-you-type with debounced event notifications. Events are batched and fired after 500ms of inactivity (max 2s wait).
@@ -313,11 +313,6 @@ const removeResult = (id: string) => {
 </template>
 
 <style scoped>
-.demo-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
 h2 {
   font-size: 1.75rem;
   font-weight: 700;

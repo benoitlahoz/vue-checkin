@@ -112,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="demo-container">
+  <div>
     <h2>Plugin Example</h2>
     <p class="description">
       Demonstration of ActiveItem and History plugins for managing selection and action history.
@@ -206,13 +206,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.demo-container {
-  padding: 1.5rem;
-  border: 1px solid var(--ui-border-primary);
-  border-radius: 0.5rem;
-  background: var(--ui-bg-elevated);
-}
-
 .description {
   color: var(--ui-text-secondary);
   margin-bottom: 1.5rem;

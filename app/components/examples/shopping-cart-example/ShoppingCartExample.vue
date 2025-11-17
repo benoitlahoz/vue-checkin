@@ -117,7 +117,7 @@ const checkout = () => {
 </script>
 
 <template>
-  <div class="demo-container">
+  <div>
     <h2>Shopping Cart Example</h2>
     <p class="description">
       E-commerce shopping cart with product management and automatic total calculation.
@@ -208,13 +208,6 @@ const checkout = () => {
 </template>
 
 <style scoped>
-.demo-container {
-  padding: 1.5rem;
-  border: 1px solid var(--ui-border-primary);
-  border-radius: 0.5rem;
-  background: var(--ui-bg-elevated);
-}
-
 .description {
   color: var(--ui-text-muted);
   margin-bottom: 1.5rem;

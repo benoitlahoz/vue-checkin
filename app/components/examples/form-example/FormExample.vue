@@ -152,7 +152,7 @@ const resetForm = () => {
 </script>
 
 <template>
-  <div class="demo-container">
+  <div>
     <h2>Form Example - Validation</h2>
     <p class="description">
       Example usage with a form and validation plugin.
@@ -202,13 +202,6 @@ const resetForm = () => {
 </template>
 
 <style scoped>
-.demo-container {
-  padding: 1.5rem;
-  border: 1px solid var(--ui-border-primary);
-  border-radius: 0.5rem;
-  background: var(--ui-bg-elevated);
-}
-
 .description {
   color: var(--ui-text-secondary);
   margin-bottom: 1.5rem;

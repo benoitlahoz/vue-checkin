@@ -82,7 +82,7 @@ const toggleStatus = (id: string) => {
 </script>
 
 <template>
-  <div class="demo-container">
+  <div>
     <h2>Auto Check-in Example</h2>
     <p class="description">
       Child components automatically register and synchronize their data via watch.
@@ -146,13 +146,6 @@ const toggleStatus = (id: string) => {
 
 
 <style scoped>
-.demo-container {
-  padding: 1.5rem;
-  border: 1px solid var(--ui-border-primary);
-  border-radius: 0.5rem;
-  background: var(--ui-bg-elevated);
-}
-
 .description {
   color: var(--ui-text-secondary);
   margin-bottom: 1.5rem;
