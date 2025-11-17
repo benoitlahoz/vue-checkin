@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { TABS_DESK_KEY } from './index';
+import { type TabItemData, TABS_DESK_KEY } from '.';
 
 /**
  * Tab Item Component
@@ -9,11 +9,7 @@ import { TABS_DESK_KEY } from './index';
  * and watches prop changes to keep the registry synchronized.
  */
 
-interface TabItem {
-  label: string;
-  content: string;
-  icon?: string;
-}
+
 
 const props = defineProps<{
   id: string | number;
@@ -31,7 +27,7 @@ const emit = defineEmits<{
 
 // Automatically check in to the desk with data watching enabled
 // This keeps the desk registry in sync with the component's props
-useCheckIn<TabItem>().checkIn(TABS_DESK_KEY, {
+useCheckIn<TabItemData>().checkIn(TABS_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
   watchData: true,

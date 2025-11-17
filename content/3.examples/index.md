@@ -125,7 +125,7 @@ export { default as ChildComponent } from './ChildComponent.vue';
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from '@/vue-checkin/composables/useCheckIn';
-import { MY_DESK_KEY } from './index';
+import { MY_DESK_KEY } from '.';
 
 const { createDesk } = useCheckIn<MyData>();
 const { desk } = createDesk(MY_DESK_KEY, {
@@ -140,7 +140,7 @@ const { desk } = createDesk(MY_DESK_KEY, {
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from '@/vue-checkin/composables/useCheckIn';
-import { MY_DESK_KEY } from './index';
+import { MY_DESK_KEY } from '.';
 
 useCheckIn<MyData>().checkIn(MY_DESK_KEY, {
   id: props.id,

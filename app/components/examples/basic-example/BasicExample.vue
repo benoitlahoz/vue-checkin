@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import TodoItem from './TodoItem.vue';
-import { TODO_DESK_KEY } from './index';
+import { TODO_DESK_KEY } from '.';
 
 /**
  * Type definition for todo items

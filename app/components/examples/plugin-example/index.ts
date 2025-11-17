@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue';
 import type { DeskCore } from '#vue-checkin/composables/useCheckIn';
 
-interface PluginItemData {
+export interface PluginItemData {
   name: string;
   description: string;
 }

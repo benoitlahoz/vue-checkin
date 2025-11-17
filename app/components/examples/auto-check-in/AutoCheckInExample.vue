@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { AUTO_DESK_KEY } from './index';
+import { AUTO_DESK_KEY } from '.';
 
 /**
  * Auto Check-in Example - Dynamic Component Registration

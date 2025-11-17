@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import TabItem from './TabItem.vue';
-import { TABS_DESK_KEY } from './index';
+import { type TabItemData, TABS_DESK_KEY, TabItem } from '.';
 
 /**
  * Tabs Example - Dynamic Tab Management
@@ -13,19 +12,13 @@ import { TABS_DESK_KEY } from './index';
  * - Context sharing between components
  */
 
-// Type definition for a tab item
-interface TabItem {
-  label: string;
-  content: string;
-  icon?: string;
-}
 
 // Reactive reference to store the active tab ID
 const activeTabId = ref<string | number>('tab-1');
 
 // Create a desk with context to share the active tab state
-const { createDesk } = useCheckIn<TabItem, { activeTab: Ref<string | number> }>();
-const { desk } = createDesk(TABS_DESK_KEY, {
+const { createDesk } = useCheckIn<TabItemData, { activeTab: Ref<string | number> }>();
+createDesk(TABS_DESK_KEY, {
   context: { activeTab: activeTabId },
   debug: false,
 });
@@ -56,9 +49,6 @@ const tabsData = ref<Array<{
     icon: 'i-heroicons-user',
   },
 ]);
-
-// Computed property to get all registered tabs from the desk
-const tabs = computed(() => desk.getAll({ sortBy: 'timestamp', order: 'asc' }));
 
 // Function to change the active tab
 const selectTab = (id: string | number) => {
@@ -105,11 +95,6 @@ const activeTabContent = computed(() => {
 
 <template>
   <div class="demo-container">
-    <h2>Tabs Example</h2>
-    <p class="description">
-      Example usage with a dynamic tab system and shared context.
-    </p>
-
     <div class="tabs-header">
       <div class="tabs-list">
         <TabItem

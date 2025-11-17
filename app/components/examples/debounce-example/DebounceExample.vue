@@ -2,7 +2,7 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { createDebouncePlugin } from '#vue-checkin/plugins';
 import SearchResultItem from './SearchResultItem.vue';
-import { SEARCH_DESK_KEY } from './index';
+import { SEARCH_DESK_KEY } from '.';
 
 /**
  * Debounce Plugin Example - Search Results

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { checkInToDesk } from '#vue-checkin/composables/desk-child';
-import { SEARCH_DESK_KEY } from './index';
+import { SEARCH_DESK_KEY } from '.';
 
 interface Props {
   id: string;

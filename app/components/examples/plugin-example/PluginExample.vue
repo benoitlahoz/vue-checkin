@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCheckIn, createActiveItemPlugin, createHistoryPlugin, type CheckInItem } from '#vue-checkin/composables/useCheckIn';
 import PluginListItem from './PluginListItem.vue';
-import { PLUGIN_DESK_KEY } from './index';
+import { type PluginItemData, PLUGIN_DESK_KEY } from '.';
 
 /**
  * Plugin Example - Active Item and History
@@ -13,18 +13,12 @@ import { PLUGIN_DESK_KEY } from './index';
  * - Plugin type extensions
  */
 
-// Type definition for list items
-interface ListItem {
-  name: string;
-  description: string;
-}
-
 // Create plugins for active item tracking and history management
-const activeItemPlugin = createActiveItemPlugin<ListItem>();
-const historyPlugin = createHistoryPlugin<ListItem>({ maxHistory: 10 });
+const activeItemPlugin = createActiveItemPlugin<PluginItemData>();
+const historyPlugin = createHistoryPlugin<PluginItemData>({ maxHistory: 10 });
 
 // Create a desk with plugins enabled
-const { createDesk } = useCheckIn<ListItem>();
+const { createDesk } = useCheckIn<PluginItemData>();
 const { desk } = createDesk(PLUGIN_DESK_KEY, {
   debug: true,
   plugins: [activeItemPlugin, historyPlugin],
@@ -33,7 +27,7 @@ const { desk } = createDesk(PLUGIN_DESK_KEY, {
 // Extended type definition to include plugin methods
 type DeskWithPlugins = typeof desk & {
   activeId?: Ref<string | number | null>;
-  getActive?: () => CheckInItem<ListItem> | null;
+  getActive?: () => CheckInItem<PluginItemData> | null;
   getHistory?: () => Array<{ type: string; id: string | number; timestamp: number }>;
   setActive?: (id: string | number | null) => void;
   undo?: () => void;

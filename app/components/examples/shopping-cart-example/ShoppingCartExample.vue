@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import ProductCard from './ProductCard.vue';
-import { CART_DESK_KEY } from './index';
+import { type CartItem, CART_DESK_KEY } from '.';
 
 /**
  * Shopping Cart Example - E-commerce Cart
@@ -13,12 +13,6 @@ import { CART_DESK_KEY } from './index';
  * - User confirmation before removing items
  */
 
-interface CartItem {
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl?: string;
-}
 
 // Create a desk for the shopping cart with lifecycle hooks
 const { createDesk } = useCheckIn<CartItem>();

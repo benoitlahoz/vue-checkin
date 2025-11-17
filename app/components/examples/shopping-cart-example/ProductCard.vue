@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { CART_DESK_KEY } from './index';
+import { type CartItem, CART_DESK_KEY } from '.';
 
 /**
  * Product Card Component
  * 
- * Individual product card that automatically checks in to the cart desk.
+ * Individual product card that can be added/removed from cart.
  * Handles quantity updates and cart operations.
  */
 
-interface CartItem {
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl?: string;
-}
 
 const props = defineProps<{
   id: string;
@@ -28,35 +22,50 @@ const emit = defineEmits<{
   updateQuantity: [id: string, quantity: number];
 }>();
 
-// Automatically check in to the cart desk with data watching
-const { desk, checkOut } = useCheckIn<CartItem>().checkIn(CART_DESK_KEY, {
-  id: props.id,
-  autoCheckIn: true,
-  watchData: true,
-  data: () => ({
-    name: props.name,
-    price: props.price,
-    quantity: props.quantity,
-    imageUrl: props.imageUrl,
-  }),
-});
+// Get access to the cart desk (without auto check-in)
+useCheckIn<CartItem>();
+const desk = inject(CART_DESK_KEY);
+
+if (!desk) {
+  console.error('Cart desk not found!');
+}
 
 // Check if product is in the cart
 const isInCart = computed(() => desk?.has(props.id) ?? false);
 
+// Function to add product to cart
+const addToCart = () => {
+  desk?.checkIn(props.id, {
+    name: props.name,
+    price: props.price,
+    quantity: props.quantity,
+    imageUrl: props.imageUrl,
+  });
+};
+
 // Function to remove product from cart
 const removeFromCart = () => {
-  checkOut();
+  desk?.checkOut(props.id);
 };
 
 // Function to increment quantity
 const increment = () => {
-  emit('updateQuantity', props.id, props.quantity + 1);
+  const newQuantity = props.quantity + 1;
+  emit('updateQuantity', props.id, newQuantity);
+  // Update the cart with new quantity
+  desk?.update(props.id, {
+    quantity: newQuantity,
+  });
 };
 
 // Function to decrement quantity
 const decrement = () => {
-  emit('updateQuantity', props.id, Math.max(1, props.quantity - 1));
+  const newQuantity = Math.max(1, props.quantity - 1);
+  emit('updateQuantity', props.id, newQuantity);
+  // Update the cart with new quantity
+  desk?.update(props.id, {
+    quantity: newQuantity,
+  });
 };
 </script>
 
@@ -72,6 +81,19 @@ const decrement = () => {
     </div>
 
     <div class="product-actions">
+      <!-- Add to Cart button when not in cart -->
+      <UButton
+        v-if="!isInCart"
+        size="sm"
+        color="primary"
+        icon="i-heroicons-shopping-cart"
+        block
+        @click="addToCart"
+      >
+        Add to Cart
+      </UButton>
+
+      <!-- Quantity controls when in cart -->
       <div v-if="isInCart" class="quantity-controls">
         <UButton
           size="xs"

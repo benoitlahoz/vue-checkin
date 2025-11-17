@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue';
 import type { DeskCore } from '#vue-checkin/composables/useCheckIn';
 
-interface CartItem {
+export interface CartItem {
   name: string;
   price: number;
   quantity: number;

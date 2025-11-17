@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { FORM_DESK_KEY } from './index';
+import { FORM_DESK_KEY } from '.';
 
 /**
  * Form Field Component
