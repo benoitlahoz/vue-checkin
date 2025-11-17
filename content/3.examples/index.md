@@ -66,7 +66,7 @@ Discover different use cases of **vue-checkin** through practical and detailed e
   ---
   title: Debounce Plugin Example
   icon: i-heroicons-clock
-  to: /examples/debounce-plugin-example
+  to: /examples/debounce-example
   ---
   Real-time search with event debouncing for optimized performance.
   ::

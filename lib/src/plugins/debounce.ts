@@ -9,6 +9,9 @@ export interface DebounceOptions {
 
   /** Maximum time the function can be delayed before it's invoked */
   maxWait?: number;
+
+  /** If true, debounce the actual check-in/check-out operations, not just notifications */
+  debounceOperations?: boolean;
 }
 
 /**

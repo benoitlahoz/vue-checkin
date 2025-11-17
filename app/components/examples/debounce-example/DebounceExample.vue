@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { createDebouncePlugin, createLoggerPlugin } from '#vue-checkin/plugins';
+import { createDebouncePlugin } from '#vue-checkin/plugins';
 import SearchResultItem from './SearchResultItem.vue';
 import { SEARCH_DESK_KEY } from './index';
 
@@ -29,17 +29,11 @@ const debouncePlugin = createDebouncePlugin<SearchResult>({
   maxWait: 2000, // Force execution after 2s max
 });
 
-// Add logger to see when debounced events fire
-const loggerPlugin = createLoggerPlugin<SearchResult>({
-  prefix: '[Search]',
-  verbose: true,
-});
-
-// Create a desk with debounce plugin
+// Create a desk with debounce plugin (NO logger to clearly see debouncing)
 const { createDesk } = useCheckIn<SearchResult>();
 const { desk } = createDesk(SEARCH_DESK_KEY, {
   debug: false,
-  plugins: [debouncePlugin, loggerPlugin],
+  plugins: [debouncePlugin],
 });
 
 // Extended type to include debounce methods
@@ -56,6 +50,7 @@ const deskWithDebounce = desk as DeskWithDebounce;
 
 // Search state
 const searchQuery = ref('');
+const debouncedSearchQuery = ref('');
 const searchResults = ref<Array<{
   id: string;
   title: string;
@@ -65,6 +60,7 @@ const searchResults = ref<Array<{
 const isSearching = ref(false);
 const lastDebouncedEventTime = ref<string>('Never');
 const eventLog = ref<Array<{ time: string; message: string }>>([]);
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Mock search database
 const mockDatabase = [
@@ -100,11 +96,13 @@ const addEventLog = (message: string) => {
 const performSearch = async (query: string) => {
   if (!query.trim()) {
     searchResults.value = [];
+    desk.clear();
+    addEventLog('Search cleared');
     return;
   }
 
   isSearching.value = true;
-  addEventLog(`Search initiated: "${query}"`);
+  addEventLog(`Search executing: "${query}"`);
 
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -121,8 +119,27 @@ const performSearch = async (query: string) => {
   addEventLog(`Found ${results.length} results`);
 };
 
-// Watch search query and trigger search
+// Debounce the search query with 500ms delay
 watch(searchQuery, (newQuery) => {
+  // Clear existing timer
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+
+  // Show searching state immediately
+  if (newQuery.trim()) {
+    addEventLog(`Typing: "${newQuery}" (waiting for pause...)`);
+  }
+
+  // Set new timer to update debounced value
+  searchDebounceTimer = setTimeout(() => {
+    debouncedSearchQuery.value = newQuery;
+    addEventLog(`Search debounced! Executing search...`);
+  }, 500);
+});
+
+// Watch debounced query and trigger actual search
+watch(debouncedSearchQuery, (newQuery) => {
   performSearch(newQuery);
 });
 
@@ -147,7 +164,11 @@ const cancelPending = () => {
 
 // Clear search
 const clearSearch = () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
   searchQuery.value = '';
+  debouncedSearchQuery.value = '';
   searchResults.value = [];
   desk.clear();
   eventLog.value = [];
@@ -176,7 +197,7 @@ const removeResult = (id: string) => {
         v-model="searchQuery"
         icon="i-heroicons-magnifying-glass"
         size="lg"
-        placeholder="Search for articles, tutorials..."
+        placeholder="Vue, CSS, Typescript, ..."
         class="search-input"
       />
       
@@ -293,7 +314,6 @@ const removeResult = (id: string) => {
 
 <style scoped>
 .demo-container {
-  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
