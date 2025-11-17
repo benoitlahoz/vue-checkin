@@ -35,6 +35,13 @@ export const createLoggerPlugin = <T = unknown>(options?: LoggerOptions): CheckI
     name: 'logger',
     version: '1.0.0',
 
+    install: () => {
+      // No setup needed for logger
+      return () => {
+        // No cleanup needed
+      };
+    },
+
     onCheckIn: (id: string | number, data: T) => {
       if (verbose) {
         console.log(`${prefix} ✅ Item checked in:`, { id, data });

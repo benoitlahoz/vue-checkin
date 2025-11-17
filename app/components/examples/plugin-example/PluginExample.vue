@@ -3,24 +3,34 @@ import { useCheckIn, createActiveItemPlugin, createHistoryPlugin, type CheckInIt
 import PluginListItem from './PluginListItem.vue';
 import { PLUGIN_DESK_KEY } from './index';
 
-// Type pour les items
+/**
+ * Plugin Example - Active Item and History
+ * 
+ * Demonstrates:
+ * - Using the ActiveItem plugin to manage selected items
+ * - Using the History plugin to track changes
+ * - Undo/redo functionality
+ * - Plugin type extensions
+ */
+
+// Type definition for list items
 interface ListItem {
   name: string;
   description: string;
 }
 
-// Créer des plugins
+// Create plugins for active item tracking and history management
 const activeItemPlugin = createActiveItemPlugin<ListItem>();
 const historyPlugin = createHistoryPlugin<ListItem>({ maxHistory: 10 });
 
-// Créer un desk avec les plugins
+// Create a desk with plugins enabled
 const { createDesk } = useCheckIn<ListItem>();
 const { desk } = createDesk(PLUGIN_DESK_KEY, {
   debug: true,
   plugins: [activeItemPlugin, historyPlugin],
 });
 
-// Typage étendu pour les méthodes des plugins
+// Extended type definition to include plugin methods
 type DeskWithPlugins = typeof desk & {
   activeId?: Ref<string | number | null>;
   getActive?: () => CheckInItem<ListItem> | null;
@@ -34,7 +44,7 @@ type DeskWithPlugins = typeof desk & {
 
 const deskWithPlugins = desk as DeskWithPlugins;
 
-// State pour gérer les items
+// State to manage list items
 const itemsData = ref<Array<{
   id: string;
   name: string;
@@ -42,45 +52,45 @@ const itemsData = ref<Array<{
 }>>([
   {
     id: 'item-1',
-    name: 'Premier item',
-    description: 'Ceci est le premier item de la liste',
+    name: 'First Item',
+    description: 'This is the first item in the list',
   },
   {
     id: 'item-2',
-    name: 'Deuxième item',
-    description: 'Ceci est le deuxième item',
+    name: 'Second Item',
+    description: 'This is the second item',
   },
   {
     id: 'item-3',
-    name: 'Troisième item',
-    description: 'Ceci est le troisième item',
+    name: 'Third Item',
+    description: 'This is the third item',
   },
 ]);
 
-// Computed pour les items et l'item actif
+// Computed properties for active item and history
 const activeId = computed(() => deskWithPlugins.activeId?.value);
 const activeItem = computed(() => deskWithPlugins.getActive?.());
 const history = computed(() => deskWithPlugins.getHistory?.() || []);
 
-// Ajouter un item
+// Function to add a new item
 const addItem = () => {
   const id = `item-${Date.now()}`;
   itemsData.value.push({
     id,
     name: `Item ${itemsData.value.length + 1}`,
-    description: `Description de l'item ${itemsData.value.length + 1}`,
+    description: `Description of item ${itemsData.value.length + 1}`,
   });
   
-  // Activer automatiquement le nouvel item
+  // Automatically activate the new item
   deskWithPlugins.setActive?.(id);
 };
 
-// Sélectionner un item
+// Function to select an item
 const selectItem = (id: string | number) => {
   deskWithPlugins.setActive?.(id);
 };
 
-// Retirer un item
+// Function to remove an item
 const removeItem = (id: string | number) => {
   const index = itemsData.value.findIndex(item => item.id === id);
   if (index !== -1) {
@@ -88,17 +98,17 @@ const removeItem = (id: string | number) => {
   }
 };
 
-// Revenir en arrière dans l'historique
+// Function to undo the last action
 const undo = () => {
   deskWithPlugins.undo?.();
 };
 
-// Avancer dans l'historique
+// Function to redo the last undone action
 const redo = () => {
   deskWithPlugins.redo?.();
 };
 
-// Activer le premier item au montage
+// Activate the first item on component mount
 onMounted(() => {
   const firstItem = itemsData.value[0];
   if (firstItem) {
@@ -111,12 +121,12 @@ onMounted(() => {
   <div class="demo-container">
     <h2>Plugin Example</h2>
     <p class="description">
-      Démonstration des plugins ActiveItem et History pour gérer la sélection et l'historique.
+      Demonstration of ActiveItem and History plugins for managing selection and action history.
     </p>
 
     <div class="controls">
       <UButton icon="i-heroicons-plus" @click="addItem">
-        Ajouter un item
+        Add Item
       </UButton>
       <UButton
         icon="i-heroicons-arrow-uturn-left"
@@ -124,7 +134,7 @@ onMounted(() => {
         :disabled="!deskWithPlugins.canUndo?.value"
         @click="undo"
       >
-        Annuler
+        Undo
       </UButton>
       <UButton
         icon="i-heroicons-arrow-uturn-right"
@@ -132,12 +142,12 @@ onMounted(() => {
         :disabled="!deskWithPlugins.canRedo?.value"
         @click="redo"
       >
-        Rétablir
+        Redo
       </UButton>
     </div>
 
     <div class="content-grid">
-      <!-- Liste des items -->
+      <!-- Items list -->
       <div class="items-panel">
         <h3>Items ({{ itemsData.length }})</h3>
         <ul class="item-list">
@@ -154,12 +164,12 @@ onMounted(() => {
         </ul>
       </div>
 
-      <!-- Détails de l'item actif -->
+      <!-- Active item details -->
       <div class="details-panel">
-        <h3>Item actif</h3>
+        <h3>Active Item</h3>
         <div v-if="activeItem" class="active-details">
           <p><strong>ID:</strong> {{ activeId }}</p>
-          <p><strong>Nom:</strong> {{ activeItem.data.name }}</p>
+          <p><strong>Name:</strong> {{ activeItem.data.name }}</p>
           <p><strong>Description:</strong> {{ activeItem.data.description }}</p>
           <p class="timestamp">
             <strong>Timestamp:</strong>
@@ -167,13 +177,13 @@ onMounted(() => {
           </p>
         </div>
         <div v-else class="empty-state">
-          Aucun item sélectionné
+          No item selected
         </div>
       </div>
 
-      <!-- Historique -->
+      <!-- History panel -->
       <div class="history-panel">
-        <h3>Historique ({{ history.length }})</h3>
+        <h3>History ({{ history.length }})</h3>
         <ul class="history-list">
           <li
             v-for="(entry, index) in history.slice().reverse()"

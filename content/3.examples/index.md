@@ -1,11 +1,11 @@
 ---
-title: Exemples
-description: Exemples d'utilisation de vue-checkin avec différents cas d'usage
+title: Examples
+description: Vue CheckIn usage examples with different use cases
 ---
 
-# Exemples
+# Examples
 
-Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pratiques et détaillés.
+Discover different use cases of **vue-checkin** through practical and detailed examples.
 
 ::card-group
   ::card
@@ -14,7 +14,7 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-list-bullet
   to: /examples/basic-example
   ---
-  Liste de tâches simple démontrant les concepts fondamentaux du check-in/check-out.
+  Simple todo list demonstrating fundamental check-in/check-out concepts.
   ::
 
   ::card
@@ -23,7 +23,7 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-view-columns
   to: /examples/tabs-example
   ---
-  Système d'onglets avec contexte partagé pour gérer l'onglet actif.
+  Tab system with shared context to manage the active tab.
   ::
 
   ::card
@@ -32,7 +32,7 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-puzzle-piece
   to: /examples/plugin-example
   ---
-  Utilisation de plugins pour étendre les fonctionnalités (ActiveItem, History).
+  Using plugins to extend functionality (ActiveItem, History).
   ::
 
   ::card
@@ -41,7 +41,7 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-document-text
   to: /examples/form-example
   ---
-  Formulaire avec validation en temps réel via le ValidationPlugin.
+  Form with real-time validation via ValidationPlugin.
   ::
 
   ::card
@@ -50,7 +50,7 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-bolt
   to: /examples/auto-check-in-example
   ---
-  Enregistrement et synchronisation automatiques des composants enfants.
+  Automatic registration and synchronization of child components.
   ::
 
   ::card
@@ -59,40 +59,40 @@ Découvrez différents cas d'usage de **vue-checkin** à travers des exemples pr
   icon: i-heroicons-shopping-cart
   to: /examples/shopping-cart-example
   ---
-  Panier e-commerce avec gestion de produits, quantités et calcul de total.
+  E-commerce cart with product management, quantities and total calculation.
   ::
 ::
 
-## Vue d'ensemble
+## Overview
 
-Ces exemples illustrent les principales fonctionnalités de **vue-checkin** :
+These examples illustrate the main features of **vue-checkin**:
 
-### 🎯 Concepts de base
-- Création d'un desk parent
-- Enregistrement des composants enfants
-- Synchronisation réactive des données
-- InjectionKey pour l'injection typée
+### 🎯 Core Concepts
+- Creating a parent desk
+- Registering child components
+- Reactive data synchronization
+- InjectionKey for typed injection
 
-### 🔌 Fonctionnalités avancées
-- **Contexte** : Partage de données entre parent et enfants
-- **Plugins** : Extension des fonctionnalités du desk
-- **Validation** : Validation en temps réel des données
-- **Historique** : Undo/Redo avec le HistoryPlugin
+### 🔌 Advanced Features
+- **Context**: Sharing data between parent and children
+- **Plugins**: Extending desk functionality
+- **Validation**: Real-time data validation
+- **History**: Undo/Redo with HistoryPlugin
 
-### ⚡ Automatisation
-- `autoCheckIn: true` : Enregistrement automatique au montage
-- `watchData: true` : Synchronisation automatique des props
-- Désenregistrement automatique à la destruction
+### ⚡ Automation
+- `autoCheckIn: true`: Automatic registration on mount
+- `watchData: true`: Automatic props synchronization
+- Automatic unregistration on destroy
 
-## Structure des exemples
+## Example Structure
 
-Chaque exemple suit la même structure :
+Each example follows the same structure:
 
 ```
 example-name/
-├── index.ts              # InjectionKey et exports
-├── ParentExample.vue     # Composant parent (crée le desk)
-└── ChildComponent.vue    # Composant enfant (s'enregistre au desk)
+├── index.ts              # InjectionKey and exports
+├── ParentExample.vue     # Parent component (creates the desk)
+└── ChildComponent.vue    # Child component (registers to the desk)
 ```
 
 ### InjectionKey (`index.ts`)
@@ -102,7 +102,7 @@ import type { InjectionKey } from 'vue';
 import type { CheckInDesk } from '@/vue-checkin/composables/useCheckIn';
 
 interface MyData {
-  // Type des données
+  // Data type
 }
 
 export const MY_DESK_KEY: InjectionKey<CheckInDesk<MyData>> = Symbol('myDesk');
@@ -111,7 +111,7 @@ export { default as ParentExample } from './ParentExample.vue';
 export { default as ChildComponent } from './ChildComponent.vue';
 ```
 
-### Composant parent
+### Parent Component
 
 ```vue
 <script setup lang="ts">
@@ -126,7 +126,7 @@ const { desk } = createDesk(MY_DESK_KEY, {
 </script>
 ```
 
-### Composant enfant
+### Child Component
 
 ```vue
 <script setup lang="ts">
@@ -142,20 +142,20 @@ useCheckIn<MyData>().checkIn(MY_DESK_KEY, {
 </script>
 ```
 
-## Prochaines étapes
+## Next Steps
 
 ::alert{type="info"}
-Commencez par le [Basic Example](/examples/basic-example) pour comprendre les concepts fondamentaux, puis progressez vers des exemples plus avancés.
+Start with the [Basic Example](/examples/basic-example) to understand fundamental concepts, then progress to more advanced examples.
 ::
 
 ::card-group
   ::card
   ---
-  title: Guide de démarrage
+  title: Getting Started Guide
   icon: i-heroicons-rocket-launch
   to: /getting-started/installation
   ---
-  Installation et configuration de vue-checkin
+  Installation and configuration of vue-checkin
   ::
 
   ::card
@@ -164,6 +164,6 @@ Commencez par le [Basic Example](/examples/basic-example) pour comprendre les co
   icon: i-heroicons-book-open
   to: /api/use-check-in
   ---
-  Documentation complète de l'API
+  Complete API documentation
   ::
 ::

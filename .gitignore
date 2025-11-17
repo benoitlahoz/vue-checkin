@@ -35,3 +35,9 @@ logs
 #VSC
 .history
 .wrangler
+
+# MacOS
+*.DS_Store
+
+# VueCheckIn Specifics
+.private

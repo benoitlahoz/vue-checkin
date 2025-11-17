@@ -3,24 +3,34 @@ import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import TabItem from './TabItem.vue';
 import { TABS_DESK_KEY } from './index';
 
-// Type pour un onglet
+/**
+ * Tabs Example - Dynamic Tab Management
+ * 
+ * Demonstrates:
+ * - Creating a desk with shared context
+ * - Dynamic tab creation and deletion
+ * - Auto check-in of child components
+ * - Context sharing between components
+ */
+
+// Type definition for a tab item
 interface TabItem {
   label: string;
   content: string;
   icon?: string;
 }
 
-// Context pour stocker l'onglet actif
+// Reactive reference to store the active tab ID
 const activeTabId = ref<string | number>('tab-1');
 
-// Créer un desk avec contexte
+// Create a desk with context to share the active tab state
 const { createDesk } = useCheckIn<TabItem, { activeTab: Ref<string | number> }>();
 const { desk } = createDesk(TABS_DESK_KEY, {
   context: { activeTab: activeTabId },
   debug: false,
 });
 
-// State pour gérer les onglets
+// State to manage all tabs
 const tabsData = ref<Array<{
   id: string;
   label: string;
@@ -29,54 +39,55 @@ const tabsData = ref<Array<{
 }>>([
   {
     id: 'tab-1',
-    label: 'Accueil',
-    content: 'Bienvenue dans la démo des onglets !',
+    label: 'Home',
+    content: 'Welcome to the tabs demo!',
     icon: 'i-heroicons-home',
   },
   {
     id: 'tab-2',
-    label: 'Paramètres',
-    content: 'Configuration de l\'application',
+    label: 'Settings',
+    content: 'Application configuration',
     icon: 'i-heroicons-cog-6-tooth',
   },
   {
     id: 'tab-3',
-    label: 'Profil',
-    content: 'Informations utilisateur',
+    label: 'Profile',
+    content: 'User information',
     icon: 'i-heroicons-user',
   },
 ]);
 
-// Computed pour les onglets
+// Computed property to get all registered tabs from the desk
 const tabs = computed(() => desk.getAll({ sortBy: 'timestamp', order: 'asc' }));
 
-// Changer d'onglet
+// Function to change the active tab
 const selectTab = (id: string | number) => {
   activeTabId.value = id;
 };
 
-// Ajouter un onglet dynamiquement
+// Function to dynamically add a new tab
 const addTab = () => {
   const id = `tab-${Date.now()}`;
   tabsData.value.push({
     id,
-    label: `Onglet ${tabsData.value.length + 1}`,
-    content: `Contenu de l'onglet ${tabsData.value.length + 1}`,
+    label: `Tab ${tabsData.value.length + 1}`,
+    content: `Content of tab ${tabsData.value.length + 1}`,
     icon: 'i-heroicons-document-text',
   });
   selectTab(id);
 };
 
-// Fermer un onglet
+// Function to close a tab
 const closeTab = (id: string | number) => {
-  if (tabsData.value.length <= 1) return; // Garder au moins un onglet
+  // Keep at least one tab open
+  if (tabsData.value.length <= 1) return;
 
   const index = tabsData.value.findIndex(t => t.id === id);
   if (index !== -1) {
     tabsData.value.splice(index, 1);
   }
 
-  // Si l'onglet actif est fermé, sélectionner le premier disponible
+  // If the active tab is closed, select the first available tab
   if (activeTabId.value === id && tabsData.value.length > 0) {
     const firstTab = tabsData.value[0];
     if (firstTab) {
@@ -85,7 +96,7 @@ const closeTab = (id: string | number) => {
   }
 };
 
-// Contenu de l'onglet actif
+// Computed property for the active tab's content
 const activeTabContent = computed(() => {
   const tab = tabsData.value.find(t => t.id === activeTabId.value);
   return tab?.content || '';
@@ -96,7 +107,7 @@ const activeTabContent = computed(() => {
   <div class="demo-container">
     <h2>Tabs Example</h2>
     <p class="description">
-      Exemple d'utilisation avec un système d'onglets dynamiques et contexte partagé.
+      Example usage with a dynamic tab system and shared context.
     </p>
 
     <div class="tabs-header">
@@ -115,7 +126,7 @@ const activeTabContent = computed(() => {
         />
       </div>
       <UButton size="sm" icon="i-heroicons-plus" @click="addTab">
-        Nouvel onglet
+        New Tab
       </UButton>
     </div>
 
@@ -124,8 +135,8 @@ const activeTabContent = computed(() => {
     </div>
 
     <div class="debug-info">
-      <strong>Debug:</strong> {{ tabsData.length }} onglet(s),
-      Actif: {{ activeTabId }}
+      <strong>Debug:</strong> {{ tabsData.length }} tab(s),
+      Active: {{ activeTabId }}
     </div>
   </div>
 </template>

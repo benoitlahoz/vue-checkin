@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import type { CheckInPlugin } from '../composables/types';
-import type { CheckInDesk, CheckInItem } from '../composables/useCheckIn';
+import type { DeskCore } from '../composables/desk-core';
 
 export interface HistoryEntry<T = unknown> {
   action: 'check-in' | 'check-out' | 'update';
@@ -38,7 +38,7 @@ export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): Chec
     name: 'history',
     version: '1.0.0',
 
-    install: (desk: CheckInDesk<T>) => {
+    install: (desk: DeskCore<T>) => {
       const history = ref<HistoryEntry<T>[]>([]);
 
       // Add history to desk
@@ -79,14 +79,14 @@ export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): Chec
       /**
        * Get the history of operations
        */
-      getHistory(desk: CheckInDesk<T>): HistoryEntry<T>[] {
+      getHistory(desk: DeskCore<T>): HistoryEntry<T>[] {
         return (desk as any).history?.value || [];
       },
 
       /**
        * Clear the history
        */
-      clearHistory(desk: CheckInDesk<T>) {
+      clearHistory(desk: DeskCore<T>) {
         const deskWithHistory = desk as any;
         if (deskWithHistory.history) {
           deskWithHistory.history.value = [];
@@ -96,7 +96,7 @@ export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): Chec
       /**
        * Get last N history entries
        */
-      getLastHistory(desk: CheckInDesk<T>, count: number): HistoryEntry<T>[] {
+      getLastHistory(desk: DeskCore<T>, count: number): HistoryEntry<T>[] {
         const history = (desk as any).history?.value || [];
         return history.slice(-count);
       },
@@ -105,7 +105,7 @@ export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): Chec
        * Get history filtered by action type
        */
       getHistoryByAction(
-        desk: CheckInDesk<T>,
+        desk: DeskCore<T>,
         action: 'check-in' | 'check-out' | 'update'
       ): HistoryEntry<T>[] {
         const history = (desk as any).history?.value || [];

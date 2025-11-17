@@ -2,6 +2,13 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { FORM_DESK_KEY } from './index';
 
+/**
+ * Form Field Component
+ * 
+ * Individual form field that automatically checks in to the form desk
+ * and watches value changes for validation.
+ */
+
 interface FormField {
   label: string;
   value: string;
@@ -22,7 +29,7 @@ const emit = defineEmits<{
   'update:value': [value: string];
 }>();
 
-// Auto check-in avec watch des données
+// Automatically check in to the form desk with data watching
 useCheckIn<FormField>().checkIn(FORM_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
@@ -46,7 +53,7 @@ useCheckIn<FormField>().checkIn(FORM_DESK_KEY, {
       :id="String(props.id)"
       :model-value="props.value"
       :type="props.type"
-      :placeholder="`Entrez ${props.label.toLowerCase()}`"
+      :placeholder="`Enter ${props.label.toLowerCase()}`"
       @update:model-value="emit('update:value', $event)"
     />
     <span v-if="props.error" class="error">

@@ -3,45 +3,61 @@ import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import TodoItem from './TodoItem.vue';
 import { TODO_DESK_KEY } from './index';
 
-// Type pour les items de la liste
+/**
+ * Type definition for todo items
+ */
 interface TodoItem {
   label: string;
   done: boolean;
 }
 
-// Créer un desk pour gérer les items
+/**
+ * Create a desk to manage todo items
+ * The desk acts as a central registry where child TodoItem components check in
+ */
 const { createDesk } = useCheckIn<TodoItem>();
 const { desk } = createDesk(TODO_DESK_KEY, {
   debug: true,
   onCheckIn: (id, data) => {
-    console.log(`✅ Item ajouté: ${id}`, data);
+    console.log(`✅ Item added: ${id}`, data);
   },
   onCheckOut: (id) => {
-    console.log(`❌ Item retiré: ${id}`);
+    console.log(`❌ Item removed: ${id}`);
   },
 });
 
-// State pour gérer les todos
+/**
+ * Local state for managing todos
+ * Each todo will automatically check in to the desk when mounted
+ */
 const todos = ref<Array<{
   id: number;
   label: string;
   done: boolean;
 }>>([]);
 
-// Computed pour le nombre d'items
-const itemCount = computed(() => desk.registry.value.size);
+/**
+ * Computed count of items currently checked in at the desk
+ * Uses the registryMap directly for O(1) access
+ */
+const itemCount = computed(() => desk.registryMap.size);
 
-// Ajouter un item manuellement
+/**
+ * Add a new todo item
+ * The TodoItem component will auto check-in when mounted
+ */
 const addItem = () => {
   const id = Date.now();
   todos.value.push({
     id,
-    label: `Tâche ${id}`,
+    label: `Task ${id}`,
     done: false,
   });
 };
 
-// Basculer l'état done d'un item
+/**
+ * Toggle the done state of a todo item
+ */
 const toggleItem = (id: string | number) => {
   const todo = todos.value.find(t => t.id === id);
   if (todo) {
@@ -49,7 +65,10 @@ const toggleItem = (id: string | number) => {
   }
 };
 
-// Retirer un item
+/**
+ * Remove a todo item from the list
+ * Will trigger auto check-out when component unmounts
+ */
 const removeItem = (id: string | number) => {
   const index = todos.value.findIndex(t => t.id === id);
   if (index !== -1) {
@@ -57,7 +76,9 @@ const removeItem = (id: string | number) => {
   }
 };
 
-// Tout effacer
+/**
+ * Clear all todos and reset the desk
+ */
 const clearAll = () => {
   todos.value = [];
   desk.clear();
@@ -68,12 +89,12 @@ const clearAll = () => {
   <div class="demo-container">
     <h2>Basic Example - Todo List</h2>
     <p class="description">
-      Démonstration du système check-in/check-out avec une simple liste de tâches.
+      Demonstration of the check-in/check-out system with a simple todo list.
     </p>
 
     <div class="controls">
       <UButton icon="i-heroicons-plus" @click="addItem">
-        Ajouter une tâche
+        Add Task
       </UButton>
       <UButton
         color="error"
@@ -82,7 +103,7 @@ const clearAll = () => {
         :disabled="itemCount === 0"
         @click="clearAll"
       >
-        Tout effacer
+        Clear All
       </UButton>
       <UBadge color="primary" variant="subtle">
         {{ itemCount }} item(s)
@@ -90,7 +111,7 @@ const clearAll = () => {
     </div>
 
     <div v-if="todos.length === 0" class="empty-state">
-      <p>Aucune tâche. Cliquez sur "Ajouter une tâche" pour commencer.</p>
+      <p>No tasks. Click "Add Task" to get started.</p>
     </div>
 
     <ul v-else class="item-list">

@@ -3,7 +3,17 @@ import { useCheckIn, createValidationPlugin } from '#vue-checkin/composables/use
 import FormField from './FormField.vue';
 import { FORM_DESK_KEY } from './index';
 
-// Type pour un champ de formulaire
+/**
+ * Form Example - Validation Plugin
+ * 
+ * Demonstrates:
+ * - Custom validation plugin
+ * - Form field validation
+ * - Real-time validation feedback
+ * - Form submission with validation
+ */
+
+// Type definition for form fields
 interface FieldData {
   label: string;
   value: string;
@@ -11,19 +21,19 @@ interface FieldData {
   required: boolean;
 }
 
-// Plugin de validation personnalisé
+// Create custom validation plugin
 const validationPlugin = createValidationPlugin<FieldData>({
   validate: (data: FieldData) => {
-    // Vérifier si le champ est requis
+    // Check if required field is filled
     if (data.required && !data.value) {
-      return 'Ce champ est requis';
+      return 'This field is required';
     }
     
-    // Vérifier le format email
+    // Validate email format
     if (data.type === 'email' && data.value) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(data.value)) {
-        return 'Email invalide';
+        return 'Invalid email';
       }
     }
     
@@ -31,14 +41,14 @@ const validationPlugin = createValidationPlugin<FieldData>({
   },
 });
 
-// Créer un desk avec validation
+// Create a desk with validation plugin
 const { createDesk } = useCheckIn<FieldData>();
 const { desk } = createDesk(FORM_DESK_KEY, {
   debug: true,
   plugins: [validationPlugin],
 });
 
-// Typage étendu pour les méthodes des plugins
+// Extended type definition to include validation plugin methods
 type DeskWithValidation = typeof desk & {
   isValid?: Ref<boolean>;
   getErrors?: () => Record<string | number, string>;
@@ -46,7 +56,7 @@ type DeskWithValidation = typeof desk & {
 
 const deskWithValidation = desk as DeskWithValidation;
 
-// État des champs
+// Form fields state
 const fieldsData = ref<Array<{
   id: string;
   label: string;
@@ -56,7 +66,7 @@ const fieldsData = ref<Array<{
 }>>([
   {
     id: 'name',
-    label: 'Nom',
+    label: 'Name',
     value: '',
     type: 'text',
     required: true,
@@ -70,18 +80,18 @@ const fieldsData = ref<Array<{
   },
   {
     id: 'age',
-    label: 'Âge',
+    label: 'Age',
     value: '',
     type: 'number',
     required: false,
   },
 ]);
 
-// Computed pour la validation
+// Computed properties for validation
 const isFormValid = computed(() => deskWithValidation.isValid?.value ?? false);
 const errors = computed(() => deskWithValidation.getErrors?.() || {});
 
-// Mettre à jour la valeur d'un champ
+// Function to update field value
 const updateFieldValue = (id: string, value: string) => {
   const field = fieldsData.value.find(f => f.id === id);
   if (field) {
@@ -89,7 +99,7 @@ const updateFieldValue = (id: string, value: string) => {
   }
 };
 
-// Soumettre le formulaire
+// Function to submit the form
 const submitForm = () => {
   if (isFormValid.value) {
     const formData = fieldsData.value.reduce((acc, field) => {
@@ -97,13 +107,13 @@ const submitForm = () => {
       return acc;
     }, {} as Record<string, string>);
 
-    alert('Formulaire soumis avec succès!\n\n' + JSON.stringify(formData, null, 2));
+    alert('Form submitted successfully!\n\n' + JSON.stringify(formData, null, 2));
   } else {
-    alert('Le formulaire contient des erreurs. Veuillez les corriger.');
+    alert('The form contains errors. Please correct them.');
   }
 };
 
-// Réinitialiser le formulaire
+// Function to reset the form
 const resetForm = () => {
   fieldsData.value.forEach((field) => {
     field.value = '';
@@ -115,7 +125,7 @@ const resetForm = () => {
   <div class="demo-container">
     <h2>Form Example - Validation</h2>
     <p class="description">
-      Exemple d'utilisation avec un formulaire et plugin de validation.
+      Example usage with a form and validation plugin.
     </p>
 
     <form class="form" @submit.prevent="submitForm">
@@ -137,7 +147,7 @@ const resetForm = () => {
           icon="i-heroicons-check"
           :disabled="!isFormValid"
         >
-          Soumettre
+          Submit
         </UButton>
         <UButton
           type="button"
@@ -145,16 +155,16 @@ const resetForm = () => {
           icon="i-heroicons-arrow-path"
           @click="resetForm"
         >
-          Réinitialiser
+          Reset
         </UButton>
       </div>
 
       <div class="validation-status">
         <UBadge :color="isFormValid ? 'success' : 'error'">
-          {{ isFormValid ? '✓ Formulaire valide' : '✗ Formulaire invalide' }}
+          {{ isFormValid ? '✓ Valid form' : '✗ Invalid form' }}
         </UBadge>
         <span v-if="Object.keys(errors).length > 0" class="error-count">
-          {{ Object.keys(errors).length }} erreur(s)
+          {{ Object.keys(errors).length }} error(s)
         </span>
       </div>
     </form>

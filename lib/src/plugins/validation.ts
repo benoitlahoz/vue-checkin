@@ -35,7 +35,14 @@ export const createValidationPlugin = <T = unknown>(
   name: 'validation',
   version: '1.0.0',
 
-  onBeforeCheckIn: (id, data) => {
+  install: () => {
+    // No setup needed for validation
+    return () => {
+      // No cleanup needed
+    };
+  },
+
+  onBeforeCheckIn: (id: string | number, data: T): boolean => {
     // Check required fields
     if (options.required) {
       for (const field of options.required) {

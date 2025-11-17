@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import type { CheckInPlugin } from '../composables/types';
-import type { CheckInDesk } from '../composables/useCheckIn';
+import type { DeskCore } from '../composables/desk-core';
 
 /**
  * Plugin to manage an active item in the desk.
@@ -24,7 +24,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
   name: 'active-item',
   version: '1.0.0',
 
-  install: (desk: CheckInDesk<T>) => {
+  install: (desk: DeskCore<T>) => {
     // Add reactive activeId state
     const activeId = ref<string | number | null>(null);
     (desk as any).activeId = activeId;
@@ -39,9 +39,8 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
     /**
      * Set the active item by ID
      */
-    setActive(desk: CheckInDesk<T>, id: string | number | null) {
+    setActive(desk: DeskCore<T>, id: string | number | null) {
       const deskWithActive = desk as any;
-      const previousId = deskWithActive.activeId?.value;
 
       if (id === null) {
         deskWithActive.activeId.value = null;
@@ -66,7 +65,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
     /**
      * Get the currently active item
      */
-    getActive(desk: CheckInDesk<T>) {
+    getActive(desk: DeskCore<T>) {
       const deskWithActive = desk as any;
       const id = deskWithActive.activeId?.value;
       return id ? desk.get(id) : null;
@@ -75,7 +74,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
     /**
      * Clear the active item
      */
-    clearActive(desk: CheckInDesk<T>) {
+    clearActive(desk: DeskCore<T>) {
       const deskWithActive = desk as any;
       return deskWithActive.setActive?.(null);
     },
@@ -85,7 +84,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
     /**
      * Check if there's an active item
      */
-    hasActive(desk: CheckInDesk<T>) {
+    hasActive(desk: DeskCore<T>) {
       const deskWithActive = desk as any;
       return deskWithActive.activeId?.value !== null;
     },

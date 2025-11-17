@@ -2,34 +2,44 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { AUTO_DESK_KEY } from './index';
 
-// Type pour un composant enfant
+/**
+ * Auto Check-in Example - Dynamic Component Registration
+ * 
+ * Demonstrates:
+ * - Automatic component registration with autoCheckIn
+ * - Data synchronization with watchData
+ * - Dynamic component creation and removal
+ * - Real-time registry updates
+ */
+
+// Type definition for child component data
 interface ChildData {
   name: string;
   status: 'active' | 'inactive' | 'pending';
   count: number;
 }
 
-// Créer un desk parent
+// Create parent desk for child components
 const { createDesk } = useCheckIn<ChildData>();
 const { desk } = createDesk(AUTO_DESK_KEY, {
   debug: true,
 });
 
-// État pour gérer les composants enfants
+// State to manage child components
 const children = ref<Array<{
   id: string;
   name: string;
   status: 'active' | 'inactive' | 'pending';
   count: number;
 }>>([
-  { id: 'child-1', name: 'Composant A', status: 'active', count: 0 },
-  { id: 'child-2', name: 'Composant B', status: 'inactive', count: 0 },
+  { id: 'child-1', name: 'Component A', status: 'active', count: 0 },
+  { id: 'child-2', name: 'Component B', status: 'inactive', count: 0 },
 ]);
 
-// Computed pour afficher les items enregistrés
+// Computed property to get all registered items from the desk
 const registeredItems = computed(() => desk.getAll());
 
-// Ajouter un nouvel enfant
+// Function to add a new child component
 const addChild = () => {
   const id = `child-${Date.now()}`;
   const newChild: {
@@ -39,14 +49,14 @@ const addChild = () => {
     count: number;
   } = {
     id,
-    name: `Composant ${String.fromCharCode(65 + children.value.length)}`,
+    name: `Component ${String.fromCharCode(65 + children.value.length)}`,
     status: 'pending',
     count: 0,
   };
   children.value.push(newChild);
 };
 
-// Supprimer un enfant
+// Function to remove a child component
 const removeChild = (id: string) => {
   const index = children.value.findIndex(c => c.id === id);
   if (index !== -1) {
@@ -54,7 +64,7 @@ const removeChild = (id: string) => {
   }
 };
 
-// Incrémenter le compteur
+// Function to increment the counter
 const incrementCount = (id: string) => {
   const child = children.value.find(c => c.id === id);
   if (child) {
@@ -62,7 +72,7 @@ const incrementCount = (id: string) => {
   }
 };
 
-// Changer le statut
+// Function to toggle the status
 const toggleStatus = (id: string) => {
   const child = children.value.find(c => c.id === id);
   if (child) {
@@ -75,22 +85,22 @@ const toggleStatus = (id: string) => {
   <div class="demo-container">
     <h2>Auto Check-in Example</h2>
     <p class="description">
-      Les composants enfants s'enregistrent automatiquement et synchronisent leurs données via watch.
+      Child components automatically register and synchronize their data via watch.
     </p>
 
     <div class="controls">
       <UButton icon="i-heroicons-plus" @click="addChild">
-        Ajouter un composant
+        Add Component
       </UButton>
       <UBadge color="primary" variant="subtle">
-        {{ registeredItems.length }} enregistré(s) sur {{ children.length }}
+        {{ registeredItems.length }} registered out of {{ children.length }}
       </UBadge>
     </div>
 
     <div class="grid">
-      <!-- Composants enfants -->
+      <!-- Child components -->
       <div class="children-panel">
-        <h3>Composants Enfants</h3>
+        <h3>Child Components</h3>
         <div class="children-list">
           <DemoChild
             v-for="child in children"
@@ -106,11 +116,11 @@ const toggleStatus = (id: string) => {
         </div>
       </div>
 
-      <!-- Registry du desk -->
+      <!-- Desk registry -->
       <div class="registry-panel">
         <h3>Registry (Desk)</h3>
         <div v-if="registeredItems.length === 0" class="empty-state">
-          Aucun composant enregistré
+          No component registered
         </div>
         <ul v-else class="registry-list">
           <li v-for="item in registeredItems" :key="item.id" class="registry-item">

@@ -18,7 +18,13 @@ const emit = defineEmits<{
   remove: [id: string | number];
 }>();
 
-// Auto check-in avec watch des données
+/**
+ * Auto check-in with data watching enabled
+ * The component will:
+ * 1. Check in automatically when mounted
+ * 2. Watch props changes and update the desk
+ * 3. Check out automatically when unmounted
+ */
 useCheckIn<TodoItem>().checkIn(TODO_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,

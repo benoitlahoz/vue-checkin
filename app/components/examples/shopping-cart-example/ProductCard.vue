@@ -2,6 +2,13 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { CART_DESK_KEY } from './index';
 
+/**
+ * Product Card Component
+ * 
+ * Individual product card that automatically checks in to the cart desk.
+ * Handles quantity updates and cart operations.
+ */
+
 interface CartItem {
   name: string;
   price: number;
@@ -21,7 +28,7 @@ const emit = defineEmits<{
   updateQuantity: [id: string, quantity: number];
 }>();
 
-// Auto check-in avec watch des données
+// Automatically check in to the cart desk with data watching
 const { desk, checkOut } = useCheckIn<CartItem>().checkIn(CART_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
@@ -34,20 +41,20 @@ const { desk, checkOut } = useCheckIn<CartItem>().checkIn(CART_DESK_KEY, {
   }),
 });
 
-// Ajouter au panier (déjà fait par autoCheckIn)
+// Check if product is in the cart
 const isInCart = computed(() => desk?.has(props.id) ?? false);
 
-// Retirer du panier
+// Function to remove product from cart
 const removeFromCart = () => {
   checkOut();
 };
 
-// Incrémenter la quantité
+// Function to increment quantity
 const increment = () => {
   emit('updateQuantity', props.id, props.quantity + 1);
 };
 
-// Décrémenter la quantité
+// Function to decrement quantity
 const decrement = () => {
   emit('updateQuantity', props.id, Math.max(1, props.quantity - 1));
 };
@@ -61,7 +68,7 @@ const decrement = () => {
     
     <div class="product-info">
       <h4 class="product-name">{{ name }}</h4>
-      <div class="product-price">{{ price.toFixed(2) }}€</div>
+      <div class="product-price">${{ price.toFixed(2) }}</div>
     </div>
 
     <div class="product-actions">
@@ -92,12 +99,12 @@ const decrement = () => {
         icon="i-heroicons-trash"
         @click="removeFromCart"
       >
-        Retirer
+        Remove
       </UButton>
       
       <UBadge v-if="isInCart" color="success" variant="subtle">
         <UIcon name="i-heroicons-check" />
-        Dans le panier
+        In Cart
       </UBadge>
     </div>
   </div>

@@ -2,6 +2,13 @@
 import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import { PLUGIN_DESK_KEY } from './index';
 
+/**
+ * Plugin List Item Component
+ * 
+ * Individual list item that automatically checks in to the desk
+ * and watches prop changes for synchronization.
+ */
+
 interface ListItem {
   name: string;
   description: string;
@@ -19,7 +26,7 @@ const emit = defineEmits<{
   remove: [id: string | number];
 }>();
 
-// Auto check-in avec watch des données
+// Automatically check in to the desk with data watching enabled
 useCheckIn<ListItem>().checkIn(PLUGIN_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,

@@ -3,6 +3,16 @@ import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
 import ProductCard from './ProductCard.vue';
 import { CART_DESK_KEY } from './index';
 
+/**
+ * Shopping Cart Example - E-commerce Cart
+ * 
+ * Demonstrates:
+ * - Auto check-in for product management
+ * - Lifecycle hooks (onCheckIn, onCheckOut, onBeforeCheckOut)
+ * - Dynamic cart total calculation
+ * - User confirmation before removing items
+ */
+
 interface CartItem {
   name: string;
   price: number;
@@ -10,23 +20,23 @@ interface CartItem {
   imageUrl?: string;
 }
 
-// Créer un desk pour le panier
+// Create a desk for the shopping cart with lifecycle hooks
 const { createDesk } = useCheckIn<CartItem>();
 const { desk } = createDesk(CART_DESK_KEY, {
   debug: true,
   onCheckIn: (id, data) => {
-    console.log(`✅ Produit ajouté au panier: ${data.name}`);
+    console.log(`✅ Product added to cart: ${data.name}`);
   },
   onCheckOut: (id) => {
-    console.log(`❌ Produit retiré du panier: ${id}`);
+    console.log(`❌ Product removed from cart: ${id}`);
   },
   onBeforeCheckOut: () => {
-    const confirmed = confirm('Voulez-vous vraiment retirer ce produit du panier ?');
+    const confirmed = confirm('Do you really want to remove this product from the cart?');
     return confirmed;
   },
 });
 
-// Produits disponibles
+// Available products catalog
 const products = ref([
   {
     id: 'product-1',
@@ -72,16 +82,16 @@ const products = ref([
   },
 ]);
 
-// Computed pour le panier
+// Computed properties for cart data
 const cartItems = computed(() => desk.getAll());
-const cartCount = computed(() => desk.registry.value.size);
+const cartCount = computed(() => desk.registryMap.size);
 const cartTotal = computed(() => {
   return cartItems.value.reduce((total, item) => {
     return total + (item.data.price * item.data.quantity);
   }, 0);
 });
 
-// Mettre à jour la quantité
+// Function to update product quantity
 const updateQuantity = (id: string, quantity: number) => {
   const product = products.value.find(p => p.id === id);
   if (product) {
@@ -89,25 +99,25 @@ const updateQuantity = (id: string, quantity: number) => {
   }
 };
 
-// Vider le panier
+// Function to clear the entire cart
 const clearCart = () => {
-  if (confirm('Voulez-vous vraiment vider le panier ?')) {
+  if (confirm('Do you really want to empty the cart?')) {
     desk.clear();
   }
 };
 
-// Procéder au paiement
+// Function to proceed to checkout
 const checkout = () => {
   if (cartItems.value.length === 0) {
-    alert('Votre panier est vide !');
+    alert('Your cart is empty!');
     return;
   }
 
   const orderSummary = cartItems.value
-    .map(item => `${item.data.name} x${item.data.quantity} - ${(item.data.price * item.data.quantity).toFixed(2)}€`)
+    .map(item => `${item.data.name} x${item.data.quantity} - $${(item.data.price * item.data.quantity).toFixed(2)}`)
     .join('\n');
 
-  alert(`Commande validée !\n\nRésumé:\n${orderSummary}\n\nTotal: ${cartTotal.value.toFixed(2)}€`);
+  alert(`Order confirmed!\n\nSummary:\n${orderSummary}\n\nTotal: $${cartTotal.value.toFixed(2)}`);
   desk.clear();
 };
 </script>
@@ -116,13 +126,13 @@ const checkout = () => {
   <div class="demo-container">
     <h2>Shopping Cart Example</h2>
     <p class="description">
-      Panier d'achat e-commerce avec gestion des produits et calcul automatique du total.
+      E-commerce shopping cart with product management and automatic total calculation.
     </p>
 
     <div class="shop-layout">
-      <!-- Liste des produits -->
+      <!-- Products section -->
       <div class="products-section">
-        <h3>Produits disponibles</h3>
+        <h3>Available Products</h3>
         <div class="products-grid">
           <ProductCard
             v-for="product in products"
@@ -137,18 +147,18 @@ const checkout = () => {
         </div>
       </div>
 
-      <!-- Panier -->
+      <!-- Shopping cart -->
       <div class="cart-section">
         <div class="cart-header">
-          <h3>Panier</h3>
+          <h3>Cart</h3>
           <UBadge color="primary" variant="subtle">
-            {{ cartCount }} article(s)
+            {{ cartCount }} item(s)
           </UBadge>
         </div>
 
         <div v-if="cartItems.length === 0" class="empty-cart">
           <UIcon name="i-heroicons-shopping-cart" class="empty-icon" />
-          <p>Votre panier est vide</p>
+          <p>Your cart is empty</p>
         </div>
 
         <div v-else class="cart-content">
@@ -162,11 +172,11 @@ const checkout = () => {
                 <UIcon :name="item.data.imageUrl || 'i-heroicons-cube'" class="item-icon" />
                 <div>
                   <strong>{{ item.data.name }}</strong>
-                  <span class="item-quantity">Quantité: {{ item.data.quantity }}</span>
+                  <span class="item-quantity">Quantity: {{ item.data.quantity }}</span>
                 </div>
               </div>
               <div class="item-price">
-                {{ (item.data.price * item.data.quantity).toFixed(2) }}€
+                ${{ (item.data.price * item.data.quantity).toFixed(2) }}
               </div>
             </div>
           </div>
@@ -174,7 +184,7 @@ const checkout = () => {
           <div class="cart-summary">
             <div class="total-line">
               <span class="total-label">Total</span>
-              <span class="total-amount">{{ cartTotal.toFixed(2) }}€</span>
+              <span class="total-amount">${{ cartTotal.toFixed(2) }}</span>
             </div>
           </div>
 
@@ -185,7 +195,7 @@ const checkout = () => {
               block
               @click="checkout"
             >
-              Passer la commande
+              Checkout
             </UButton>
             <UButton
               color="error"
@@ -194,7 +204,7 @@ const checkout = () => {
               block
               @click="clearCart"
             >
-              Vider le panier
+              Clear Cart
             </UButton>
           </div>
         </div>
