@@ -286,10 +286,10 @@ export type { CheckInPlugin } from './types';
 export {
   createActiveItemPlugin,
   createValidationPlugin,
-  createLoggerPlugin,
+  createDebouncePlugin,
   createHistoryPlugin,
   type ValidationOptions,
-  type LoggerOptions,
+  type DebounceOptions,
   type HistoryOptions,
   type HistoryEntry,
 } from '../plugins';

@@ -52,8 +52,8 @@ export type { CheckInPlugin } from './types';
 export {
   createActiveItemPlugin, 
   createValidationPlugin,
-  createLoggerPlugin,
   createHistoryPlugin,
+  createDebouncePlugin
 } from '../plugins';
 
   
