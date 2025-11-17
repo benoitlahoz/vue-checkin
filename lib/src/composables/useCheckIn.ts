@@ -1,5 +1,5 @@
 /**
- * Vue CheckIn - Generic check-in system for parent/child component registration.
+ * VueCheckIn - Generic check-in system for parent/child component registration.
  * Refactored for performance and maintainability.
  * 
  * @type registry:hook

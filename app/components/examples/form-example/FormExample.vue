@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn, createValidationPlugin } from '#vue-checkin/composables/useCheckIn';
+import type { ValidationError } from '#vue-checkin/plugins/validation';
 import FormField from './FormField.vue';
 import { FORM_DESK_KEY } from '.';
 
@@ -11,6 +12,7 @@ import { FORM_DESK_KEY } from '.';
  * - Form field validation
  * - Real-time validation feedback
  * - Form submission with validation
+ * - Error cache management
  */
 
 // Type definition for form fields
@@ -39,6 +41,7 @@ const validationPlugin = createValidationPlugin<FieldData>({
     
     return true;
   },
+  maxErrors: 100, // Keep up to 100 validation errors
 });
 
 // Create a desk with validation plugin
@@ -48,13 +51,19 @@ const { desk } = createDesk(FORM_DESK_KEY, {
   plugins: [validationPlugin],
 });
 
-// Extended type definition to include validation plugin methods
+// Extend desk type to include validation plugin methods
 type DeskWithValidation = typeof desk & {
-  isValid?: Ref<boolean>;
-  getErrors?: () => Record<string | number, string>;
+  getValidationErrors?: () => ValidationError[];
+  getLastValidationError?: () => ValidationError | null;
+  getValidationErrorsById?: (id: string | number) => ValidationError[];
+  clearValidationErrors?: () => void;
+  getValidationErrorsByType?: (type: ValidationError['type']) => ValidationError[];
+  validationErrorCount?: number;
+  hasValidationErrors?: boolean;
+  count?: number;
 };
 
-const deskWithValidation = desk as DeskWithValidation;
+const validatedDesk = desk as DeskWithValidation;
 
 // Form fields state
 const fieldsData = ref<Array<{
@@ -88,8 +97,22 @@ const fieldsData = ref<Array<{
 ]);
 
 // Computed properties for validation
-const isFormValid = computed(() => deskWithValidation.isValid?.value ?? false);
-const errors = computed(() => deskWithValidation.getErrors?.() || {});
+const validationErrors = computed(() => validatedDesk.getValidationErrors?.() || []);
+const hasErrors = computed(() => validatedDesk.hasValidationErrors ?? false);
+
+// Get current errors by field ID
+const errors = computed(() => {
+  const errorMap: Record<string, string> = {};
+  validationErrors.value.forEach((error: ValidationError) => {
+    if (!errorMap[error.id]) {
+      errorMap[error.id] = error.message;
+    }
+  });
+  return errorMap;
+});
+
+// Check if form is valid (no errors and all fields checked in)
+const isFormValid = computed(() => !hasErrors.value && (validatedDesk.count ?? 0) > 0);
 
 // Function to update field value
 const updateFieldValue = (id: string, value: string) => {
@@ -108,8 +131,12 @@ const submitForm = () => {
     }, {} as Record<string, string>);
 
     alert('Form submitted successfully!\n\n' + JSON.stringify(formData, null, 2));
+    
+    // Clear validation errors after successful submission
+    validatedDesk.clearValidationErrors?.();
   } else {
-    alert('The form contains errors. Please correct them.');
+    const errorList = validationErrors.value.map((e: ValidationError) => `- ${e.message}`).join('\n');
+    alert('The form contains errors. Please correct them:\n\n' + errorList);
   }
 };
 
@@ -118,6 +145,9 @@ const resetForm = () => {
   fieldsData.value.forEach((field) => {
     field.value = '';
   });
+  
+  // Clear validation errors when resetting
+  validatedDesk.clearValidationErrors?.();
 };
 </script>
 

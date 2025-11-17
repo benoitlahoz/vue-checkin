@@ -1,6 +1,6 @@
 ---
 title: Examples
-description: Vue CheckIn usage examples with different use cases
+description: VueCheckIn usage examples with different use cases
 ---
 
 # Examples

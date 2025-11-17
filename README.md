@@ -1,4 +1,4 @@
-# Vue CheckIn
+# VueCheckIn
 
 [![npm version](https://img.shields.io/npm/v/vue-checkin.svg)](https://www.npmjs.com/package/vue-checkin)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)

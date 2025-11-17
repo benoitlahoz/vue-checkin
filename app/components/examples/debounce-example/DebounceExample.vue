@@ -66,7 +66,7 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const mockDatabase = [
   { id: 'vue-1', title: 'Vue 3 Composition API', description: 'Learn about the new Composition API', category: 'Vue' },
   { id: 'vue-2', title: 'Vue Router', description: 'Official routing library', category: 'Vue' },
-  { id: 'vue-3', title: 'Vue Checkin Library', description: 'Generic check-in system for Vue', category: 'Vue' },
+  { id: 'vue-3', title: 'VueCheckIn Library', description: 'Generic check-in system for Vue', category: 'Vue' },
   { id: 'ts-1', title: 'TypeScript Basics', description: 'Introduction to TypeScript', category: 'TypeScript' },
   { id: 'ts-2', title: 'TypeScript Advanced', description: 'Advanced TypeScript patterns', category: 'TypeScript' },
   { id: 'js-1', title: 'JavaScript ES6+', description: 'Modern JavaScript features', category: 'JavaScript' },
