@@ -9,9 +9,9 @@ seo:
 VueCheckIn
 
 #description
-A generic check-in system for parent/child component registration pattern in Vue 3.
+A generic check-in system for parent/child component registration pattern in Vue 3 using Inversion of Control (IoC).
 
-Like an airport check-in desk: parent components provide a check-in counter where child components register themselves with their data.
+Like an airport check-in desk: parent components provide a check-in counter where child components register themselves with their data. Built on dependency injection principles for clean, maintainable component architecture.
 
 #links
   :::u-button
@@ -79,10 +79,10 @@ Core Features
   icon: i-lucide-box
   ---
   #title
-  [Dependency Injection]{.text-primary}
+  [Inversion of Control]{.text-primary}
   
   #description
-  Uses Vue's provide/inject pattern for seamless communication between parent and child components across any depth.
+  Implements IoC pattern using Vue's provide/inject for dependency injection. Children register with parents instead of parents managing children directly.
   :::
 
   :::u-page-feature
