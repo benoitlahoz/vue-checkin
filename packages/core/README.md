@@ -11,6 +11,14 @@ A generic check-in system (local IoC container) for parent/child component regis
 
 Think of it like an airport check-in desk: parent components provide a check-in counter where child components register themselves with their data.
 
+## 📦 Monorepo Structure
+
+VueAirport is organized as a monorepo with separate packages:
+
+- **[vue-airport](./packages/core)** - Core composable and desk system
+- **[@vue-airport/plugins](./packages/plugins)** - Base plugins (activeItem, validation, debounce, history)
+- **[vue-airport-devtools](./packages/devtools)** - Vue DevTools integration
+
 ## 📖 Documentation
 
 Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](https://benoitlahoz.github.io/vue-airport)
@@ -31,18 +39,42 @@ Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](
 ## 📦 Installation
 
 ```bash
-# npm
-npm install vue-airport
+# npm - Install core and plugins
+npm install vue-airport @vue-airport/plugins
 
 # yarn
-yarn add vue-airport
+yarn add vue-airport @vue-airport/plugins
 
 # pnpm
-pnpm add vue-airport
+pnpm add vue-airport @vue-airport/plugins
 
 # bun
-bun add vue-airport
+bun add vue-airport @vue-airport/plugins
 ```
+
+::tip
+You can install only `vue-airport` if you don't need the built-in plugins.
+::
+
+### DevTools Integration
+
+For enhanced debugging experience, install the DevTools package:
+
+```bash
+# npm
+npm install -D vue-airport-devtools
+
+# yarn
+yarn add -D vue-airport-devtools
+
+# pnpm
+pnpm add -D vue-airport-devtools
+
+# bun
+bun add -D vue-airport-devtools
+```
+
+See the [DevTools section](#-devtools) below for setup instructions.
 
 ## 🚀 Quick Start
 
@@ -120,7 +152,8 @@ useCheckIn<TabItem>().checkIn('tabs', {
 Track which item is currently active:
 
 ```ts
-import { useCheckIn, createActiveItemPlugin } from 'vue-airport';
+import { useCheckIn } from 'vue-airport';
+import { createActiveItemPlugin } from '@vue-airport/plugins';
 
 const { createDesk } = useCheckIn();
 const { desk } = createDesk('tabs', {
@@ -137,8 +170,10 @@ const hasActive = computed(() => desk.hasActive);
 Validate data before check-in:
 
 ```ts
-import { createValidationPlugin } from 'vue-airport';
+import { useCheckIn } from 'vue-airport';
+import { createValidationPlugin } from '@vue-airport/plugins';
 
+const { createDesk } = useCheckIn();
 const { desk } = createDesk('form', {
   plugins: [
     createValidationPlugin({
@@ -161,8 +196,10 @@ const lastError = desk.getLastValidationError();
 Track operation history:
 
 ```ts
-import { createHistoryPlugin } from 'vue-airport';
+import { useCheckIn } from 'vue-airport';
+import { createHistoryPlugin } from '@vue-airport/plugins';
 
+const { createDesk } = useCheckIn();
 const { desk } = createDesk('items', {
   plugins: [createHistoryPlugin({ maxHistory: 100 })]
 });
@@ -178,8 +215,10 @@ desk.clearHistory();
 Debounce operations:
 
 ```ts
-import { createDebouncePlugin } from 'vue-airport';
+import { useCheckIn } from 'vue-airport';
+import { createDebouncePlugin } from '@vue-airport/plugins';
 
+const { createDesk } = useCheckIn();
 const { desk } = createDesk('search', {
   plugins: [
     createDebouncePlugin({
@@ -189,6 +228,72 @@ const { desk } = createDesk('search', {
   ]
 });
 ```
+
+## 🔍 DevTools
+
+VueAirport includes a comprehensive DevTools integration for debugging and monitoring your desks in development.
+
+### Setup
+
+#### For Vite Projects
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { vueAirportDevTools } from 'vue-airport-devtools/vite';
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    vueAirportDevTools()
+  ]
+});
+```
+
+#### For Nuxt Projects
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['vue-airport-devtools/nuxt']
+});
+```
+
+### Enable DevTools in Your Desk
+
+```vue
+<script setup lang="ts">
+import { useCheckIn } from 'vue-airport';
+
+const { createDesk } = useCheckIn();
+const { desk } = createDesk('my-desk', {
+  devTools: true  // Enable DevTools for this desk
+});
+</script>
+```
+
+### Features
+
+- 📊 **Real-time Monitoring** - Track all check-ins, check-outs, and updates
+- 🔍 **Desk Inspector** - View desk state, registered items, and metadata
+- ⏱️ **Performance Metrics** - Monitor operation timing and plugin execution
+- 📜 **Event Timeline** - See chronological history of all desk events
+- 🎯 **Plugin Tracking** - Debug plugin behavior and side effects
+- 🔌 **Multiple Desk Support** - Monitor all active desks in your application
+
+### Accessing DevTools
+
+Once configured, DevTools are accessible through the Vue DevTools browser extension:
+
+1. Open Vue DevTools in your browser
+2. Navigate to the "VueAirport" tab
+3. Select a desk to inspect
+4. View real-time updates as components check in/out
+
+::tip
+DevTools automatically disable in production builds for optimal performance.
+::
 
 ## 📚 Use Cases
 

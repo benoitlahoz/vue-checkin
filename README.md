@@ -56,6 +56,26 @@ bun add vue-airport @vue-airport/plugins
 You can install only `vue-airport` if you don't need the built-in plugins.
 ::
 
+### DevTools Integration
+
+For enhanced debugging experience, install the DevTools package:
+
+```bash
+# npm
+npm install -D vue-airport-devtools
+
+# yarn
+yarn add -D vue-airport-devtools
+
+# pnpm
+pnpm add -D vue-airport-devtools
+
+# bun
+bun add -D vue-airport-devtools
+```
+
+See the [DevTools section](#-devtools) below for setup instructions.
+
 ## 🚀 Quick Start
 
 ### Parent Component
@@ -208,6 +228,72 @@ const { desk } = createDesk('search', {
   ]
 });
 ```
+
+## 🔍 DevTools
+
+VueAirport includes a comprehensive DevTools integration for debugging and monitoring your desks in development.
+
+### Setup
+
+#### For Vite Projects
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { vueAirportDevTools } from 'vue-airport-devtools/vite';
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    vueAirportDevTools()
+  ]
+});
+```
+
+#### For Nuxt Projects
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['vue-airport-devtools/nuxt']
+});
+```
+
+### Enable DevTools in Your Desk
+
+```vue
+<script setup lang="ts">
+import { useCheckIn } from 'vue-airport';
+
+const { createDesk } = useCheckIn();
+const { desk } = createDesk('my-desk', {
+  devTools: true  // Enable DevTools for this desk
+});
+</script>
+```
+
+### Features
+
+- 📊 **Real-time Monitoring** - Track all check-ins, check-outs, and updates
+- 🔍 **Desk Inspector** - View desk state, registered items, and metadata
+- ⏱️ **Performance Metrics** - Monitor operation timing and plugin execution
+- 📜 **Event Timeline** - See chronological history of all desk events
+- 🎯 **Plugin Tracking** - Debug plugin behavior and side effects
+- 🔌 **Multiple Desk Support** - Monitor all active desks in your application
+
+### Accessing DevTools
+
+Once configured, DevTools are accessible through the Vue DevTools browser extension:
+
+1. Open Vue DevTools in your browser
+2. Navigate to the "VueAirport" tab
+3. Select a desk to inspect
+4. View real-time updates as components check in/out
+
+::tip
+DevTools automatically disable in production builds for optimal performance.
+::
 
 ## 📚 Use Cases
 
