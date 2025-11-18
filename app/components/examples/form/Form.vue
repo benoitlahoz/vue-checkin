@@ -46,7 +46,7 @@ const validationPlugin = createValidationPlugin<FieldData>({
 // Create a desk with validation plugin
 const { createDesk } = useCheckIn<FieldData>();
 const { desk } = createDesk(FORM_DESK_KEY, {
-  debug: true,
+  debug: false,
   plugins: [validationPlugin],
 });
 

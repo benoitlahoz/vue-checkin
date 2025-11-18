@@ -218,16 +218,16 @@ const removeResult = (id: string) => {
 <template>
   <div>
     <!-- Search Controls -->
-    <div class="search-section">
+    <div class="mb-8">
       <UInput
         v-model="searchQuery"
         icon="i-heroicons-magnifying-glass"
         size="lg"
         placeholder="Vue, CSS, Typescript, ..."
-        class="search-input"
+        class="mb-4"
       />
 
-      <div class="controls">
+      <div class="flex gap-3 flex-wrap">
         <UButton
           icon="i-heroicons-arrow-path"
           color="primary"
@@ -249,43 +249,43 @@ const removeResult = (id: string) => {
     </div>
 
     <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-label">Results Found</div>
-        <div class="stat-value">{{ searchResults.length }}</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Results Found</div>
+        <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ searchResults.length }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Checked In</div>
-        <div class="stat-value">{{ itemCount }}</div>
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Checked In</div>
+        <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ itemCount }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Pending Events</div>
-        <div class="stat-value" :class="{ 'text-primary': hasPending }">{{ pendingCheckIns }}</div>
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Pending Events</div>
+        <div class="text-3xl font-bold" :class="hasPending ? 'text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100'">{{ pendingCheckIns }}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Last Debounced Event</div>
-        <div class="stat-value small">{{ lastDebouncedEventTime }}</div>
+      <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Last Debounced Event</div>
+        <div class="text-base font-bold text-gray-900 dark:text-gray-100">{{ lastDebouncedEventTime }}</div>
       </div>
     </div>
 
     <!-- Search Results -->
-    <div class="results-section">
-      <div v-if="isSearching" class="loading">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin" />
+    <div class="mb-8 min-h-[300px]">
+      <div v-if="isSearching" class="flex flex-col items-center justify-center gap-4 py-12 text-gray-500 dark:text-gray-400">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-3xl" />
         Searching...
       </div>
 
-      <div v-else-if="searchResults.length === 0 && searchQuery" class="empty-state">
-        <UIcon name="i-heroicons-magnifying-glass" />
+      <div v-else-if="searchResults.length === 0 && searchQuery" class="flex flex-col items-center justify-center gap-4 py-12 text-gray-500 dark:text-gray-400">
+        <UIcon name="i-heroicons-magnifying-glass" class="text-5xl opacity-50" />
         <p>No results found for "{{ searchQuery }}"</p>
       </div>
 
-      <div v-else-if="searchResults.length === 0" class="empty-state">
-        <UIcon name="i-heroicons-document-magnifying-glass" />
+      <div v-else-if="searchResults.length === 0" class="flex flex-col items-center justify-center gap-4 py-12 text-gray-500 dark:text-gray-400">
+        <UIcon name="i-heroicons-document-magnifying-glass" class="text-5xl opacity-50" />
         <p>Type to search...</p>
       </div>
 
-      <TransitionGroup v-else name="list" tag="div" class="results-grid">
+      <TransitionGroup v-else name="list" tag="div" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <SearchResultItem
           v-for="result in searchResults"
           :id="result.id"
@@ -299,213 +299,34 @@ const removeResult = (id: string) => {
     </div>
 
     <!-- Event Log -->
-    <div class="event-log">
-      <h3>Event Log</h3>
-      <div class="log-entries">
+    <div class="mb-8 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Event Log</h3>
+      <div class="max-h-[300px] overflow-y-auto">
         <TransitionGroup name="log" tag="div">
-          <div v-for="(entry, index) in eventLog" :key="`${entry.time}-${index}`" class="log-entry">
-            <span class="log-time">{{ entry.time }}</span>
-            <span class="log-message">{{ entry.message }}</span>
+          <div v-for="(entry, index) in eventLog" :key="`${entry.time}-${index}`" class="flex gap-4 py-3 border-b border-gray-200 dark:border-gray-700 text-sm last:border-b-0">
+            <span class="text-gray-500 dark:text-gray-400 font-mono shrink-0">{{ entry.time }}</span>
+            <span class="text-gray-900 dark:text-gray-100">{{ entry.message }}</span>
           </div>
         </TransitionGroup>
-        <div v-if="eventLog.length === 0" class="log-empty">No events yet</div>
+        <div v-if="eventLog.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400 italic">No events yet</div>
       </div>
     </div>
 
     <!-- Info Box -->
-    <div class="info-box">
-      <h3>How it works:</h3>
-      <ul>
-        <li>Search results check-in as you type</li>
-        <li>Debounce plugin batches events (500ms delay)</li>
-        <li>Events are forced after 2s (maxWait)</li>
-        <li>You can manually flush or cancel pending events</li>
-        <li>Check the event log to see debounced events firing</li>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+      <h3 class="text-base font-semibold mb-3 text-gray-900 dark:text-gray-100">How it works:</h3>
+      <ul class="space-y-2">
+        <li class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400">Search results check-in as you type</li>
+        <li class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400">Debounce plugin batches events (500ms delay)</li>
+        <li class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400">Events are forced after 2s (maxWait)</li>
+        <li class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400">You can manually flush or cancel pending events</li>
+        <li class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400">Check the event log to see debounced events firing</li>
       </ul>
     </div>
   </div>
 </template>
 
 <style scoped>
-h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: var(--ui-text-highlighted);
-}
-
-.description {
-  color: var(--ui-text-muted);
-  margin-bottom: 2rem;
-}
-
-/* Search Section */
-.search-section {
-  margin-bottom: 2rem;
-}
-
-.search-input {
-  margin-bottom: 1rem;
-}
-
-.controls {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-/* Stats */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: var(--ui-bg-elevated);
-  border: 1px solid var(--ui-border);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  text-align: center;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--ui-text-muted);
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--ui-text-highlighted);
-}
-
-.stat-value.small {
-  font-size: 1rem;
-}
-
-.stat-value.text-primary {
-  color: var(--ui-primary);
-}
-
-/* Results Section */
-.results-section {
-  margin-bottom: 2rem;
-  min-height: 300px;
-}
-
-.loading,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 3rem;
-  color: var(--ui-text-muted);
-}
-
-.loading svg {
-  font-size: 2rem;
-}
-
-.empty-state svg {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-/* Event Log */
-.event-log {
-  margin-bottom: 2rem;
-  background: var(--ui-bg-elevated);
-  border: 1px solid var(--ui-border);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-}
-
-.event-log h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.log-entries {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.log-entry {
-  display: flex;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--ui-border);
-  font-size: 0.875rem;
-}
-
-.log-entry:last-child {
-  border-bottom: none;
-}
-
-.log-time {
-  color: var(--ui-text-muted);
-  font-family: monospace;
-  flex-shrink: 0;
-}
-
-.log-message {
-  color: var(--ui-text);
-}
-
-.log-empty {
-  text-align: center;
-  padding: 2rem;
-  color: var(--ui-text-muted);
-  font-style: italic;
-}
-
-/* Info Box */
-.info-box {
-  background: var(--ui-bg);
-  border: 1px solid var(--ui-border);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-}
-
-.info-box h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
-
-.info-box ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.info-box li {
-  padding: 0.5rem 0;
-  padding-left: 1.5rem;
-  position: relative;
-}
-
-.info-box li::before {
-  content: '→';
-  position: absolute;
-  left: 0;
-  color: var(--ui-primary);
-}
-
 /* Transitions */
 .list-enter-active,
 .list-leave-active {

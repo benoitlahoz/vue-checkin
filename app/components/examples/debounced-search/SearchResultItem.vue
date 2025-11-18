@@ -54,8 +54,8 @@ const getCategoryColor = (category: string): 'primary' | 'secondary' | 'success'
 </script>
 
 <template>
-  <div class="result-item">
-    <div class="result-header">
+  <div class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md hover:-translate-y-0.5">
+    <div class="flex justify-between items-center mb-3">
       <UBadge :color="getCategoryColor(category)" size="xs">
         {{ category }}
       </UBadge>
@@ -68,43 +68,10 @@ const getCategoryColor = (category: string): 'primary' | 'secondary' | 'success'
       />
     </div>
     
-    <h4 class="result-title">{{ title }}</h4>
-    <p class="result-description">{{ description }}</p>
+    <h4 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{{ title }}</h4>
+    <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ description }}</p>
   </div>
 </template>
 
 <style scoped>
-.result-item {
-  background: var(--ui-bg-elevated);
-  border: 1px solid var(--ui-border);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  transition: all 0.2s ease;
-}
-
-.result-item:hover {
-  border-color: var(--ui-border-active);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  transform: translateY(-2px);
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.result-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--ui-text-highlighted);
-}
-
-.result-description {
-  font-size: 0.875rem;
-  color: var(--ui-text-muted);
-  line-height: 1.5;
-}
 </style>
