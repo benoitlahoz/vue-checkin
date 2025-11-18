@@ -13,7 +13,17 @@ Vue DevTools integration for [vue-airport](../lib) library.
 ## Installation
 
 ```bash
+# npm
 npm install -D vue-airport-devtools
+
+# yarn
+yarn add -D vue-airport-devtools
+
+# pnpm
+pnpm add -D vue-airport-devtools
+
+# bun
+bun add -D vue-airport-devtools
 ```
 
 ## Quick Start
@@ -38,29 +48,19 @@ export default defineConfig({
 
 ### Nuxt Project
 
-For Nuxt, disable auto-injection and use the Nuxt plugin instead:
+For Nuxt, simply add the DevTools module to your configuration:
 
 ```ts
 // nuxt.config.ts
-import { VueAirportDevTools } from 'vue-airport-devtools/vite'
-
 export default defineNuxtConfig({
-  vite: {
-    plugins: [
-      VueAirportDevTools({ autoInject: false }), // Disable auto-injection for Nuxt
-    ],
-  },
+  modules: [
+    // ... other modules
+    'vue-airport-devtools/nuxt',
+  ],
 })
 ```
 
-Then create a plugin file:
-
-```ts
-// plugins/devtools.client.ts
-import devtoolsPlugin from 'vue-airport-devtools/nuxt'
-
-export default defineNuxtPlugin(devtoolsPlugin())
-```
+> **Note**: The Nuxt module automatically handles client-side setup. No additional plugin file needed.
 
 ### Manual Setup (without Vite plugin)
 
@@ -83,15 +83,23 @@ app.mount('#app')
 
 ## Usage in Your App
 
-Simply add a `deskId` when creating your desks for better visibility:
+**Important**: DevTools must be explicitly enabled when creating desks.
 
 ```ts
 import { useCheckIn } from 'vue-airport'
 
 const { createDesk } = useCheckIn()
 createDesk(MY_DESK_KEY, {
-  deskId: 'my-custom-desk',  // Will appear in DevTools! 
-  context: { /* ... */ },
+  devTools: true, // Required to enable DevTools tracking
+})
+```
+
+For better visibility, add a descriptive `deskId` (optional):
+
+```ts
+createDesk(MY_DESK_KEY, {
+  devTools: true,
+  deskId: 'my-custom-desk', // Optional: better visibility in DevTools
 })
 ```
 
@@ -109,23 +117,26 @@ desk.checkIn('item-1',
 
 ## What You'll See in DevTools
 
-### 1. CheckIn Registry Inspector
+### 1. Airport Registry Inspector
 
-Open Vue DevTools → **CheckIn Registry** tab:
+Open Vue DevTools → **Airport Registry** tab:
 
 - Tree view of all desks and their children
-- Live count badges
+- Live count badges showing registered items
 - Click any node to see detailed state
-- Metadata, data, and timestamps
+- Metadata, data, and timestamps for each item
 
-### 2. CheckIn Events Timeline
+### 2. Airport Events Timeline
 
-Open Vue DevTools → **Timeline** → **CheckIn Events** layer:
+Open Vue DevTools → **Timeline** → **Airport Events** layer:
 
-- ✅ Green: check-in events
-- ❌ Red: check-out events  
-- 🔄 Blue: update events
-- ⚡ Purple: plugin execution
+- ✓ **Green**: check-in events
+- ✗ **Red**: check-out events  
+- ↻ **Blue**: update events
+- ⚡ **Purple**: plugin execution
+- 🗑 **Orange**: clear events
+
+> **Note for Nuxt users**: DevTools do not integrate in Nuxt devtools panels. Use the standard Vue DevTools browser extension instead.
 
 ## Architecture
 
