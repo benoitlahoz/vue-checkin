@@ -40,55 +40,42 @@ export interface HistoryOptions {
  */
 export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): CheckInPlugin<T> => {
   const maxHistory = options?.maxHistory || 50;
+  const history = ref<HistoryEntry<T>[]>([]);
 
   return {
     name: 'history',
     version: '1.0.0',
 
     install: (desk: DeskCore<T>) => {
-      const history = ref<HistoryEntry<T>[]>([]);
-
       // Add history to desk
       (desk as any).history = history;
 
-      // Listen to events
-      const unsubCheckIn = desk.on(
-        'check-in',
-        ({ id, data, timestamp }: { id?: string | number; data?: T; timestamp: number }) => {
-          history.value.push({ action: 'check-in', id: id!, data: data as any, timestamp });
-          if (history.value.length > maxHistory) {
-            history.value.shift();
-          }
-        }
-      );
-
-      const unsubCheckOut = desk.on(
-        'check-out',
-        ({ id, timestamp }: { id?: string | number; data?: T; timestamp: number }) => {
-          history.value.push({ action: 'check-out', id: id!, timestamp });
-          if (history.value.length > maxHistory) {
-            history.value.shift();
-          }
-        }
-      );
-
-      const unsubUpdate = desk.on(
-        'update',
-        ({ id, data, timestamp }: { id?: string | number; data?: T; timestamp: number }) => {
-          history.value.push({ action: 'update', id: id!, data: data as any, timestamp });
-          if (history.value.length > maxHistory) {
-            history.value.shift();
-          }
-        }
-      );
-
       // Cleanup
       return () => {
-        unsubCheckIn();
-        unsubCheckOut();
-        unsubUpdate();
         history.value = [];
       };
+    },
+
+    // Use lifecycle hooks instead of desk.on() for better DevTools tracking
+    onCheckIn(id: string | number, data: T) {
+      history.value.push({ action: 'check-in', id, data: data as any, timestamp: Date.now() });
+      if (history.value.length > maxHistory) {
+        history.value.shift();
+      }
+    },
+
+    onCheckOut(id: string | number) {
+      history.value.push({ action: 'check-out', id, timestamp: Date.now() });
+      if (history.value.length > maxHistory) {
+        history.value.shift();
+      }
+    },
+
+    onUpdate(id: string | number, data: Partial<T>) {
+      history.value.push({ action: 'update', id, data: data as any, timestamp: Date.now() });
+      if (history.value.length > maxHistory) {
+        history.value.shift();
+      }
     },
 
     methods: {

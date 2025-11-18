@@ -18,8 +18,9 @@ const activeTabId = ref<string | number>('tab-1');
 // Create a desk with context to share the active tab state
 const { createDesk } = useCheckIn<TabItemData, { activeTab: Ref<string | number> }>();
 createDesk(TABS_DESK_KEY, {
-  context: { activeTab: activeTabId },
+  devTools: true,
   debug: false,
+  context: { activeTab: activeTabId },
 });
 
 // State to manage all tabs

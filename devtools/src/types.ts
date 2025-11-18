@@ -1,11 +1,14 @@
-export interface CheckInEvent {
-  type: 'check-in' | 'check-out' | 'update' | 'plugin-execute';
+export interface AirportEvent {
+  type: 'check-in' | 'check-out' | 'update' | 'plugin-execute' | 'clear';
   timestamp: number;
   deskId: string;
-  childId?: string;
+  childId?: string | number;
   pluginName?: string;
   duration?: number;
   data?: Record<string, unknown>;
+  previousData?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  registrySize?: number;
 }
 
 export interface RegistryNode {
@@ -26,5 +29,18 @@ export interface InspectorState {
     checkInTime?: number;
     checkOutTime?: number;
     updateCount?: number;
+    lastOperationTime?: number;
+  };
+  lifecycle?: {
+    createdAt: string;
+    lastCheckIn?: string;
+    lastCheckOut?: string;
+    lastUpdate?: string;
+  };
+  stats?: {
+    totalCheckIns: number;
+    totalCheckOuts: number;
+    totalUpdates: number;
+    activePlugins: number;
   };
 }

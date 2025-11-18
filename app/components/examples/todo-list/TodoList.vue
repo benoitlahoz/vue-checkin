@@ -9,6 +9,7 @@ import { type TodoItem as TodoItemData, TODO_DESK_KEY } from '.';
  */
 const { createDesk } = useCheckIn<TodoItemData>();
 const { desk } = createDesk(TODO_DESK_KEY, {
+  devTools: true,
   debug: false,
   onCheckIn: (id, data) => {
     console.log(`Item added: ${id}`, data);

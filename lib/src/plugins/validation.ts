@@ -68,7 +68,10 @@ export const createValidationPlugin = <T = unknown>(
     validationErrors.value = validationErrors.value.filter((error) => error.id !== id);
   };
 
-  const validateData = (id: string | number, data: T, _isUpdate = false): boolean => {
+  const validateData = (id: string | number, data: T, _isUpdate = false, desk?: any): boolean => {
+    const startTime = performance.now();
+    const deskId = desk?.__deskId;
+
     // Remove previous errors for this ID
     removeErrorsForId(id);
 
@@ -108,28 +111,51 @@ export const createValidationPlugin = <T = unknown>(
       }
     }
 
+    // Track in DevTools
+    const duration = performance.now() - startTime;
+    if (deskId && desk) {
+      const errorCount = validationErrors.value.filter((e) => e.id === id).length;
+      desk.devTools.emit({
+        type: 'plugin-execute',
+        timestamp: Date.now(),
+        deskId,
+        childId: id,
+        pluginName: 'validation',
+        duration,
+        data: {
+          action: _isUpdate ? 'validate-update' : 'validate-check-in',
+          errorCount,
+          hasErrors: errorCount > 0,
+        },
+      });
+    }
+
     // Always return true to allow check-in/update even with validation errors
     // Errors are stored and can be checked separately
     return true;
   };
 
+  let deskInstance: any = null;
+
   return {
     name: 'validation',
     version: '1.0.0',
 
-    install: () => {
+    install: (desk: any) => {
+      deskInstance = desk;
       return () => {
         // Clear errors on cleanup
         validationErrors.value = [];
+        deskInstance = null;
       };
     },
 
     onBeforeCheckIn: (id: string | number, data: T): boolean => {
-      return validateData(id, data, false);
+      return validateData(id, data, false, deskInstance);
     },
 
     onBeforeUpdate: (id: string | number, data: Partial<T>): boolean => {
-      return validateData(id, data as T, true);
+      return validateData(id, data as T, true, deskInstance);
     },
 
     methods: {
@@ -155,8 +181,28 @@ export const createValidationPlugin = <T = unknown>(
       /**
        * Clear all validation errors
        */
-      clearValidationErrors: () => {
+      clearValidationErrors: (desk: any) => {
+        const startTime = performance.now();
+        const deskId = desk?.__deskId;
+        const errorCount = validationErrors.value.length;
+
         validationErrors.value = [];
+
+        // Track in DevTools
+        const duration = performance.now() - startTime;
+        if (deskId) {
+          desk.devTools.emit({
+            type: 'plugin-execute',
+            timestamp: Date.now(),
+            deskId,
+            pluginName: 'validation',
+            duration,
+            data: {
+              action: 'clearValidationErrors',
+              clearedCount: errorCount,
+            },
+          });
+        }
       },
 
       /**

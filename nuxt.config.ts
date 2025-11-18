@@ -21,7 +21,7 @@ export default defineNuxtConfig({
       global: true,
     },
   ],
-  modules: ['@nuxt/content', '@nuxt/eslint', '@nuxt/ui'],
+  modules: ['@nuxt/content', '@nuxt/eslint', '@nuxt/ui', 'vue-airport-devtools/nuxt'],
   robots: {
     robotsTxt: false,
   },

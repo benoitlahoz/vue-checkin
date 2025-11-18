@@ -25,6 +25,7 @@ const historyPlugin = createHistoryPlugin<PluginItemData>({ maxHistory: 20 });
 // Create a desk with plugins enabled
 const { createDesk } = useCheckIn<PluginItemData>();
 const { desk } = createDesk(PLUGIN_DESK_KEY, {
+  devTools: true,
   debug: false,
   plugins: [activeItemPlugin, historyPlugin],
 });

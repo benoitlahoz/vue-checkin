@@ -63,10 +63,11 @@ export const createDebouncePlugin = <T = unknown>(
     return Date.now() - firstTime >= maxWait;
   };
 
-  const processCheckInNotifications = () => {
+  const processCheckInNotifications = (desk?: any) => {
     if (pendingCheckInEvents.size === 0) return;
 
     const events = Array.from(pendingCheckInEvents.entries());
+    const count = events.length;
     pendingCheckInEvents.clear();
     firstCheckInTime = null;
     clearCheckInTimer();
@@ -77,12 +78,28 @@ export const createDebouncePlugin = <T = unknown>(
         userCheckInCallback!(id, data);
       });
     }
+
+    // Track in DevTools
+    if (desk?.__deskId) {
+      desk.devTools.emit({
+        type: 'plugin-execute',
+        timestamp: Date.now(),
+        deskId: desk.__deskId,
+        pluginName: 'debounce',
+        duration: 0,
+        data: {
+          action: 'processCheckInNotifications',
+          count,
+        },
+      });
+    }
   };
 
-  const processCheckOutNotifications = () => {
+  const processCheckOutNotifications = (desk?: any) => {
     if (pendingCheckOutEvents.size === 0) return;
 
     const ids = Array.from(pendingCheckOutEvents);
+    const count = ids.length;
     pendingCheckOutEvents.clear();
     firstCheckOutTime = null;
     clearCheckOutTimer();
@@ -93,13 +110,31 @@ export const createDebouncePlugin = <T = unknown>(
         userCheckOutCallback!(id);
       });
     }
+
+    // Track in DevTools
+    if (desk?.__deskId) {
+      desk.devTools.emit({
+        type: 'plugin-execute',
+        timestamp: Date.now(),
+        deskId: desk.__deskId,
+        pluginName: 'debounce',
+        duration: 0,
+        data: {
+          action: 'processCheckOutNotifications',
+          count,
+        },
+      });
+    }
   };
+
+  let deskInstance: any = null;
 
   return {
     name: 'debounce',
     version: '1.0.0',
 
-    install: (_desk) => {
+    install: (desk) => {
+      deskInstance = desk;
       return () => {
         clearCheckInTimer();
         clearCheckOutTimer();
@@ -109,6 +144,7 @@ export const createDebouncePlugin = <T = unknown>(
         firstCheckOutTime = null;
         userCheckInCallback = null;
         userCheckOutCallback = null;
+        deskInstance = null;
       };
     },
 
@@ -135,13 +171,13 @@ export const createDebouncePlugin = <T = unknown>(
 
       // Check if we should invoke by maxWait
       if (shouldInvokeByMaxWait(firstCheckInTime)) {
-        processCheckInNotifications();
+        processCheckInNotifications(deskInstance);
         return;
       }
 
       // Set new timer
       checkInTimer = setTimeout(() => {
-        processCheckInNotifications();
+        processCheckInNotifications(deskInstance);
       }, checkInDelay);
     },
 
@@ -161,13 +197,13 @@ export const createDebouncePlugin = <T = unknown>(
 
       // Check if we should invoke by maxWait
       if (shouldInvokeByMaxWait(firstCheckOutTime)) {
-        processCheckOutNotifications();
+        processCheckOutNotifications(deskInstance);
         return;
       }
 
       // Set new timer
       checkOutTimer = setTimeout(() => {
-        processCheckOutNotifications();
+        processCheckOutNotifications(deskInstance);
       }, checkOutDelay);
     },
 
@@ -175,21 +211,65 @@ export const createDebouncePlugin = <T = unknown>(
       /**
        * Immediately flush all pending debounced event notifications
        */
-      flushDebounce: () => {
-        processCheckInNotifications();
-        processCheckOutNotifications();
+      flushDebounce: (desk: any) => {
+        const startTime = performance.now();
+        const deskId = desk?.__deskId;
+        const checkInCount = pendingCheckInEvents.size;
+        const checkOutCount = pendingCheckOutEvents.size;
+
+        processCheckInNotifications(desk);
+        processCheckOutNotifications(desk);
+
+        // Track in DevTools
+        const duration = performance.now() - startTime;
+        if (deskId) {
+          desk.devTools.emit({
+            type: 'plugin-execute',
+            timestamp: Date.now(),
+            deskId,
+            pluginName: 'debounce',
+            duration,
+            data: {
+              action: 'flushDebounce',
+              checkInCount,
+              checkOutCount,
+            },
+          });
+        }
       },
 
       /**
        * Cancel all pending debounced event notifications
        */
-      cancelDebounce: () => {
+      cancelDebounce: (desk: any) => {
+        const startTime = performance.now();
+        const deskId = desk?.__deskId;
+        const checkInCount = pendingCheckInEvents.size;
+        const checkOutCount = pendingCheckOutEvents.size;
+
         clearCheckInTimer();
         clearCheckOutTimer();
         pendingCheckInEvents.clear();
         pendingCheckOutEvents.clear();
         firstCheckInTime = null;
         firstCheckOutTime = null;
+
+        // Track in DevTools
+        const duration = performance.now() - startTime;
+        if (deskId) {
+          desk.devTools.emit({
+            type: 'plugin-execute',
+            timestamp: Date.now(),
+            deskId,
+            pluginName: 'debounce',
+            duration,
+            data: {
+              action: 'cancelDebounce',
+              cancelledCheckInCount: checkInCount,
+              cancelledCheckOutCount: checkOutCount,
+            },
+          });
+        }
       },
 
       /**

@@ -18,20 +18,67 @@ npm install -D vue-airport-devtools
 
 ## Quick Start
 
-### Vite / Vue 3
+### Standard Vue 3 / Vite Project
+
+The plugin will automatically inject DevTools setup in your application:
 
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { VueCheckInDevTools } from 'vue-airport-devtools/vite'
+import { VueAirportDevTools } from 'vue-airport-devtools/vite'
 
 export default defineConfig({
   plugins: [
     vue(),
-    VueCheckInDevTools(),
+    VueAirportDevTools(), // Auto-injects DevTools
   ],
 })
+```
+
+### Nuxt Project
+
+For Nuxt, disable auto-injection and use the Nuxt plugin instead:
+
+```ts
+// nuxt.config.ts
+import { VueAirportDevTools } from 'vue-airport-devtools/vite'
+
+export default defineNuxtConfig({
+  vite: {
+    plugins: [
+      VueAirportDevTools({ autoInject: false }), // Disable auto-injection for Nuxt
+    ],
+  },
+})
+```
+
+Then create a plugin file:
+
+```ts
+// plugins/devtools.client.ts
+import devtoolsPlugin from 'vue-airport-devtools/nuxt'
+
+export default defineNuxtPlugin(devtoolsPlugin())
+```
+
+### Manual Setup (without Vite plugin)
+
+If you prefer manual setup or don't use Vite:
+
+```ts
+// main.ts
+import { createApp } from 'vue'
+import { setupAirportDevTools } from 'vue-airport-devtools'
+import App from './App.vue'
+
+const app = createApp(App)
+
+if (import.meta.env.DEV) {
+  setupAirportDevTools(app)
+}
+
+app.mount('#app')
 ```
 
 ## Usage in Your App
@@ -85,7 +132,7 @@ Open Vue DevTools → **Timeline** → **CheckIn Events** layer:
 ```
 vue-airport (lib)
     ↓ emits events
-window.__VUE_CHECKIN_DEVTOOLS_HOOK__
+window.__VUE_AIRPORT_DEVTOOLS_HOOK__
     ↓ consumes
 vue-airport-devtools
     ↓ displays in

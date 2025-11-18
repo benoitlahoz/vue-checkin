@@ -165,8 +165,11 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
     injectionKey: InjectionKey<DeskWithContext<T, TContext>> = Symbol('CheckInDesk'),
     options?: DeskCoreOptions<T> & { context?: TContext }
   ) => {
-    // Create desk core
-    const deskCore = createDeskCore<T>(options);
+    // Extract deskId from Symbol description or options
+    const deskId = options?.deskId || (injectionKey as any).description || 'desk';
+
+    // Create desk core with deskId
+    const deskCore = createDeskCore<T>({ ...options, deskId });
 
     // Provide to children with context
     const { desk, injectionKey: key } = provideDesk<T, TContext>(

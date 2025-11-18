@@ -15,6 +15,7 @@ import { type CartItem, CART_DESK_KEY } from '.';
 // Create a desk for the shopping cart with lifecycle hooks
 const { createDesk } = useCheckIn<CartItem>();
 const { desk } = createDesk(CART_DESK_KEY, {
+  devTools: true,
   debug: false,
   onCheckIn: (_id, data) => {
     console.log(`Product added to cart: ${data.name}`);

@@ -25,6 +25,7 @@ const debouncePlugin = createDebouncePlugin<SearchResult>({
 // Create a desk with debounce plugin (NO logger to clearly see debouncing)
 const { createDesk } = useCheckIn<SearchResult>();
 const { desk } = createDesk(SEARCH_DESK_KEY, {
+  devTools: true,
   debug: false,
   plugins: [debouncePlugin],
 });

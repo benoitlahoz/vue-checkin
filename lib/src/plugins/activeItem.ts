@@ -40,6 +40,8 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
      */
     setActive(desk: DeskCore<T>, id: string | number | null) {
       const deskWithActive = desk as any;
+      const startTime = performance.now();
+      const deskId = deskWithActive.__deskId;
 
       if (id === null) {
         deskWithActive.activeId.value = null;
@@ -48,6 +50,20 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
           id: undefined,
           data: undefined,
         });
+
+        // Track in DevTools
+        const duration = performance.now() - startTime;
+        if (deskId) {
+          desk.devTools.emit({
+            type: 'plugin-execute',
+            timestamp: Date.now(),
+            deskId,
+            pluginName: 'active-item',
+            duration,
+            data: { action: 'clearActive' },
+          });
+        }
+
         return true;
       }
 
@@ -58,6 +74,21 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
         id,
         data: desk.get(id)?.data,
       });
+
+      // Track in DevTools
+      const duration = performance.now() - startTime;
+      if (deskId) {
+        desk.devTools.emit({
+          type: 'plugin-execute',
+          timestamp: Date.now(),
+          deskId,
+          childId: id,
+          pluginName: 'active-item',
+          duration,
+          data: { action: 'setActive' },
+        });
+      }
+
       return true;
     },
 
