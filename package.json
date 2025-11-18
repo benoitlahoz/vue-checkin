@@ -13,7 +13,7 @@
     "lib:build": "cd lib && yarn build",
     "lib:clean": "cd lib && yarn clean",
     "devtools:install": "cd devtools && yarn",
-    "devtools:build": "cd devtools && yarn build",
+    "devtools:build": "node_modules/.bin/vite build --config devtools/vite.config.ts",
     "devtools:clean": "cd devtools && yarn clean"
   },
   "dependencies": {
@@ -25,7 +25,7 @@
     "eslint": "^9.0.0",
     "nuxt": "^4.1.2",
     "typescript": "^5.6.3",
-    "vue-airport-devtools": "file:../devtools"
+    "vue-airport-devtools": "file:./devtools"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

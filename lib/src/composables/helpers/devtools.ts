@@ -19,7 +19,7 @@ export interface DevToolsHook {
   updateRegistry(deskId: string, registry: Map<string | number, any>): void;
 }
 
-const HOOK_KEY = '__VUE_CHECKIN_DEVTOOLS_HOOK__';
+const HOOK_KEY = '__VUE_AIRPORT_DEVTOOLS_HOOK__';
 
 declare global {
   interface Window {
@@ -37,7 +37,7 @@ export function emitDevToolsEvent(event: DevToolsEvent): void {
     } catch (error) {
       // Silently fail in production
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('[vue-checkin] DevTools event failed:', error);
+        console.warn('[vue-airport] DevTools event failed:', error);
       }
     }
   }
@@ -52,7 +52,7 @@ export function registerDeskWithDevTools(deskId: string, metadata: Record<string
       window[HOOK_KEY].registerDesk(deskId, metadata);
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('[vue-checkin] DevTools registerDesk failed:', error);
+        console.warn('[vue-airport] DevTools registerDesk failed:', error);
       }
     }
   }
@@ -67,7 +67,7 @@ export function updateDevToolsRegistry(deskId: string, registry: Map<string | nu
       window[HOOK_KEY].updateRegistry(deskId, registry);
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
-        console.warn('[vue-checkin] DevTools updateRegistry failed:', error);
+        console.warn('[vue-airport] DevTools updateRegistry failed:', error);
       }
     }
   }

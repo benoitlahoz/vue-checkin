@@ -9,8 +9,8 @@
       "import": "./dist/index.js"
     },
     "./nuxt": {
-      "types": "./dist/nuxt.d.ts",
-      "import": "./dist/nuxt.js"
+      "types": "./dist/nuxt-module.d.ts",
+      "import": "./dist/nuxt-module.js"
     },
     "./vite": {
       "types": "./dist/vite.d.ts",
@@ -44,7 +44,9 @@
   },
   "peerDependencies": {
     "vue": "^3.4.0",
-    "vue-airport": "file:../lib"
+    "vue-airport": "file:../lib",
+    "vite": "^6.0.0 || ^7.0.0",
+    "@nuxt/kit": "^3.0.0"
   },
   "dependencies": {
     "@vue/devtools-api": "^7.6.4"
@@ -52,7 +54,7 @@
   "devDependencies": {
     "@types/node": "^22.9.3",
     "typescript": "^5.7.2",
-    "vite": "^6.0.1",
+    "vite-plugin-dts": "^4.5.4",
     "vue-tsc": "^2.1.10"
   }
 }

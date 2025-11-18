@@ -5,7 +5,7 @@ import { setupTimeline } from './timeline';
 import { setupInspector } from './inspector';
 import { attachGlobalHook } from './hook';
 
-export interface CheckInDevToolsOptions {
+export interface AirportDevToolsOptions {
   /**
    * Enable performance tracking
    * @default true
@@ -26,9 +26,9 @@ export interface CheckInDevToolsOptions {
 }
 
 /**
- * Setup vue-checkin DevTools integration
+ * Setup vue-airport DevTools integration
  */
-export function setupCheckInDevTools(app: App, options: CheckInDevToolsOptions = {}) {
+export function setupAirportDevTools(app: App, options: AirportDevToolsOptions = {}) {
   const { enableTimeline = true, enableInspector = true } = options;
 
   // Attach global hook for tracking
@@ -37,10 +37,10 @@ export function setupCheckInDevTools(app: App, options: CheckInDevToolsOptions =
   setupDevtoolsPlugin(
     {
       id: PLUGIN_ID,
-      label: 'CheckIn',
-      packageName: 'vue-checkin',
-      homepage: 'https://github.com/benoitlahoz/vue-checkin',
-      logo: 'https://raw.githubusercontent.com/benoitlahoz/vue-checkin/master/logo.svg',
+      label: 'Airport',
+      packageName: 'vue-airport',
+      homepage: 'https://github.com/benoitlahoz/vue-airport',
+      logo: 'https://raw.githubusercontent.com/benoitlahoz/vue-airport/master/public/vue-airport.png',
       app: app as any,
       enableEarlyProxy: true,
     },

@@ -11,7 +11,7 @@ export function setupInspector(api: any) {
   // Add inspector
   api.addInspector({
     id: INSPECTOR_ID,
-    label: 'CheckIn Registry',
+    label: 'Airport Registry',
     icon: ICONS.desk,
     treeFilterPlaceholder: 'Search registry...',
   });

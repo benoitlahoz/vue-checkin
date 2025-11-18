@@ -1,4 +1,4 @@
-export interface CheckInEvent {
+export interface AirportEvent {
   type: 'check-in' | 'check-out' | 'update' | 'plugin-execute';
   timestamp: number;
   deskId: string;

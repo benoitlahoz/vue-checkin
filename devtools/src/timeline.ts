@@ -1,12 +1,12 @@
 import { LAYER_ID, COLORS } from './constants';
 import { getGlobalHook } from './hook';
-import type { CheckInEvent } from './types';
+import type { AirportEvent } from './types';
 
 export function setupTimeline(api: any) {
   // Add timeline layer
   api.addTimelineLayer({
     id: LAYER_ID,
-    label: 'CheckIn Events',
+    label: 'Airport Events',
     color: COLORS.checkIn,
   });
 
@@ -14,12 +14,12 @@ export function setupTimeline(api: any) {
   const hook = getGlobalHook();
   if (!hook) return;
 
-  hook.on((event: CheckInEvent) => {
+  hook.on((event: AirportEvent) => {
     addTimelineEvent(api, event);
   });
 }
 
-function addTimelineEvent(api: any, event: CheckInEvent) {
+function addTimelineEvent(api: any, event: AirportEvent) {
   const colorMap = {
     'check-in': COLORS.checkIn,
     'check-out': COLORS.checkOut,

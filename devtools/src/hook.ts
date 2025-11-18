@@ -1,5 +1,5 @@
 import type { App } from 'vue';
-import type { CheckInEvent } from './types';
+import type { AirportEvent } from './types';
 
 export interface DeskRegistryState {
   deskId: string;
@@ -8,15 +8,15 @@ export interface DeskRegistryState {
 }
 
 export interface CheckInDevToolsHook {
-  events: CheckInEvent[];
+  events: AirportEvent[];
   desks: Map<string, DeskRegistryState>;
-  emit(event: CheckInEvent): void;
-  on(handler: (event: CheckInEvent) => void): () => void;
+  emit(event: AirportEvent): void;
+  on(handler: (event: AirportEvent) => void): () => void;
   registerDesk(deskId: string, metadata: Record<string, unknown>): void;
   updateRegistry(deskId: string, registry: Map<string | number, any>): void;
 }
 
-const HOOK_KEY = '__VUE_CHECKIN_DEVTOOLS_HOOK__';
+const HOOK_KEY = '__VUE_AIRPORT_DEVTOOLS_HOOK__';
 
 declare global {
   interface Window {
@@ -25,17 +25,17 @@ declare global {
 }
 
 export function attachGlobalHook(app: App) {
-  const handlers = new Set<(event: CheckInEvent) => void>();
+  const handlers = new Set<(event: AirportEvent) => void>();
   const desks = new Map<string, DeskRegistryState>();
 
   const hook: CheckInDevToolsHook = {
     events: [],
     desks,
-    emit(event: CheckInEvent) {
+    emit(event: AirportEvent) {
       this.events.push(event);
       handlers.forEach((handler) => handler(event));
     },
-    on(handler: (event: CheckInEvent) => void) {
+    on(handler: (event: AirportEvent) => void) {
       handlers.add(handler);
       return () => handlers.delete(handler);
     },
