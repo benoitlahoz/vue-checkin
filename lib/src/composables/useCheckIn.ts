@@ -1,21 +1,8 @@
 /**
  * VueCheckIn - Generic check-in system for parent/child component registration.
- * Refactored for performance and maintainability.
- * 
- * @type registry:hook
- * @category dependency-injection
  */
 
-import {
-  computed,
-  type ComputedRef,
-  type Ref,
-  type InjectionKey,
-} from 'vue';
-
-// ==========================================
-// IMPORTS FROM MODULES
-// ==========================================
+import { computed, type ComputedRef, type Ref, type InjectionKey } from 'vue';
 
 import {
   createDeskCore,
@@ -26,30 +13,12 @@ import {
   type DeskCoreOptions,
 } from './desk-core';
 
-import {
-  createDeskKey,
-  provideDesk,
-  type DeskWithContext,
-} from './desk-di';
+import { provideDesk, type DeskWithContext } from './desk-injection';
 
-import {
-  checkInToDesk,
-  type CheckInOptions,
-  type CheckInResult,
-} from './desk-child';
+import { checkInToDesk, type CheckInOptions, type CheckInResult } from './desk-child';
 
 // Re-export types
-export type {
-  DeskEventType,
-  DeskEventCallback,
-  CheckInItem,
-  CheckInOptions,
-  DeskCore,
-};
-
-// ==========================================
-// ID GENERATION & MEMOIZATION
-// ==========================================
+export type { DeskEventType, DeskEventCallback, CheckInItem, CheckInOptions, DeskCore };
 
 // WeakMap for generating stable IDs based on component instance
 const instanceIdMap = new WeakMap<object, string>();
@@ -119,13 +88,6 @@ export const memoizedId = (
   }
 
   // Case 3: null/undefined = cryptographically secure generation with warning
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
-    console.warn(
-      '[useCheckIn] memoizedId: no instance or custom ID provided. ' +
-        'Generated cryptographically secure ID. ' +
-        'Consider passing getCurrentInstance() or a custom ID (nanoid, uuid, props.id, etc.).'
-    );
-  }
   return generateId(prefix);
 };
 
@@ -135,24 +97,12 @@ export const memoizedId = (
  * Note: instanceIdMap (WeakMap) is auto-cleaned by garbage collection.
  */
 export const clearIdCache = (resetCounter = false) => {
-  const customIdCount = customIdMap.size;
   customIdMap.clear();
 
   if (resetCounter) {
     instanceCounter = 0;
   }
-
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
-    console.log(
-      `[useCheckIn] Cleared ${customIdCount} custom IDs from cache` +
-        (resetCounter ? ' and reset counter' : '')
-    );
-  }
 };
-
-// ==========================================
-// COMPUTED HELPERS
-// ==========================================
 
 /**
  * Computed helper to check if a specific ID is checked in
@@ -177,24 +127,20 @@ export const getRegistry = <T = any, TContext extends Record<string, any> = {}>(
   return computed(() => desk.getAll(options));
 };
 
-// ==========================================
-// MAIN COMPOSABLE
-// ==========================================
-
 /**
  * Check-in system for managing parent-child component relationships.
- * 
+ *
  * Architecture:
  * - desk-core.ts: Registry, events, plugins (optimized for performance)
  * - desk-di.ts: Dependency injection (simplified Symbol-based keys)
  * - desk-child.ts: Child check-in logic (async protection, watchers)
- * 
+ *
  * Performance optimizations:
  * - Hybrid registry (Map + shallowRef) for O(1) updates
  * - LRU cache for sorted results
  * - Event batching (prevents avalanche)
  * - Async update protection (race condition prevention)
- * 
+ *
  * @example
  * ```ts
  * // In parent component - create a desk
@@ -202,7 +148,7 @@ export const getRegistry = <T = any, TContext extends Record<string, any> = {}>(
  * const { desk } = createDesk('tabsDesk', {
  *   context: { activeTab: ref('tab1') }
  * })
- * 
+ *
  * // In child component - check in at parent's desk
  * const { checkIn } = useCheckIn<TabItem>()
  * const { desk } = checkIn('tabsDesk', {
@@ -218,12 +164,12 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
    * Uses Symbol-based dependency injection.
    */
   const createDesk = (
-    injectionKey: string | InjectionKey<DeskWithContext<T, TContext>> = 'checkInDesk',
+    injectionKey: InjectionKey<DeskWithContext<T, TContext>> = Symbol('CheckInDesk'),
     options?: DeskCoreOptions<T> & { context?: TContext }
   ) => {
     // Create desk core
     const deskCore = createDeskCore<T>(options);
-    
+
     // Provide to children with context
     const { desk, injectionKey: key } = provideDesk<T, TContext>(
       injectionKey,
@@ -250,10 +196,7 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
       | undefined,
     checkInOptions?: CheckInOptions<T>
   ): CheckInResult<T, TContext> => {
-    return checkInToDesk<T, TContext>(
-      parentDeskOrKey as any,
-      checkInOptions
-    );
+    return checkInToDesk<T, TContext>(parentDeskOrKey as any, checkInOptions);
   };
 
   /**
@@ -272,17 +215,9 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
     isCheckedIn,
     getRegistry,
     clearIdCache,
-    
-    // Export key creation helper
-    createDeskKey,
   };
 };
 
-// ==========================================
-// RE-EXPORTS
-// ==========================================
-
-export type { CheckInPlugin } from './types';
 export {
   createActiveItemPlugin,
   createValidationPlugin,
@@ -293,3 +228,5 @@ export {
   type HistoryOptions,
   type HistoryEntry,
 } from '../plugins';
+
+export type { CheckInPlugin } from './types';
