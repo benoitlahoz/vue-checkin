@@ -6,6 +6,7 @@
 import { shallowRef, computed, type ComputedRef, type ShallowRef } from 'vue';
 import { EventManager } from '../helpers/event-manager';
 import { SortedRegistryCache } from '../helpers/sorted-registry-cache';
+import { emitDevToolsEvent, updateDevToolsRegistry } from '../helpers/devtools';
 import type { CheckInPlugin } from '../types';
 import { NoOp, Debug } from '../utils';
 
@@ -40,6 +41,7 @@ export interface DeskCoreOptions<T = any> {
   onCheckOut?: (id: string | number) => void;
   debug?: boolean;
   plugins?: CheckInPlugin<T>[];
+  deskId?: string; // For DevTools integration
 }
 
 export interface DeskCore<T = any> {
@@ -95,6 +97,7 @@ const DebugPrefix = '[DeskCore]';
  */
 export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<T> => {
   const debug = options?.debug ? Debug : NoOp;
+  const deskId = options?.deskId || `desk-${Math.random().toString(36).substr(2, 9)}`;
 
   // ==========================================
   // HYBRID REGISTRY REPRESENTATION
@@ -188,6 +191,16 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     // Emit event
     emit('check-in', { id, data });
 
+    // DevTools integration
+    emitDevToolsEvent({
+      type: 'check-in',
+      timestamp: Date.now(),
+      deskId,
+      childId: id,
+      data: meta,
+    });
+    updateDevToolsRegistry(deskId, registryMap);
+
     // Lifecycle: after
     options?.onCheckIn?.(id, data);
 
@@ -239,6 +252,15 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
 
     // Emit event
     emit('check-out', { id });
+
+    // DevTools integration
+    emitDevToolsEvent({
+      type: 'check-out',
+      timestamp: Date.now(),
+      deskId,
+      childId: id,
+    });
+    updateDevToolsRegistry(deskId, registryMap);
 
     // Lifecycle: after
     options?.onCheckOut?.(id);
@@ -338,6 +360,16 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
       // Emit event (will be batched)
       emit('update', { id, data: existing.data });
 
+      // DevTools integration
+      emitDevToolsEvent({
+        type: 'update',
+        timestamp: Date.now(),
+        deskId,
+        childId: id,
+        data: data as Record<string, unknown>,
+      });
+      updateDevToolsRegistry(deskId, registryMap);
+
       if (options?.debug) {
         debug(`${DebugPrefix} update diff:`, {
           id,
@@ -365,6 +397,14 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
 
     // Emit event
     emit('clear', {});
+
+    // DevTools integration
+    emitDevToolsEvent({
+      type: 'clear',
+      timestamp: Date.now(),
+      deskId,
+    });
+    updateDevToolsRegistry(deskId, registryMap);
 
     // Cleanup plugins
     pluginCleanups.forEach((cleanup) => cleanup());

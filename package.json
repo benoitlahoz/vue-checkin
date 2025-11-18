@@ -24,7 +24,8 @@
     "docus": "latest",
     "eslint": "^9.0.0",
     "nuxt": "^4.1.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vue-airport-devtools": "file:../devtools"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
