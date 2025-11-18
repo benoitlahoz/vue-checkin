@@ -1,10 +1,6 @@
-# vue-checkin-devtools
+# vue-airport-devtools
 
-Vue DevTools integration for [vue-checkin](../lib) library.
-
-## ✅ Status: Fully Integrated
-
-The DevTools are now **fully connected** to the `vue-checkin` library and display **real-time data** from your application!
+Vue DevTools integration for [vue-airport](../lib) library.
 
 ## Features
 
@@ -17,7 +13,7 @@ The DevTools are now **fully connected** to the `vue-checkin` library and displa
 ## Installation
 
 ```bash
-npm install -D vue-checkin-devtools
+npm install -D vue-airport-devtools
 ```
 
 ## Quick Start
@@ -28,7 +24,7 @@ npm install -D vue-checkin-devtools
 // vite.config.ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { VueCheckInDevTools } from 'vue-checkin-devtools/vite'
+import { VueCheckInDevTools } from 'vue-airport-devtools/vite'
 
 export default defineConfig({
   plugins: [
@@ -38,21 +34,12 @@ export default defineConfig({
 })
 ```
 
-### Nuxt 3
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['vue-checkin-devtools/nuxt'],
-})
-```
-
 ## Usage in Your App
 
 Simply add a `deskId` when creating your desks for better visibility:
 
 ```ts
-import { useCheckIn } from 'vue-checkin'
+import { useCheckIn } from 'vue-airport'
 
 const { createDesk } = useCheckIn()
 createDesk(MY_DESK_KEY, {
@@ -96,11 +83,11 @@ Open Vue DevTools → **Timeline** → **CheckIn Events** layer:
 ## Architecture
 
 ```
-vue-checkin (lib)
+vue-airport (lib)
     ↓ emits events
 window.__VUE_CHECKIN_DEVTOOLS_HOOK__
     ↓ consumes
-vue-checkin-devtools
+vue-airport-devtools
     ↓ displays in
 Vue DevTools UI
 ```
@@ -119,10 +106,6 @@ npm install
 npm run dev      # Watch mode
 npm run build    # Production build
 ```
-
-## Documentation
-
-See [INTEGRATION.md](./INTEGRATION.md) for complete integration guide.
 
 ## License
 
