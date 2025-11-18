@@ -1,5 +1,5 @@
 /**
- * VueCheckIn - Generic check-in system for parent/child component registration.
+ * VueAirport - Generic check-in system for parent/child component registration.
  */
 
 import { computed, type ComputedRef, type Ref, type InjectionKey } from 'vue';

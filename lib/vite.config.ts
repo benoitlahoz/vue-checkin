@@ -15,9 +15,9 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VueCheckIn',
+      name: 'VueAirport',
       formats: ['es', 'cjs'],
-      fileName: (format) => `vue-checkin.${format === 'es' ? 'mjs' : 'cjs'}`,
+      fileName: (format) => `vue-airport.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
     rollupOptions: {
       external: ['vue'],

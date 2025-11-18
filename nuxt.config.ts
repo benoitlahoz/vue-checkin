@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 
 export default defineNuxtConfig({
   site: {
-    name: 'Vue Check-in',
-    description: 'Documentation for Vue Check-in composable and features',
+    name: 'VueAirport',
+    description: 'Documentation for VueAirport composable and features',
   },
   app: {
-    baseURL: '/vue-checkin/',
+    baseURL: '/vue-airport/',
   },
   alias: {
-    '#vue-checkin': fileURLToPath(new URL('./lib/src', import.meta.url)),
+    '#vue-airport': fileURLToPath(new URL('./lib/src', import.meta.url)),
   },
   components: [
     {
@@ -18,16 +18,16 @@ export default defineNuxtConfig({
       pathPrefix: false,
       extensions: ['.vue'],
       ignore: ['**/index.ts'],
-      global: true
+      global: true,
     },
   ],
-  modules: ["@nuxt/content", "@nuxt/eslint", "@nuxt/ui"],
+  modules: ['@nuxt/content', '@nuxt/eslint', '@nuxt/ui'],
   robots: {
     robotsTxt: false,
   },
   llms: {
-    domain: 'https://benoitlahoz.github.io/vue-checkin/',
-    title: 'VueCheck-in',
-    description: 'Documentation for Vue Check-in composable and features',
-  }
-}) 
+    domain: 'https://benoitlahoz.github.io/vue-airport/',
+    title: 'VueAirport',
+    description: 'Documentation for VueAirport composable and features',
+  },
+});

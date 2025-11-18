@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
-import { createDebouncePlugin } from '#vue-checkin/plugins';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
+import { createDebouncePlugin } from '#vue-airport/plugins';
 import SearchResultItem from './SearchResultItem.vue';
 import { type SearchResult, SEARCH_DESK_KEY } from '.';
 

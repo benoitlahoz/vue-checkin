@@ -1,5 +1,5 @@
 {
-  "name": "vue-checkin",
+  "name": "vue-airport",
   "version": "1.0.0",
   "description": "A generic check-in system (local IoC container) for parent/child component registration pattern in Vue 3",
   "author": "Benoit Lahoz",
@@ -17,14 +17,14 @@
     "plugin"
   ],
   "type": "module",
-  "main": "./dist/vue-checkin.cjs",
-  "module": "./dist/vue-checkin.mjs",
+  "main": "./dist/vue-airport.cjs",
+  "module": "./dist/vue-airport.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/vue-checkin.mjs",
-      "require": "./dist/vue-checkin.cjs"
+      "import": "./dist/vue-airport.mjs",
+      "require": "./dist/vue-airport.cjs"
     }
   },
   "files": [

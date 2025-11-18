@@ -1,5 +1,5 @@
 name: ✨ Feature request
-description: Suggest a feature that will improve vue-checkin
+description: Suggest a feature that will improve vue-airport
 labels: [enhancement]
 title: "[FEATURE]: "
 body:
@@ -7,7 +7,7 @@ body:
     id: solution-description
     attributes:
       label: Describe the solution you'd like
-      description: A clear and concise description of what you think would be a helpful addition to vue-checkin, including the possible use cases and alternatives you have considered. If you have a working prototype or module that implements it, please include a link.
+      description: A clear and concise description of what you think would be a helpful addition to vue-airport, including the possible use cases and alternatives you have considered. If you have a working prototype or module that implements it, please include a link.
       placeholder: Solution description
     validations:
       required: true

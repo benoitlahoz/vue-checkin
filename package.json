@@ -1,8 +1,8 @@
 {
-  "name": "vue-checkin-docs",
+  "name": "vue-airport-docs",
   "version": "1.0.0",
   "private": true,
-  "description": "Documentation for vue-checkin library",
+  "description": "Documentation for vue-airport library",
   "author": "Benoit Lahoz",
   "license": "MIT",
   "scripts": {

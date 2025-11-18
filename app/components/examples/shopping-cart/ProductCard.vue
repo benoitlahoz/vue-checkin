@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject } from 'vue';
 import { type CartItem, CART_DESK_KEY } from '.';
-import type { DeskCore } from '#vue-checkin/composables/useCheckIn';
+import type { DeskCore } from '#vue-airport/composables/useCheckIn';
 
 /**
  * Product Card Component

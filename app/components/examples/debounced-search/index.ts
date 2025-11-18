@@ -1,5 +1,5 @@
 import type { InjectionKey } from 'vue';
-import type { DeskCore } from '#vue-checkin/composables/useCheckIn';
+import type { DeskCore } from '#vue-airport/composables/useCheckIn';
 
 export interface SearchResult {
   title: string;

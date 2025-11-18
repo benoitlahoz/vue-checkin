@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import ProductCard from './ProductCard.vue';
 import { type CartItem, CART_DESK_KEY } from '.';
 

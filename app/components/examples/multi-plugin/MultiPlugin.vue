@@ -4,7 +4,7 @@ import {
   createActiveItemPlugin,
   createHistoryPlugin,
   type CheckInItem,
-} from '#vue-checkin/composables/useCheckIn';
+} from '#vue-airport/composables/useCheckIn';
 import PluginListItem from './PluginListItem.vue';
 import { type PluginItemData, PLUGIN_DESK_KEY } from '.';
 

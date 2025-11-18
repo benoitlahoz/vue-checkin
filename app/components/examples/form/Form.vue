@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useCheckIn, createValidationPlugin } from '#vue-checkin/composables/useCheckIn';
-import type { ValidationError } from '#vue-checkin/plugins/validation';
+import { useCheckIn, createValidationPlugin } from '#vue-airport/composables/useCheckIn';
+import type { ValidationError } from '#vue-airport/plugins/validation';
 import FormField from './FormField.vue';
 import { type FieldData, FORM_DESK_KEY } from '.';
 

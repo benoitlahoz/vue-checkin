@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCheckIn } from '#vue-checkin/composables/useCheckIn';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import TodoItem from './TodoItem.vue';
 import { type TodoItem as TodoItemData, TODO_DESK_KEY } from '.';
 

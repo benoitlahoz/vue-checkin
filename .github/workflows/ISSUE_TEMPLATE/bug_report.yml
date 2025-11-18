@@ -1,5 +1,5 @@
 name: 🐞 Bug report
-description: Create a report to help us improve vue-checkin
+description: Create a report to help us improve vue-airport
 labels: [bug]
 title: "[BUG]: "
 body:
@@ -10,13 +10,13 @@ body:
         This form is only for submitting bug reports. If you have a usage question
         or are unsure if this is really a bug, make sure to:
 
-        - Check if there's already an existing issue for this bug in [Issues](https://github.com/benoitlahoz/vue-checkin/issues)
-        - Ask on [GitHub Discussions](https://github.com/benoitlahoz/vue-checkin/discussions) if you're unsure
+        - Check if there's already an existing issue for this bug in [Issues](https://github.com/benoitlahoz/vue-airport/issues)
+        - Ask on [GitHub Discussions](https://github.com/benoitlahoz/vue-airport/discussions) if you're unsure
   - type: textarea
     id: bug-env
     attributes:
       label: Environment
-      description: Output of `npx envinfo --system --npmPackages vue,vue-checkin,nuxt --binaries --browsers`
+      description: Output of `npx envinfo --system --npmPackages vue,vue-airport,nuxt --binaries --browsers`
       placeholder: Environment
     validations:
       required: true

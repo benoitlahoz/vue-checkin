@@ -39,5 +39,5 @@ logs
 # MacOS
 *.DS_Store
 
-# VueCheckIn Specifics
+# VueAirport Specifics
 .private

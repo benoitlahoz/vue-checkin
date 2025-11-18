@@ -1,12 +1,12 @@
 ---
 seo:
-  title: VueCheckIn - Generic Parent-Child Registration System
+  title: VueAirport - Generic Parent-Child Registration System
   description: A flexible, type-safe Vue 3 composable for managing parent-child component registration patterns with plugin support.
 ---
 
 ::u-page-hero
 #title
-VueCheckIn
+VueAirport
 
 #description
 A generic check-in system for parent/child component registration pattern in Vue 3 using Inversion of Control (IoC).
@@ -29,7 +29,7 @@ Like an airport check-in desk: parent components provide a check-in counter wher
   color: neutral
   icon: simple-icons-github
   size: xl
-  to: https://github.com/benoitlahoz/vue-checkin
+  to: https://github.com/benoitlahoz/vue-airport
   variant: outline
   ---
   Star on GitHub
