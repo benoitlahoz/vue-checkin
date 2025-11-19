@@ -119,7 +119,15 @@ function getNodeState(nodeId: string) {
     const desk = hook.desks.get(deskId);
     if (!desk) return {};
 
-    const item = desk.registry.get(childId);
+    // Try to get item with childId as string first, then as number if that fails
+    let item = desk.registry.get(childId);
+    if (!item) {
+      // Try parsing as number
+      const numericId = Number(childId);
+      if (!isNaN(numericId)) {
+        item = desk.registry.get(numericId);
+      }
+    }
     if (!item) return {};
 
     const result: Record<string, any[]> = {

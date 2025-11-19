@@ -17,8 +17,7 @@ const { desk } = checkIn(TODO_DESK_KEY, {
   data: (desk) => {
     const item = desk.itemsData?.value.find((t) => t.id === props.id);
     if (!item) return { label: '', done: false };
-    const { id, ...data } = item;
-    return data;
+    return item;
   },
 });
 

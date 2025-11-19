@@ -26,8 +26,7 @@ const { desk } = checkIn(TABS_DESK_KEY, {
   data: (desk) => {
     const tab = desk.tabsData?.value.find((t) => t.id === props.id);
     if (!tab) return { label: '', content: '' };
-    const { id, ...data } = tab;
-    return data;
+    return tab;
   },
 });
 
