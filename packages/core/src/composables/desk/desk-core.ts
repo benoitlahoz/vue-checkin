@@ -396,10 +396,10 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     if (typeof existing.data === 'object' && typeof data === 'object') {
       const previousData = { ...existing.data };
 
-      // Direct update (mutation is fine since we control the Map)
+      // Direct mutation (performant - reactivity is ensured via syncList())
       Object.assign(existing.data as object, data);
 
-      // Sync list (triggers reactivity)
+      // Sync list (triggers reactivity for registryList)
       syncList();
 
       // Invalidate sort cache only if sorted fields might have changed
