@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import { type TabItemData, type TabItemContext, TABS_DESK_KEY, TabItem } from '.';
+import { Button } from '@/components/ui/button';
 
 /**
  * Tabs Example - Dynamic Tab Management
@@ -21,27 +22,28 @@ const tabsData = ref<
   Array<{
     id: string;
     label: string;
-    content: string;
+    content?: string;
+    url?: string;
     icon?: string;
   }>
 >([
   {
     id: 'tab-1',
-    label: 'Home',
-    content: 'Welcome to the tabs demo!',
-    icon: 'i-heroicons-home',
+    label: 'Nuxt',
+    url: 'https://nuxt.com',
+    icon: 'material-icon-theme:nuxt',
   },
   {
     id: 'tab-2',
-    label: 'Settings',
-    content: 'Application configuration',
-    icon: 'i-heroicons-cog-6-tooth',
+    label: 'Tailwind',
+    url: 'https://tailwindcss.com',
+    icon: 'vscode-icons:file-type-tailwind',
   },
   {
     id: 'tab-3',
-    label: 'Profile',
-    content: 'User information',
-    icon: 'i-heroicons-user',
+    label: 'VueAirport',
+    url: 'https://benoitlahoz.github.io/vue-airport',
+    icon: 'mdi:airplane',
   },
 ]);
 
@@ -56,8 +58,8 @@ const addTab = () => {
   tabsData.value.push({
     id,
     label: `Tab ${tabsData.value.length + 1}`,
-    content: `Content of tab ${tabsData.value.length + 1}`,
-    icon: 'i-heroicons-document-text',
+    url: 'https://benoitlahoz.github.io/vue-airport',
+    icon: 'mdi:airplane',
   });
   selectTab(id);
 };
@@ -95,10 +97,10 @@ createDesk(TABS_DESK_KEY, {
   },
 });
 
-// Computed property for the active tab's content
-const activeTabContent = computed(() => {
+// Computed property for the active tab's URL
+const activeTabUrl = computed(() => {
   const tab = tabsData.value.find((t) => t.id === activeTabId.value);
-  return tab?.content || '';
+  return tab?.url || '';
 });
 </script>
 <template>
@@ -108,23 +110,20 @@ const activeTabContent = computed(() => {
         <!-- Note: no props, just the id -->
         <TabItem v-for="tab in tabsData" :id="tab.id" :key="tab.id" />
       </div>
-      <UButton
-        size="sm"
-        icon="i-heroicons-plus"
-        class="bg-primary text-primary-foreground"
-        @click="addTab"
-      />
+      <Button size="sm" variant="ghost" @click="addTab">
+        <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+      </Button>
     </div>
 
     <div
-      class="relative overflow-hidden p-6 min-h-[150px] bg-gray-300 dark:bg-gray-700 rounded-bl-md rounded-br-md mb-2"
+      class="relative overflow-hidden min-h-[500px] bg-background rounded-bl-lg rounded-br-lg mb-2 border border-gray-400 dark:border-gray-800"
     >
       <Transition name="slide-fade" mode="out-in">
-        <p :key="activeTabId">{{ activeTabContent }}</p>
+        <iframe :key="activeTabId" :src="activeTabUrl" class="w-full h-[500px] border-0" />
       </Transition>
     </div>
 
-    <div class="p-2 border border-gray-300 dark:border-gray-500 rounded-md text-xs">
+    <div class="px-4 text-xs text-primary">
       {{ tabsData.length }} tab(s), Active: {{ activeTabId }}
     </div>
   </div>

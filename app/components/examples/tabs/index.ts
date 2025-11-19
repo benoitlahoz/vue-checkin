@@ -3,7 +3,8 @@ import type { DeskCore } from '#vue-airport/composables/useCheckIn';
 
 export interface TabItemData {
   label: string;
-  content: string;
+  content?: string;
+  url?: string;
   icon?: string;
 }
 

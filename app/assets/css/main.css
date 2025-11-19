@@ -1,3 +1,8 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+@iport 'tw-animate-css';
+@import './examples.css';
+
 @keyframes bounce-slow {
   0%,
   100% {

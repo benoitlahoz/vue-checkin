@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import { type TabItemData, type TabItemContext, TABS_DESK_KEY } from '.';
+import { Button } from '@/components/ui/button';
 
 /**
  * Tab Item Component
@@ -27,7 +28,7 @@ const { desk } = checkIn(TABS_DESK_KEY, {
   watchData: true,
   data: (desk) => {
     const tab = desk.tabsData?.value.find((t) => t.id === props.id);
-    if (!tab) return { label: '', content: '' };
+    if (!tab) return { icon: '', label: '', content: '' };
     return tab;
   },
 });
@@ -63,24 +64,26 @@ const onClose = () => {
 </script>
 
 <template>
-  <div class="relative flex items-center gap-1 h-12">
-    <UButton
-      :leading-icon="tabData?.icon"
-      color="neutral"
+  <div
+    class="group relative flex items-center h-12 rounded-t-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 [&:hover_button]:bg-transparent!"
+  >
+    <Button
       variant="ghost"
-      class="rounded-t-md rounded-b-none whitespace-nowrap"
+      class="rounded-none whitespace-nowrap flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100 px-4"
       @click="onSelect"
     >
+      <UIcon v-if="tabData?.icon" :name="tabData.icon" class="w-4 h-4" />
       {{ tabData?.label }}
-    </UButton>
-    <UButton
+    </Button>
+    <Button
       v-if="canClose"
-      size="xs"
-      color="neutral"
+      size="icon-sm"
       variant="ghost"
-      icon="i-heroicons-x-mark"
+      class="rounded-none hover:text-red-600 dark:hover:text-red-400 mr-2"
       @click="onClose"
-    />
-    <div v-if="isActive" class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary z-10" />
+    >
+      <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+    </Button>
+    <div v-if="isActive" class="absolute -bottom-px left-0 right-0 h-1 bg-primary z-20" />
   </div>
 </template>

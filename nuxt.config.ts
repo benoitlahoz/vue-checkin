@@ -10,6 +10,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/vue-airport/',
   },
+  css: ['~/assets/css/main.css'],
   alias: {
     '@/lib': fileURLToPath(new URL('./app/lib', import.meta.url)),
     '@/components': fileURLToPath(new URL('./app/components', import.meta.url)),
