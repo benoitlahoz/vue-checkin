@@ -1,29 +1,24 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import ProductCard from './ProductCard.vue';
-import { type CartItem, CART_DESK_KEY } from '.';
+import { type CartItem, type CartContext, CART_DESK_KEY } from '.';
 
 /**
  * Shopping Cart Example - E-commerce Cart
  *
  * Demonstrates:
- * - Lifecycle hooks (onCheckIn, onCheckOut, onBeforeCheckOut)
+ * - Context sharing between parent and child components
+ * - Lifecycle hooks (onCheckIn, onCheckOut)
  * - Dynamic cart total calculation
- * - User confirmation before removing items
  */
 
-// Create a desk for the shopping cart with lifecycle hooks
-const { createDesk } = useCheckIn<CartItem>();
-const { desk } = createDesk(CART_DESK_KEY, {
-  devTools: true,
-  debug: false,
-  onCheckIn: (_id, data) => {
-    console.log(`Product added to cart: ${data.name}`);
-  },
-  onCheckOut: (id) => {
-    console.log(`Product removed from cart: ${id}`);
-  },
-});
+// Function to update product quantity
+const updateQuantity = (id: string, quantity: number) => {
+  const product = products.value.find((p) => p.id === id);
+  if (product) {
+    product.quantity = Math.max(1, quantity);
+  }
+};
 
 // Available products catalog
 const products = ref([
@@ -71,6 +66,23 @@ const products = ref([
   },
 ]);
 
+// Create a desk for the shopping cart with context
+const { createDesk } = useCheckIn<CartItem, CartContext>();
+const { desk } = createDesk(CART_DESK_KEY, {
+  devTools: true,
+  debug: false,
+  context: {
+    products,
+    updateQuantity,
+  },
+  onCheckIn: (_id, data) => {
+    console.log(`Product added to cart: ${data.name}`);
+  },
+  onCheckOut: (id) => {
+    console.log(`Product removed from cart: ${id}`);
+  },
+});
+
 // Computed properties for cart data
 const cartItems = computed(() => desk.getAll());
 const cartCount = computed(() => {
@@ -83,14 +95,6 @@ const cartTotal = computed(() => {
     return total + item.data.price * item.data.quantity;
   }, 0);
 });
-
-// Function to update product quantity
-const updateQuantity = (id: string, quantity: number) => {
-  const product = products.value.find((p) => p.id === id);
-  if (product) {
-    product.quantity = Math.max(1, quantity);
-  }
-};
 
 // Function to remove item from cart
 const removeFromCart = (id: string | number) => {
@@ -139,16 +143,7 @@ const checkout = () => {
       <!-- Products section -->
       <div>
         <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
-          <ProductCard
-            v-for="product in products"
-            :id="product.id"
-            :key="product.id"
-            :name="product.name"
-            :price="product.price"
-            :quantity="product.quantity"
-            :image-url="product.imageUrl"
-            @update-quantity="updateQuantity"
-          />
+          <ProductCard v-for="product in products" :id="product.id" :key="product.id" />
         </div>
       </div>
 

@@ -1,54 +1,61 @@
 <script setup lang="ts">
-import { inject } from 'vue';
-import { type CartItem, CART_DESK_KEY } from '.';
-import type { DeskCore } from '#vue-airport/composables/useCheckIn';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
+import { type CartItem, type CartContext, CART_DESK_KEY } from '.';
 
 /**
  * Product Card Component
  *
- * Individual product card that can be added/removed from cart.
- * Handles quantity updates and cart operations.
+ * Automatically checks in and retrieves product data from desk context.
  */
 
 const props = defineProps<{
   id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  imageUrl?: string;
 }>();
 
-const emit = defineEmits<{
-  updateQuantity: [id: string, quantity: number];
-}>();
+// Check in to the cart desk and get context
+const { checkIn } = useCheckIn<CartItem, CartContext>();
+const { desk } = checkIn(CART_DESK_KEY, {
+  id: props.id,
+  autoCheckIn: false,
+  watchData: true,
+  data: (desk) => {
+    const product = desk.products.value.find((p) => p.id === props.id);
+    return {
+      name: product?.name ?? '',
+      price: product?.price ?? 0,
+      quantity: product?.quantity ?? 1,
+      imageUrl: product?.imageUrl,
+    };
+  },
+});
 
-/**
- * Get access to the cart desk directly via inject
- * Products (NOT components) are manually added/removed from the cart
- */
-const desk = inject<DeskCore<CartItem>>(CART_DESK_KEY);
+// Get product data from context
+const productData = computed(() => {
+  return desk?.products?.value.find((p) => p.id === props.id);
+});
 
-// Check if product is in the cart
+// Check if product is in the cart (checked in to desk)
 const isInCart = computed(() => desk?.has(props.id) ?? false);
 
 // Function to add product to cart
 const addToCart = () => {
+  if (!productData.value) return;
+
   // If already in cart, just increment quantity
   if (desk?.has(props.id)) {
     const currentItem = desk.get(props.id);
     if (currentItem) {
-      desk.update(props.id, {
-        quantity: currentItem.data.quantity + 1,
-      });
-      emit('updateQuantity', props.id, currentItem.data.quantity + 1);
+      const newQty = currentItem.data.quantity + 1;
+      desk.update(props.id, { quantity: newQty });
+      desk.updateQuantity(props.id, newQty);
     }
   } else {
-    // Add new item to cart
+    // Add new item to cart by checking in
     desk?.checkIn(props.id, {
-      name: props.name,
-      price: props.price,
-      quantity: props.quantity,
-      imageUrl: props.imageUrl,
+      name: productData.value.name,
+      price: productData.value.price,
+      quantity: productData.value.quantity,
+      imageUrl: productData.value.imageUrl,
     });
   }
 };
@@ -62,25 +69,25 @@ const removeFromCart = () => {
 
 // Function to increment quantity
 const increment = () => {
-  const newQuantity = props.quantity + 1;
-  emit('updateQuantity', props.id, newQuantity);
+  if (!productData.value) return;
+  const newQuantity = productData.value.quantity + 1;
+  desk?.updateQuantity(props.id, newQuantity);
+
   // Update the cart with new quantity if item is in cart
   if (desk?.has(props.id)) {
-    desk?.update(props.id, {
-      quantity: newQuantity,
-    });
+    desk.update(props.id, { quantity: newQuantity });
   }
 };
 
 // Function to decrement quantity
 const decrement = () => {
-  const newQuantity = Math.max(1, props.quantity - 1);
-  emit('updateQuantity', props.id, newQuantity);
+  if (!productData.value) return;
+  const newQuantity = Math.max(1, productData.value.quantity - 1);
+  desk?.updateQuantity(props.id, newQuantity);
+
   // Update the cart with new quantity if item is in cart
   if (desk?.has(props.id)) {
-    desk?.update(props.id, {
-      quantity: newQuantity,
-    });
+    desk.update(props.id, { quantity: newQuantity });
   }
 };
 </script>
@@ -90,12 +97,12 @@ const decrement = () => {
     class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 flex flex-col gap-3 transition-all duration-200 hover:border-primary hover:shadow-md"
   >
     <div class="flex justify-center items-center h-16 text-5xl text-primary opacity-70">
-      <UIcon :name="imageUrl || 'i-heroicons-cube'" />
+      <UIcon :name="productData?.imageUrl || 'i-heroicons-cube'" />
     </div>
 
     <div class="flex flex-col gap-2 flex-1">
-      <h4 class="text-base font-semibold m-0">{{ name }}</h4>
-      <div class="text-xl font-bold text-primary">${{ price.toFixed(2) }}</div>
+      <h4 class="text-base font-semibold m-0">{{ productData?.name }}</h4>
+      <div class="text-xl font-bold text-primary">${{ productData?.price.toFixed(2) }}</div>
     </div>
 
     <div class="flex flex-col gap-2">
@@ -118,10 +125,10 @@ const decrement = () => {
           color="primary"
           variant="soft"
           icon="i-heroicons-minus"
-          :disabled="quantity <= 1"
+          :disabled="(productData?.quantity ?? 1) <= 1"
           @click="decrement"
         />
-        <span class="min-w-8 text-center font-semibold">{{ quantity }}</span>
+        <span class="min-w-8 text-center font-semibold">{{ productData?.quantity }}</span>
         <UButton
           size="xs"
           color="primary"
