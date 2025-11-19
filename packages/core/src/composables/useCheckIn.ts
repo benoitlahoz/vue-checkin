@@ -203,7 +203,7 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
       | string
       | null
       | undefined,
-    checkInOptions?: CheckInOptions<T>
+    checkInOptions?: CheckInOptions<T, TContext>
   ): CheckInResult<T, TContext> => {
     return checkInToDesk<T, TContext>(parentDeskOrKey as any, checkInOptions);
   };

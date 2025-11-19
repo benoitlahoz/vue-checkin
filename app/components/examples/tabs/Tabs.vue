@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useCheckIn } from '#vue-airport/composables/useCheckIn';
-import { type TabItemData, TABS_DESK_KEY, TabItem } from '.';
+import { type TabItemData, type TabItemContext, TABS_DESK_KEY, TabItem } from '.';
 
 /**
  * Tabs Example - Dynamic Tab Management
@@ -14,14 +15,6 @@ import { type TabItemData, TABS_DESK_KEY, TabItem } from '.';
 
 // Reactive reference to store the active tab ID
 const activeTabId = ref<string | number>('tab-1');
-
-// Create a desk with context to share the active tab state
-const { createDesk } = useCheckIn<TabItemData, { activeTab: Ref<string | number> }>();
-createDesk(TABS_DESK_KEY, {
-  devTools: true,
-  debug: false,
-  context: { activeTab: activeTabId },
-});
 
 // State to manage all tabs
 const tabsData = ref<
@@ -88,6 +81,20 @@ const closeTab = (id: string | number) => {
   }
 };
 
+// Create a desk with context to share the active tab state and helpers
+const { createDesk } = useCheckIn<TabItemData, TabItemContext>();
+createDesk(TABS_DESK_KEY, {
+  devTools: true,
+  debug: false,
+  context: {
+    activeTab: activeTabId,
+    selectTab,
+    closeTab,
+    tabsCount: computed(() => tabsData.value.length),
+    tabsData,
+  },
+});
+
 // Computed property for the active tab's content
 const activeTabContent = computed(() => {
   const tab = tabsData.value.find((t) => t.id === activeTabId.value);
@@ -99,18 +106,8 @@ const activeTabContent = computed(() => {
   <div>
     <div class="flex gap-4 items-center mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">
       <div class="flex gap-1 flex-1 overflow-x-auto">
-        <TabItem
-          v-for="tab in tabsData"
-          :id="tab.id"
-          :key="tab.id"
-          :label="tab.label"
-          :content="tab.content"
-          :icon="tab.icon"
-          :is-active="tab.id === activeTabId"
-          :can-close="tabsData.length > 1"
-          @select="selectTab"
-          @close="closeTab"
-        />
+        <!-- Note: no props, just the id -->
+        <TabItem v-for="tab in tabsData" :id="tab.id" :key="tab.id" />
       </div>
       <UButton size="sm" icon="i-heroicons-plus" @click="addTab"> New Tab </UButton>
     </div>

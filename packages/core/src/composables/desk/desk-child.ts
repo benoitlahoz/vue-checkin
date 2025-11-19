@@ -8,11 +8,16 @@ import type { DeskCore } from '../desk/desk-core';
 import { AsyncUpdateGuard } from '../helpers/async-update-guard';
 import { NoOp, Debug } from '../utils';
 
-export interface CheckInOptions<T = any> {
+export interface CheckInOptions<T = any, TContext extends Record<string, any> = {}> {
   required?: boolean;
   autoCheckIn?: boolean;
   id?: string | number;
-  data?: T | (() => T) | (() => Promise<T>);
+  data?:
+    | T
+    | (() => T)
+    | (() => Promise<T>)
+    | ((desk: DeskCore<T> & TContext) => T)
+    | ((desk: DeskCore<T> & TContext) => Promise<T>);
   generateId?: () => string | number;
   watchData?: boolean;
   shallow?: boolean;
@@ -46,7 +51,7 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
     | InjectionKey<DeskCore<T> & TContext>
     | null
     | undefined,
-  checkInOptions?: CheckInOptions<T>
+  checkInOptions?: CheckInOptions<T, TContext>
 ): CheckInResult<T, TContext> => {
   const debug = checkInOptions?.debug ? Debug : NoOp;
 
@@ -94,7 +99,13 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
 
     const dataValue =
       typeof checkInOptions.data === 'function'
-        ? (checkInOptions.data as (() => T) | (() => Promise<T>))()
+        ? (
+            checkInOptions.data as
+              | ((desk: DeskCore<T> & TContext) => T)
+              | ((desk: DeskCore<T> & TContext) => Promise<T>)
+              | (() => T)
+              | (() => Promise<T>)
+          )(desk!)
         : checkInOptions.data;
 
     // If it's a Promise, protect against race conditions
@@ -195,7 +206,13 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
       () => {
         if (!checkInOptions.data) return undefined;
         return typeof checkInOptions.data === 'function'
-          ? (checkInOptions.data as (() => T) | (() => Promise<T>))()
+          ? (
+              checkInOptions.data as
+                | ((desk: DeskCore<T> & TContext) => T)
+                | ((desk: DeskCore<T> & TContext) => Promise<T>)
+                | (() => T)
+                | (() => Promise<T>)
+            )(desk!)
           : checkInOptions.data;
       },
       async (newData) => {
