@@ -1,6 +1,6 @@
 {
   "name": "vue-airport",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A generic check-in system with local IoC container for parent/child component registration pattern in Vue 3",
   "author": "Benoit Lahoz",
   "license": "MIT",

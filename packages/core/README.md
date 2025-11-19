@@ -143,7 +143,27 @@ useCheckIn<TabItem>().checkIn('tabs', {
 </script>
 ```
 
-## 🔌 Built-in Plugins
+See the full API reference and examples in the [documentation](https://benoitlahoz.github.io/vue-airport).
+
+## 🔌 Base Plugins
+
+The `@vue-airport/plugins-base` package includes four powerful plugins to extend desk functionality.
+
+### Installation
+
+```bash
+# npm
+npm install @vue-airport/plugins-base
+
+# yarn
+yarn add @vue-airport/plugins-base
+
+# pnpm
+pnpm add @vue-airport/plugins-base
+
+# bun
+bun add @vue-airport/plugins-base
+```
 
 ### Active Item Plugin
 
@@ -231,6 +251,24 @@ const { desk } = createDesk('search', {
 
 VueAirport includes a comprehensive DevTools integration for debugging and monitoring your desks in development.
 
+### Installation
+
+Install the DevTools package as a dev dependency:
+
+```bash
+# npm
+npm install -D vue-airport-devtools
+
+# yarn
+yarn add -D vue-airport-devtools
+
+# pnpm
+pnpm add -D vue-airport-devtools
+
+# bun
+bun add -D vue-airport-devtools
+```
+
 ### Setup
 
 #### For Vite Projects
@@ -266,7 +304,7 @@ import { useCheckIn } from 'vue-airport';
 
 const { createDesk } = useCheckIn();
 const { desk } = createDesk('my-desk', {
-  devTools: true  // Enable DevTools for this desk
+  devTools: import.meta.env.DEV  // Enable DevTools for this desk
 });
 </script>
 ```
