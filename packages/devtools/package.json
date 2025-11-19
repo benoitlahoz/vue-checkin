@@ -1,6 +1,6 @@
 {
   "name": "vue-airport-devtools",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "DevTools integration for vue-airport library",
   "type": "module",
   "exports": {
@@ -40,7 +40,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/benoitlahoz/vue-airport",
-    "directory": "devtools"
+    "directory": "packages/devtools"
   },
   "peerDependencies": {
     "vue": "^3.4.0",

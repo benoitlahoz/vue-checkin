@@ -87,6 +87,7 @@ export interface DeskCore<T = any> {
   on: (event: DeskEventType, callback: DeskEventCallback<T>) => () => void;
   off: (event: DeskEventType, callback: DeskEventCallback<T>) => void;
   emit: (event: DeskEventType, payload: { id?: string | number; data?: T }) => void;
+  destroy: () => void;
 }
 
 const DebugPrefix = '[DeskCore]';
@@ -501,6 +502,36 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     updates.forEach(({ id, data }) => update(id, data));
   };
 
+  /**
+   * Cleanup function to destroy the desk and free resources
+   */
+  const destroy = () => {
+    debug(`${DebugPrefix} Destroying desk: ${deskId}`);
+
+    // 1. Clear all registry items
+    registryMap.clear();
+    syncList();
+    sortCache.invalidate();
+
+    // 2. Cleanup all plugins
+    pluginCleanups.forEach((cleanup) => {
+      try {
+        cleanup();
+      } catch (error) {
+        debug(`${DebugPrefix} Plugin cleanup error:`, error);
+      }
+    });
+    pluginCleanups.length = 0;
+
+    // 3. Remove all event listeners
+    eventManager.removeAllListeners();
+
+    // 4. Unregister from DevTools
+    devTools.unregisterDesk(deskId);
+
+    debug(`${DebugPrefix} Desk destroyed: ${deskId}`);
+  };
+
   const desk: DeskCore<T> = {
     devTools,
     registryMap,
@@ -520,6 +551,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     on,
     off,
     emit,
+    destroy,
   };
 
   // Add deskId as internal property for plugin access

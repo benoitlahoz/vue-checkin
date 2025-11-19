@@ -20,6 +20,7 @@ export interface DevToolsHook {
   emit(event: DevToolsEvent): void;
   registerDesk(deskId: string, metadata: Record<string, unknown>): void;
   updateRegistry(deskId: string, registry: Map<string | number, any>): void;
+  unregisterDesk?(deskId: string): void;
 }
 
 const HOOK_KEY = '__VUE_AIRPORT_DEVTOOLS_HOOK__';
@@ -77,6 +78,31 @@ const updateDevToolsRegistry = (deskId: string, registry: Map<string | number, a
 };
 
 /**
+ * Unregister desk from DevTools
+ */
+const unregisterDeskWithDevTools = (deskId: string): void => {
+  if (typeof window !== 'undefined' && window[HOOK_KEY]) {
+    try {
+      // Emit a clear event to signal desk destruction
+      window[HOOK_KEY].emit({
+        type: 'clear',
+        timestamp: Date.now(),
+        deskId,
+        registrySize: 0,
+      });
+      // Remove desk from DevTools registry
+      if (window[HOOK_KEY].unregisterDesk) {
+        window[HOOK_KEY].unregisterDesk(deskId);
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[vue-airport] DevTools unregisterDesk failed:', error);
+      }
+    }
+  }
+};
+
+/**
  * Check if DevTools are available
  */
 const hasDevTools = (): boolean => {
@@ -87,6 +113,7 @@ export const DevTools = {
   emit: emitDevToolsEvent,
   registerDesk: registerDeskWithDevTools,
   updateRegistry: updateDevToolsRegistry,
+  unregisterDesk: unregisterDeskWithDevTools,
   isAvailable: hasDevTools,
 };
 
@@ -98,6 +125,9 @@ export const NoOpDevTools = {
     // No-op
   },
   updateRegistry(_deskId: string, _registry: Map<string | number, any>): void {
+    // No-op
+  },
+  unregisterDesk(_deskId: string): void {
     // No-op
   },
   isAvailable(): boolean {

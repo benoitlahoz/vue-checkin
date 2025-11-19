@@ -29,6 +29,7 @@ useCheckIn<TabItemData>().checkIn(TABS_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
   watchData: true,
+  debug: true,
   data: () => ({
     label: props.label,
     content: props.content,

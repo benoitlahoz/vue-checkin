@@ -19,6 +19,7 @@ export interface CheckInDevToolsHook {
   on(handler: (event: AirportEvent) => void): () => void;
   registerDesk(deskId: string, metadata: Record<string, unknown>): void;
   updateRegistry(deskId: string, registry: Map<string | number, any>): void;
+  unregisterDesk(deskId: string): void;
 }
 
 const HOOK_KEY = '__VUE_AIRPORT_DEVTOOLS_HOOK__';
@@ -92,6 +93,9 @@ export function attachGlobalHook(app: App) {
           stats: { totalCheckIns: 0, totalCheckOuts: 0, totalUpdates: 0 },
         });
       }
+    },
+    unregisterDesk(deskId: string) {
+      desks.delete(deskId);
     },
   };
 

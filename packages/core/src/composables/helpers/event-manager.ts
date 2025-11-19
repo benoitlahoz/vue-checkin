@@ -41,6 +41,11 @@ export class EventManager<T = any> {
     }
   }
 
+  public removeAllListeners() {
+    this.eventListeners.clear();
+    this.debug(`${DebugPrefix} All listeners removed`);
+  }
+
   public emit(event: DeskEventType, payload: { id?: string | number; data?: T }) {
     // Use batching for update events (high frequency)
     if (event === 'update') {

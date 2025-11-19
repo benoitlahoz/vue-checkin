@@ -2,7 +2,7 @@
  * VueAirport - Generic check-in system for parent/child component registration.
  */
 
-import { computed, type ComputedRef, type Ref, type InjectionKey } from 'vue';
+import { computed, onUnmounted, type ComputedRef, type Ref, type InjectionKey } from 'vue';
 
 import {
   createDeskCore,
@@ -178,6 +178,14 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
       options?.context,
       options?.debug
     );
+
+    // Cleanup on unmount
+    onUnmounted(() => {
+      if (options?.debug) {
+        console.log(`[useCheckIn] Desk unmounting: ${deskId}`);
+      }
+      deskCore.destroy();
+    });
 
     return {
       desk,

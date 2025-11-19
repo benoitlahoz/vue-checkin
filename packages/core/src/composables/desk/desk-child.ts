@@ -246,6 +246,7 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
 
   // Cleanup on unmount
   onUnmounted(() => {
+    debug(`${DebugPrefix} Component unmounted - performing check-out if needed`);
     performCheckOut();
 
     if (watchStopHandle) {
