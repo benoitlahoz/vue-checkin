@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useCheckIn, getItemData } from '#vue-airport/composables/useCheckIn';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import { type TabItemData, type TabItemContext, TABS_DESK_KEY } from '.';
 
 /**
@@ -22,33 +22,27 @@ const emit = defineEmits<{
 const { checkIn } = useCheckIn<TabItemData, TabItemContext>();
 const { desk } = checkIn(TABS_DESK_KEY, {
   id: props.id,
-  autoCheckIn: false,
+  autoCheckIn: true,
+  data: (desk) => {
+    const tab = desk.tabsData?.value.find((t) => t.id === props.id);
+    if (!tab) return { label: '', content: '' };
+    const { id, ...data } = tab;
+    return data;
+  },
+});
+
+// Get tab data from tabsData
+const tabData = computed(() => {
+  return desk?.tabsData?.value.find((t) => t.id === props.id);
 });
 
 const isActive = computed(() => {
-  if (!desk || !desk.activeTab) return false;
-  try {
-    return desk.activeTab.value === props.id;
-  } catch {
-    return false;
-  }
+  return desk?.activeTab?.value === props.id;
 });
 
 const canClose = computed(() => {
-  if (!desk || !desk.tabsCount) return true;
-  try {
-    return desk.tabsCount.value > 1;
-  } catch {
-    return true;
-  }
+  return (desk?.tabsCount?.value ?? 0) > 1;
 });
-
-// Helper computed qui utilise registryList pour la réactivité
-const tabData = computed(() =>
-  props.id !== undefined
-    ? getItemData<TabItemData, TabItemContext>(desk!, props.id).value
-    : undefined
-);
 
 const onSelect = () => {
   if (desk && typeof desk.selectTab === 'function') {

@@ -16,13 +16,6 @@ export { checkInToDesk, type CheckInOptions, type CheckInResult } from './desk/d
 // HELPERS
 // ==========================================
 
-export {
-  generateId,
-  memoizedId,
-  clearIdCache,
-  isCheckedIn,
-  getItemData,
-  getRegistry,
-} from './useCheckIn';
+export { generateId, memoizedId, clearIdCache, isCheckedIn, getRegistry } from './useCheckIn';
 
 export type { CheckInPlugin } from './types';

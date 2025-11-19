@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useCheckIn, getItemData } from '#vue-airport/composables/useCheckIn';
+import { computed } from 'vue';
+import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import { type TodoItemContext, type TodoItemData, TODO_DESK_KEY } from '.';
 
 const props = defineProps<{
@@ -12,11 +13,19 @@ const props = defineProps<{
 const { checkIn } = useCheckIn<TodoItemData, TodoItemContext>();
 const { desk } = checkIn(TODO_DESK_KEY, {
   id: props.id,
-  autoCheckIn: false,
+  autoCheckIn: true,
+  data: (desk) => {
+    const item = desk.itemsData?.value.find((t) => t.id === props.id);
+    if (!item) return { label: '', done: false };
+    const { id, ...data } = item;
+    return data;
+  },
 });
 
-// Computed helper to get the item data from the desk
-const itemData = getItemData<TodoItemData, TodoItemContext>(desk!, props.id);
+// Get item data from itemsData
+const itemData = computed(() => {
+  return desk?.itemsData?.value.find((t) => t.id === props.id);
+});
 
 const onDone = () => {
   desk?.toggleDone(props.id);
