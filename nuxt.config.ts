@@ -9,6 +9,15 @@ export default defineNuxtConfig({
   },
   app: {
     baseURL: '/vue-airport/',
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/vue-airport/favicon.ico' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/vue-airport/favicon-16x16.png' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/vue-airport/favicon-32x32.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/vue-airport/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/vue-airport/site.webmanifest' }
+      ]
+    }
   },
   css: ['~/assets/css/main.css'],
   alias: {
