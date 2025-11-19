@@ -23,6 +23,8 @@ const { checkIn } = useCheckIn<TabItemData, TabItemContext>();
 const { desk } = checkIn(TABS_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
+  // For devTools.
+  watchData: true,
   data: (desk) => {
     const tab = desk.tabsData?.value.find((t) => t.id === props.id);
     if (!tab) return { label: '', content: '' };

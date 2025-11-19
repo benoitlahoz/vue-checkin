@@ -14,6 +14,8 @@ const { checkIn } = useCheckIn<TodoItemData, TodoItemContext>();
 const { desk } = checkIn(TODO_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
+  // For devTools.
+  watchData: true,
   data: (desk) => {
     const item = desk.itemsData?.value.find((t) => t.id === props.id);
     if (!item) return { label: '', done: false };
