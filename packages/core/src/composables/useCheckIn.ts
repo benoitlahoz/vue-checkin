@@ -2,7 +2,7 @@
  * VueAirport - Generic check-in system for parent/child component registration.
  */
 
-import { computed, onUnmounted, type ComputedRef, type Ref, type InjectionKey } from 'vue';
+import { computed, onUnmounted, isRef, type ComputedRef, type Ref, type InjectionKey } from 'vue';
 
 import {
   createDeskCore,
@@ -117,14 +117,31 @@ export const isCheckedIn = <T = any, TContext extends Record<string, any> = {}>(
 
 /**
  * Computed helper to get item data by ID
- * Uses registryList to ensure reactivity when items are updated
+ * Automatically detects data source:
+ * 1. First tries to find a Ref<Array> in the context (external data management)
+ * 2. Falls back to registryList (desk-managed data)
+ * This ensures reactivity regardless of where data is stored
  */
 export const getItemData = <T = any, TContext extends Record<string, any> = {}>(
   desk: DeskCore<T> & TContext,
   id: string | number | Ref<string | number>
 ): ComputedRef<T | undefined> => {
   return computed(() => {
-    const itemId = typeof id === 'object' && 'value' in id ? id.value : id;
+    const itemId = isRef(id) ? id.value : id;
+
+    // Try to find any Ref<Array> in the context that contains items with IDs
+    for (const key in desk) {
+      const prop = (desk as any)[key];
+      // Check if it's a ref with a value that's an array
+      if (prop && isRef(prop) && Array.isArray(prop.value)) {
+        const found = prop.value.find((item: any) => item && item.id === itemId);
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    // Fallback to registryList (desk-managed data)
     return desk.registryList.value.find((item) => item.id === itemId)?.data;
   });
 };

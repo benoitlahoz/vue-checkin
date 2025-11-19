@@ -31,7 +31,7 @@ const onDelete = () => {
   <li
     class="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-500 rounded-md transition-all duration-200 bg-muted hover:bg-gray-50 dark:hover:bg-gray-800"
   >
-    <UCheckbox @update:model-value="onDone" />
+    <UCheckbox :model-value="itemData?.done ?? false" @update:model-value="onDone" />
     <span
       class="flex-1 transition-all duration-200"
       :class="itemData?.done ? 'line-through opacity-60' : ''"

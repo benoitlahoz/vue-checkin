@@ -4,6 +4,44 @@ import TodoItem from './TodoItem.vue';
 import { type TodoItemContext, type TodoItemData as TodoItemData, TODO_DESK_KEY } from '.';
 
 /**
+ * Local state for managing todos
+ * Each todo will automatically check in to the desk when mounted
+ */
+const itemsData = ref<Array<TodoItemData & { id: string | number }>>([
+  {
+    id: 1,
+    label: 'Learn Vue Airport',
+    done: false,
+  },
+  {
+    id: 2,
+    label: 'Build awesome apps',
+    done: false,
+  },
+]);
+
+/**
+ * Toggle the done state of a todo item
+ */
+const toggleDone = (id: string | number) => {
+  const todo = itemsData.value.find((t) => t.id === id);
+  if (todo) {
+    todo.done = !todo.done;
+  }
+};
+
+/**
+ * Remove a todo item from the list
+ * Will trigger auto check-out when component unmounts
+ */
+const removeItem = (id: string | number) => {
+  const index = itemsData.value.findIndex((t) => t.id === id);
+  if (index !== -1) {
+    itemsData.value.splice(index, 1);
+  }
+};
+
+/**
  * Create a desk to manage todo items
  * The desk acts as a central registry where child TodoItem components check in
  */
@@ -18,24 +56,20 @@ const { desk } = createDesk(TODO_DESK_KEY, {
     console.log(`Item removed: ${id}`);
   },
   context: {
-    toggleDone: (id: string | number) => {
-      const item = desk.get(id);
-      if (item) {
-        desk.update(id, { done: !item.data.done });
-      }
-    },
-    removeItem: (id: string | number) => {
-      desk.checkOut(id);
-    },
+    toggleDone,
+    removeItem,
+    itemsData,
   },
 });
 
 /**
- * Add a new todo item directly to the desk
+ * Add a new todo item
+ * The TodoItem component will auto check-in when mounted
  */
 const addItem = () => {
   const id = Date.now();
-  desk.checkIn(id, {
+  itemsData.value.push({
+    id,
     label: `Task ${id}`,
     done: false,
   });
@@ -45,6 +79,7 @@ const addItem = () => {
  * Clear all todos and reset the desk
  */
 const clearAll = () => {
+  itemsData.value = [];
   desk.clear();
 };
 </script>
@@ -68,7 +103,7 @@ const clearAll = () => {
     </div>
 
     <div
-      v-if="desk.size.value === 0"
+      v-if="itemsData.length === 0"
       class="p-8 flex flex-col items-center justify-center min-h-[150px] bg-gray-300 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg"
     >
       <p>No tasks.</p>
@@ -81,7 +116,7 @@ const clearAll = () => {
       v-else
       class="list-none min-h-[150px] bg-gray-300 dark:bg-gray-700 p-2 m-0 rounded-lg flex flex-col gap-2"
     >
-      <TodoItem v-for="item in desk.registryList.value" :id="item.id" :key="item.id" />
+      <TodoItem v-for="todo in itemsData" :id="todo.id" :key="todo.id" />
     </ul>
   </div>
 </template>

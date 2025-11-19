@@ -12,6 +12,7 @@ export interface TabItemContext {
   selectTab: (id: string | number) => void;
   closeTab: (id: string | number) => void;
   tabsCount: ComputedRef<number>;
+  tabsData: Ref<Array<TabItemData & { id: string | number }>>;
 }
 
 export const TABS_DESK_KEY: InjectionKey<DeskCore<TabItemData> & TabItemContext> =

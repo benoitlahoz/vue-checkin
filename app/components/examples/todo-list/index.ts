@@ -9,6 +9,7 @@ export interface TodoItemData {
 export interface TodoItemContext {
   toggleDone: (id: string | number) => void;
   removeItem: (id: string | number) => void;
+  itemsData: Ref<Array<TodoItemData & { id: string | number }>>;
 }
 
 export const TODO_DESK_KEY: InjectionKey<DeskCore<TodoItemData> & TodoItemContext> =
