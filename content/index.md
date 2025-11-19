@@ -132,7 +132,7 @@ VueAirport is organized as a monorepo with separate packages for maximum flexibi
   icon: i-lucide-plug
   ---
   #title
-  @vue-airport/plugins
+  @vue-airport/plugins-base
   
   #description
   Built-in plugins: activeItem, validation, debounce, and history. Optional, install separately.

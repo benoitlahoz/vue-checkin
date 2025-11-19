@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-airport';
-import { createDebouncePlugin } from '@vue-airport/plugins';
+import { createDebouncePlugin } from '@vue-airport/plugins-base';
 import SearchResultItem from './SearchResultItem.vue';
 import { type SearchResult, SEARCH_DESK_KEY } from '.';
 

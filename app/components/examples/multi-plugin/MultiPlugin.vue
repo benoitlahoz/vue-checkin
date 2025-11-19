@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn, type CheckInItem } from '#vue-airport';
-import { createActiveItemPlugin, createHistoryPlugin } from '@vue-airport/plugins';
+import { createActiveItemPlugin, createHistoryPlugin } from '@vue-airport/plugins-base';
 import PluginListItem from './PluginListItem.vue';
 import { type PluginItemData, PLUGIN_DESK_KEY } from '.';
 

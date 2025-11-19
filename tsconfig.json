@@ -4,8 +4,8 @@
     "paths": {
       "#vue-airport": ["./packages/core/src"],
       "#vue-airport/*": ["./packages/core/src/*"],
-      "@vue-airport/plugins": ["./packages/plugins/src"],
-      "@vue-airport/plugins/*": ["./packages/plugins/src/*"],
+      "@vue-airport/plugins-base": ["./packages/plugins/src"],
+      "@vue-airport/plugins-base/*": ["./packages/plugins/src/*"],
       "vue-airport": ["./packages/core/src"],
       "vue-airport/*": ["./packages/core/src/*"],
       "vue-airport-devtools": ["./packages/devtools/src"],

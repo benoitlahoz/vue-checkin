@@ -30,6 +30,7 @@ export default defineConfig({
         '@nuxt/devtools-kit',
         '@nuxt/kit',
         'vite',
+        '#app',
       ],
       output: {
         preserveModules: false,

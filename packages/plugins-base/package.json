@@ -1,5 +1,5 @@
 {
-  "name": "@vue-airport/plugins",
+  "name": "@vue-airport/plugins-base",
   "version": "1.0.0",
   "description": "Base plugins for vue-airport (activeItem, validation, debounce, history)",
   "author": "Benoit Lahoz",
@@ -7,7 +7,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/benoitlahoz/vue-airport",
-    "directory": "packages/plugins"
+    "directory": "packages/plugins-base"
   },
   "keywords": [
     "vue",

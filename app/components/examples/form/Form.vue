@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-airport';
-import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins';
+import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-base';
 import FormField from './FormField.vue';
 import { type FieldData, FORM_DESK_KEY } from '.';
 

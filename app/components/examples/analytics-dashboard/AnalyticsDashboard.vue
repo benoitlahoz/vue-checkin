@@ -5,7 +5,7 @@ import {
   createHistoryPlugin,
   createValidationPlugin,
   createDebouncePlugin,
-} from '@vue-airport/plugins';
+} from '@vue-airport/plugins-base';
 import MetricWidget from './MetricWidget.vue';
 import ChartWidget from './ChartWidget.vue';
 import ActivityWidget from './ActivityWidget.vue';

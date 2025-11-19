@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     '#vue-airport': fileURLToPath(new URL('./packages/core/src', import.meta.url)),
     '#vue-airport/plugins': fileURLToPath(new URL('./packages/plugins/src', import.meta.url)),
     'vue-airport': fileURLToPath(new URL('./packages/core/src', import.meta.url)),
-    '@vue-airport/plugins': fileURLToPath(new URL('./packages/plugins/src', import.meta.url)),
+    '@vue-airport/plugins-base': fileURLToPath(new URL('./packages/plugins/src', import.meta.url)),
     'vue-airport-devtools': fileURLToPath(new URL('./packages/devtools/src', import.meta.url)),
     'vue-airport-devtools/nuxt': fileURLToPath(
       new URL('./packages/devtools/src/nuxt-module.ts', import.meta.url)
@@ -25,7 +25,9 @@ export default defineNuxtConfig({
         '#vue-airport': fileURLToPath(new URL('./packages/core/src', import.meta.url)),
         '#vue-airport/plugins': fileURLToPath(new URL('./packages/plugins/src', import.meta.url)),
         'vue-airport': fileURLToPath(new URL('./packages/core/src', import.meta.url)),
-        '@vue-airport/plugins': fileURLToPath(new URL('./packages/plugins/src', import.meta.url)),
+        '@vue-airport/plugins-base': fileURLToPath(
+          new URL('./packages/plugins/src', import.meta.url)
+        ),
         'vue-airport-devtools': fileURLToPath(new URL('./packages/devtools/src', import.meta.url)),
         'vue-airport-devtools/nuxt': fileURLToPath(
           new URL('./packages/devtools/src/nuxt-module.ts', import.meta.url)
