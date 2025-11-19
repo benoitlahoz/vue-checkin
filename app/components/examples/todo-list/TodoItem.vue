@@ -49,7 +49,12 @@ const onDelete = () => {
     >
       {{ itemData?.label }}
     </span>
-    <Button size="icon" variant="destructive" class="opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click="onDelete">
+    <Button
+      size="icon"
+      variant="destructive"
+      class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      @click="onDelete"
+    >
       <UIcon name="i-heroicons-trash" class="w-4 h-4" />
     </Button>
   </li>

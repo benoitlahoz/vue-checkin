@@ -4,6 +4,7 @@ import { useCheckIn } from '#vue-airport/composables/useCheckIn';
 import TodoItem from './TodoItem.vue';
 import { type TodoItemContext, type TodoItemData as TodoItemData, TODO_DESK_KEY } from '.';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * Local state for managing todos
@@ -22,6 +23,11 @@ const itemsData = ref<Array<TodoItemData & { id: string | number }>>([
   },
   {
     id: 3,
+    label: 'Contribute',
+    done: false,
+  },
+  {
+    id: 4,
     label: 'Build awesome apps',
     done: false,
   },
@@ -109,7 +115,9 @@ const clearAll = () => {
           <UIcon name="i-heroicons-trash" class="w-4 h-4" /> Clear All
         </Button>
       </div>
-      <UBadge color="primary" variant="subtle"> {{ desk.size.value }} item(s) </UBadge>
+      <Badge variant="outline" class="bg-primary/10 text-primary">
+        {{ desk.size.value }} item(s)
+      </Badge>
     </div>
 
     <div
