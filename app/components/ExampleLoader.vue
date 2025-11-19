@@ -8,7 +8,11 @@ defineProps<{
 
 <template>
   <div class="h-4" />
-  <div class="p-4 border border-muted rounded-md bg-elevated shadow-lg">
+  <div class="example-scope p-4 border border-muted rounded-md bg-elevated shadow-lg">
     <component :is="component" />
   </div>
 </template>
+
+<style>
+@import '~/assets/css/examples.css';
+</style>

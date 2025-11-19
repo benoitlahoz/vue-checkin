@@ -344,7 +344,7 @@ const removeResult = (id: string) => {
 
     <!-- Event Log -->
     <div
-      class="mb-8 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      class="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
     >
       <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Event Log</h3>
       <div class="max-h-[300px] overflow-y-auto">
@@ -367,40 +367,6 @@ const removeResult = (id: string) => {
           No events yet
         </div>
       </div>
-    </div>
-
-    <!-- Info Box -->
-    <div
-      class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
-    >
-      <h3 class="text-base font-semibold mb-3 text-gray-900 dark:text-gray-100">How it works:</h3>
-      <ul class="space-y-2">
-        <li
-          class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400"
-        >
-          Search results check-in as you type
-        </li>
-        <li
-          class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400"
-        >
-          Debounce plugin batches events (500ms delay)
-        </li>
-        <li
-          class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400"
-        >
-          Events are forced after 2s (maxWait)
-        </li>
-        <li
-          class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400"
-        >
-          You can manually flush or cancel pending events
-        </li>
-        <li
-          class="pl-6 relative text-gray-700 dark:text-gray-300 before:content-['→'] before:absolute before:left-0 before:text-primary-600 dark:before:text-primary-400"
-        >
-          Check the event log to see debounced events firing
-        </li>
-      </ul>
     </div>
   </div>
 </template>

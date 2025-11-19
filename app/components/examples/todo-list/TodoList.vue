@@ -49,12 +49,6 @@ const { createDesk } = useCheckIn<TodoItemData, TodoItemContext>();
 const { desk } = createDesk(TODO_DESK_KEY, {
   devTools: true,
   debug: false,
-  onCheckIn: (id, data) => {
-    console.log(`Item added: ${id}`, data);
-  },
-  onCheckOut: (id) => {
-    console.log(`Item removed: ${id}`);
-  },
   context: {
     toggleDone,
     removeItem,

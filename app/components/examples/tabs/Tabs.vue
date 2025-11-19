@@ -108,7 +108,12 @@ const activeTabContent = computed(() => {
         <!-- Note: no props, just the id -->
         <TabItem v-for="tab in tabsData" :id="tab.id" :key="tab.id" />
       </div>
-      <UButton size="sm" icon="i-heroicons-plus" @click="addTab" />
+      <UButton
+        size="sm"
+        icon="i-heroicons-plus"
+        class="bg-primary text-primary-foreground"
+        @click="addTab"
+      />
     </div>
 
     <div
