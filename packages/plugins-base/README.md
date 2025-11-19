@@ -1,6 +1,6 @@
-# @vue-airport/plugins
+# @vue-airport/plugins-base
 
-[![npm version](https://img.shields.io/npm/v/@vue-airport/plugins.svg)](https://www.npmjs.com/package/@vue-airport/plugins)
+[![npm version](https://img.shields.io/npm/v/@vue-airport/plugins-base.svg)](https://www.npmjs.com/package/@vue-airport/plugins-base)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Official plugin collection for [vue-airport](https://github.com/benoitlahoz/vue-airport) - A generic check-in system for Vue 3 component registration patterns.
@@ -20,16 +20,16 @@ Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](
 
 ```bash
 # npm
-npm install vue-airport @vue-airport/plugins
+npm install vue-airport @vue-airport/plugins-base
 
 # yarn
-yarn add vue-airport @vue-airport/plugins
+yarn add vue-airport @vue-airport/plugins-base
 
 # pnpm
-pnpm add vue-airport @vue-airport/plugins
+pnpm add vue-airport @vue-airport/plugins-base
 
 # bun
-bun add vue-airport @vue-airport/plugins
+bun add vue-airport @vue-airport/plugins-base
 ```
 
 ## 🚀 Usage
@@ -41,7 +41,7 @@ Track and manage the currently active/selected item in your desk.
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from 'vue-airport';
-import { createActiveItemPlugin } from '@vue-airport/plugins';
+import { createActiveItemPlugin } from '@vue-airport/plugins-base';
 
 interface TabItem {
   label: string;
@@ -86,7 +86,7 @@ Validate data before check-in with custom validation rules.
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from 'vue-airport';
-import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins';
+import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-base';
 
 interface FormField {
   name: string;
@@ -159,7 +159,7 @@ Track all operations performed on the desk with timestamps.
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from 'vue-airport';
-import { createHistoryPlugin, type HistoryEntry } from '@vue-airport/plugins';
+import { createHistoryPlugin, type HistoryEntry } from '@vue-airport/plugins-base';
 
 interface Item {
   title: string;
@@ -218,7 +218,7 @@ Debounce event notifications for batch processing.
 ```vue
 <script setup lang="ts">
 import { useCheckIn } from 'vue-airport';
-import { createDebouncePlugin } from '@vue-airport/plugins';
+import { createDebouncePlugin } from '@vue-airport/plugins-base';
 
 interface SearchResult {
   query: string;
@@ -287,7 +287,7 @@ import {
   createHistoryPlugin,
   createValidationPlugin,
   createDebouncePlugin
-} from '@vue-airport/plugins';
+} from '@vue-airport/plugins-base';
 
 const { createDesk } = useCheckIn<MyData>();
 const { desk } = createDesk('my-desk', {
@@ -359,5 +359,5 @@ MIT © [Benoit Lahoz](https://github.com/benoitlahoz)
 
 - [Documentation](https://benoitlahoz.github.io/vue-airport)
 - [GitHub Repository](https://github.com/benoitlahoz/vue-airport)
-- [npm Package](https://www.npmjs.com/package/@vue-airport/plugins)
+- [npm Package](https://www.npmjs.com/package/@vue-airport/plugins-base)
 - [Core Package](https://www.npmjs.com/package/vue-airport)
