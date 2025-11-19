@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [["vue-airport", "vue-airport-devtools", "@vue-airport/plugins-base"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "master",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}
