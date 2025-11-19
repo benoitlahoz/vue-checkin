@@ -116,6 +116,20 @@ export const isCheckedIn = <T = any, TContext extends Record<string, any> = {}>(
 };
 
 /**
+ * Computed helper to get item data by ID
+ * Uses registryList to ensure reactivity when items are updated
+ */
+export const getItemData = <T = any, TContext extends Record<string, any> = {}>(
+  desk: DeskCore<T> & TContext,
+  id: string | number | Ref<string | number>
+): ComputedRef<T | undefined> => {
+  return computed(() => {
+    const itemId = typeof id === 'object' && 'value' in id ? id.value : id;
+    return desk.registryList.value.find((item) => item.id === itemId)?.data;
+  });
+};
+
+/**
  * Computed helper to get the registry as an array
  */
 export const getRegistry = <T = any, TContext extends Record<string, any> = {}>(
@@ -222,6 +236,7 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
     memoizedId,
     standaloneDesk,
     isCheckedIn,
+    getItemData,
     getRegistry,
     clearIdCache,
   };
