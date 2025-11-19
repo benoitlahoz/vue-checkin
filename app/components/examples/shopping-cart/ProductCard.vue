@@ -94,22 +94,22 @@ const decrement = () => {
 
 <template>
   <div
-    class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 flex flex-col gap-3 transition-all duration-200 hover:border-primary hover:shadow-md"
+    class="aspect-square border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-900 flex flex-col gap-2 transition-all duration-200 hover:border-primary hover:shadow-md"
   >
-    <div class="flex justify-center items-center h-16 text-5xl text-primary opacity-70">
+    <div class="flex justify-center items-center h-12 text-3xl text-primary opacity-70">
       <UIcon :name="productData?.imageUrl || 'i-heroicons-cube'" />
     </div>
 
-    <div class="flex flex-col gap-2 flex-1">
-      <h4 class="text-base font-semibold m-0">{{ productData?.name }}</h4>
-      <div class="text-xl font-bold text-primary">${{ productData?.price.toFixed(2) }}</div>
+    <div class="flex flex-col gap-1 flex-1">
+      <h4 class="text-sm font-semibold m-0 truncate">{{ productData?.name }}</h4>
+      <div class="text-lg font-bold text-primary">${{ productData?.price.toFixed(2) }}</div>
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-1.5">
       <!-- Add to Cart button when not in cart -->
       <UButton
         v-if="!isInCart"
-        size="sm"
+        size="xs"
         color="primary"
         icon="i-heroicons-shopping-cart"
         block
@@ -119,7 +119,7 @@ const decrement = () => {
       </UButton>
 
       <!-- Quantity controls when in cart -->
-      <div v-if="isInCart" class="flex items-center gap-2 justify-center">
+      <div v-if="isInCart" class="flex items-center gap-1 justify-center">
         <UButton
           size="xs"
           color="primary"
@@ -128,7 +128,7 @@ const decrement = () => {
           :disabled="(productData?.quantity ?? 1) <= 1"
           @click="decrement"
         />
-        <span class="min-w-8 text-center font-semibold">{{ productData?.quantity }}</span>
+        <span class="min-w-6 text-center text-sm font-semibold">{{ productData?.quantity }}</span>
         <UButton
           size="xs"
           color="primary"

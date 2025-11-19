@@ -139,10 +139,10 @@ const checkout = () => {
 
 <template>
   <div>
-    <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 mt-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_384px] gap-8 mt-6">
       <!-- Products section -->
       <div>
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+        <div class="grid grid-cols-2 gap-4">
           <ProductCard v-for="product in products" :id="product.id" :key="product.id" />
         </div>
       </div>
