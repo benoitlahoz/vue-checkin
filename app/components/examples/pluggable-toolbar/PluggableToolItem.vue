@@ -5,7 +5,7 @@ import { type ToolItemData, SLOTS_TOOLBAR_DESK_KEY, type SlotsToolbarContext } f
 
 export interface PluggableToolItemProps {
   id: string;
-  zone?: string;
+  gate?: string;
 }
 
 const props = defineProps<PluggableToolItemProps>();
@@ -17,10 +17,10 @@ const { desk } = checkIn(SLOTS_TOOLBAR_DESK_KEY, {
   autoCheckIn: true, // Auto check-in when condition in `watchCondition` is met
   watchData: true,
   watchCondition: (desk) => {
-    // Check if the zone is allowed
-    if (!props.zone) return true; // No zone = always allowed
+    // Check if the gate is allowed
+    if (!props.gate) return true; // No gate = always allowed
     if (!desk) return false; // No desk = not allowed
-    return desk.zones.includes(props.zone);
+    return desk.gates.includes(props.gate);
   },
 });
 

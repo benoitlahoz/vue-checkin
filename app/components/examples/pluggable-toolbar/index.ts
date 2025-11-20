@@ -9,15 +9,21 @@ export interface ToolItemData {
 
 export interface SlotsToolbarContext {
   toolItems: Ref<ToolItemData[]>;
-  zones: string[];
+  gates: string[];
   itemClass: ComputedRef<string | undefined>;
 }
 
 export const SLOTS_TOOLBAR_DESK_KEY: InjectionKey<DeskCore<ToolItemData> & SlotsToolbarContext> =
   Symbol('slotsToolbarDesk');
 
-export { default as Toolbar } from './Toolbar.vue';
+// Pluggable Toolbar
 export { default as PluggableToolbar } from './PluggableToolbar.vue';
-export { default as PluggableToolbarZone } from './PluggableToolbarZone.vue';
+export { default as PluggableToolbarGate } from './PluggableToolbarGate.vue';
 export { default as PluggableToolItem } from './PluggableToolItem.vue';
+
+// Example Toolbar
+export { default as Toolbar } from './Toolbar.vue';
+
+// Example Tool Items
+export { default as LoadToolItem } from './LoadToolItem.vue';
 export { default as SaveToolItem } from './SaveToolItem.vue';

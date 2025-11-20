@@ -4,7 +4,7 @@
  *
  * Demonstrates:
  * - Using slots to create a flexible toolbar layout
- * - Dynamically organizing ToolItem components by zones
+ * - Dynamically organizing ToolItem components by gates
  */
 
 import { useSlots, type HTMLAttributes, type VNode, Fragment, h } from 'vue';
@@ -24,8 +24,8 @@ const props = withDefaults(defineProps<SlotsToolbarProps>(), {
 
 const slots = useSlots();
 
-// Extraire les noms de zones des VNodes de zones pour les passer au desk
-const zoneNames = computed(() => {
+// Extract gates names from PluggableToolbarGate components
+const gatesNames = computed(() => {
   const slotContent = slots.default?.() || [];
   const names: string[] = [];
 
@@ -33,9 +33,9 @@ const zoneNames = computed(() => {
     if (typeof vnode.type === 'symbol') return;
 
     const componentType = vnode.type as any;
-    const isZone = componentType?.__isToolbarZone === true;
+    const isGate = componentType?.__isToolbarGate === true;
 
-    if (isZone) {
+    if (isGate) {
       const name = vnode.props?.name as string | undefined;
       if (name) names.push(name);
     }
@@ -49,134 +49,134 @@ createDesk(SLOTS_TOOLBAR_DESK_KEY, {
   devTools: true,
   context: {
     toolItems: ref<Array<ToolItemData>>([]),
-    zones: zoneNames.value,
+    gates: gatesNames.value,
     itemClass: computed(() => props.itemClass),
   },
 });
 
-// Fonction récursive pour extraire la zone d'un VNode
-const extractZone = (vnode: VNode): string | undefined => {
-  // Si c'est un Fragment, chercher dans ses enfants
+// Recursive function to extract the gate from a VNode
+const extractGate = (vnode: VNode): string | undefined => {
+  // If it's a Fragment, look into its children
   if (vnode.type === Fragment) {
     const children = vnode.children as VNode[] | undefined;
     if (Array.isArray(children) && children.length > 0 && children[0]) {
-      return extractZone(children[0]);
+      return extractGate(children[0]);
     }
   }
 
-  // Chercher la prop zone directement sur le VNode (fonctionne pour tous les composants avec une prop zone)
-  if (vnode.props?.zone) {
-    return vnode.props.zone as string;
+  // Look for the gate prop directly on the VNode (works for all components with a gate prop)
+  if (vnode.props?.gate) {
+    return vnode.props.gate as string;
   }
 
-  // Si c'est un composant, chercher dans son slot default ou ses children
+  // If it's a component, look into its default slot or its children
   const componentType = vnode.type as any;
 
-  // Si c'est un PluggableToolItem, il a directement la prop zone
+  // Si c'est un PluggableToolItem, il a directement la prop gate
   if (componentType?.__isToolbarItem === true) {
-    return vnode.props?.zone as string | undefined;
+    return vnode.props?.gate as string | undefined;
   }
 
   return undefined;
 };
 
-// Fonction pour extraire le nom de zone d'un PluggableToolbarZone
-const extractZoneName = (vnode: VNode): string | undefined => {
+// Function to extract the gate name from a PluggableToolbarGate VNode
+const extractGateName = (vnode: VNode): string | undefined => {
   if (vnode.type === Fragment) {
     const children = vnode.children as VNode[] | undefined;
     if (Array.isArray(children) && children.length > 0 && children[0]) {
-      return extractZoneName(children[0]);
+      return extractGateName(children[0]);
     }
   }
   return vnode.props?.name as string | undefined;
 };
 
-// Fonction pour vérifier si un VNode est un PluggableToolbarZone
-const isToolbarZone = (vnode: VNode): boolean => {
+// Function to check if a VNode is a PluggableToolbarGate
+const isToolbarGate = (vnode: VNode): boolean => {
   if (vnode.type === Fragment) {
     const children = vnode.children as VNode[] | undefined;
     if (Array.isArray(children) && children.length > 0 && children[0]) {
-      return isToolbarZone(children[0]);
+      return isToolbarGate(children[0]);
     }
     return false;
   }
 
-  // Vérifier la propriété __isToolbarZone du composant
+  // Check the __isToolbarGate property of the component
   const componentType = vnode.type as any;
-  const isZone = componentType?.__isToolbarZone === true;
+  const isGate = componentType?.__isToolbarGate === true;
 
-  return isZone;
+  return isGate;
 };
 
-// Séparer les zones (PluggableToolbarZone) et les items (PluggableToolItem)
+// Separate gates (PluggableToolbarGate) and items (PluggableToolItem)
 const slotSeparation = computed(() => {
   const slotContent = slots.default?.() || [];
-  const zones: VNode[] = [];
+  const gates: VNode[] = [];
   const items: VNode[] = [];
 
   slotContent.forEach((vnode) => {
-    // Ignorer les commentaires Vue
+    // Ignore symbol types (e.g., text nodes)
     if (typeof vnode.type === 'symbol') {
       return;
     }
 
-    const isZone = isToolbarZone(vnode);
+    const isGate = isToolbarGate(vnode);
 
-    if (isZone) {
-      zones.push(vnode);
+    if (isGate) {
+      gates.push(vnode);
     } else {
       items.push(vnode);
     }
   });
 
-  return { zoneVNodes: zones, itemVNodes: items };
+  return { gateVNodes: gates, itemVNodes: items };
 });
 
-// Accéder aux valeurs via le computed
-const zoneVNodes = computed(() => slotSeparation.value.zoneVNodes);
+// Access values via computed
+const gateVNodes = computed(() => slotSeparation.value.gateVNodes);
 const itemVNodes = computed(() => slotSeparation.value.itemVNodes);
 
-// Organiser les items par zone
-const itemsByZone = computed(() => {
-  const zones: Record<string, VNode[]> = {};
-  const unzoned: VNode[] = [];
+// Organize items by gate
+const itemsByGate = computed(() => {
+  const gates: Record<string, VNode[]> = {};
+  const noGate: VNode[] = [];
 
-  // Initialiser les zones depuis les VNodes de zones
-  zoneVNodes.value.forEach((zoneVNode) => {
-    const zoneName = extractZoneName(zoneVNode);
-    if (zoneName) {
-      zones[zoneName] = [];
+  // Initialize gates from gate VNodes
+  gateVNodes.value.forEach((gateVNode) => {
+    const gateName = extractGateName(gateVNode);
+    if (gateName) {
+      gates[gateName] = [];
     }
   });
 
-  // Parcourir les items et les assigner aux zones
+  // Iterate over items and assign them to gates
   itemVNodes.value.forEach((vnode) => {
-    const zone = extractZone(vnode);
+    const gate = extractGate(vnode);
 
-    if (zone) {
-      // L'item a une zone spécifiée
-      if (zones[zone] !== undefined) {
-        // La zone existe, ajouter l'item
-        zones[zone]?.push(vnode);
+    if (gate) {
+      // The item has a specified gate
+      if (gates[gate] !== undefined) {
+        // The gate exists, add the item
+        gates[gate]?.push(vnode);
       }
-      // Si la zone n'existe pas, ne pas afficher l'item (zone invalide)
+      // If the gate does not exist, do not display the item (invalid gate)
     } else {
-      // L'item n'a pas de zone, l'ajouter aux unzoned
-      unzoned.push(vnode);
+      // The item has no gate, add it to noGates
+      noGate.push(vnode);
     }
   });
 
-  return { zones, unzoned };
+  return { gates, noGate };
 });
 
-// Créer les VNodes de zones avec leurs items en utilisant function slots
-const renderedZones = computed(() => {
-  return zoneVNodes.value.map((zoneVNode) => {
-    const zoneName = extractZoneName(zoneVNode);
-    const items = itemsByZone.value.zones[zoneName || ''] || [];
+// Create VNodes of gates with their items using function slots
+const renderedGates = computed(() => {
+  return gateVNodes.value.map((gateVNode) => {
+    const gateName = extractGateName(gateVNode);
+    const items = itemsByGate.value.gates[gateName || ''] || [];
 
-    // Créer un nouveau VNode de zone avec une function slot pour de meilleures performances
-    return h(zoneVNode.type as any, zoneVNode.props || {}, {
+    // Create a new gate VNode with a function slot for better performance
+    return h(gateVNode.type as any, gateVNode.props || {}, {
       default: () => items,
     });
   });
@@ -188,16 +188,12 @@ const renderedZones = computed(() => {
     data-slot="pluggable-toolbar"
     :class="cn('flex h-full w-full items-center gap-2', props.class)"
   >
-    <!-- Rendre les zones avec leurs items -->
-    <component :is="zoneVNode" v-for="(zoneVNode, index) in renderedZones" :key="index" />
+    <!-- Render gates with their items -->
+    <component :is="gateVNode" v-for="(gateVNode, index) in renderedGates" :key="index" />
 
-    <!-- Rendu des items sans zone ou avec zone inconnue -->
-    <div v-if="itemsByZone.unzoned.length > 0" class="flex items-center gap-1">
-      <component
-        :is="item"
-        v-for="(item, index) in itemsByZone.unzoned"
-        :key="`unzoned-${index}`"
-      />
+    <!-- Render items without a gate or with an unknown gate -->
+    <div v-if="itemsByGate.noGate.length > 0" class="flex items-center gap-1">
+      <component :is="item" v-for="(item, index) in itemsByGate.noGate" :key="`nogate-${index}`" />
     </div>
   </div>
 </template>

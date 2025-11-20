@@ -19,20 +19,20 @@ const props = withDefaults(defineProps<SaveToolItemProps>(), {
 
 // Définir les données du plugin en interne
 const toolData = {
-  id: 'save',
-  label: 'Save',
-  icon: 'material-symbols:save',
+  id: 'load',
+  label: 'Load',
+  icon: 'material-symbols:download',
 };
 
-const handleSave = () => {
-  console.log('Save action triggered');
-  // Logique de sauvegarde ici
+const handleLoad = () => {
+  console.log('Load action triggered');
+  // Logique de chargement ici
 };
 </script>
 
 <template>
   <PluggableToolItem :id="toolData.id" :gate="props.gate">
-    <Button variant="outline" size="sm" class="w-full h-full p-0" @click="handleSave">
+    <Button variant="outline" size="sm" class="w-full h-full p-0" @click="handleLoad">
       <UIcon :name="toolData.icon" />
     </Button>
   </PluggableToolItem>

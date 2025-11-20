@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem } from '.';
+import {
+  PluggableToolbar,
+  PluggableToolbarGate,
+  PluggableToolItem,
+  LoadToolItem,
+  SaveToolItem,
+} from '.';
 </script>
 
 <template>
-  <div class="w-full h-12 border border-border rounded-md bg-muted overflow-hidden p-2">
+  <div class="w-full h-12 border border-border rounded-md overflow-hidden p-2">
     <PluggableToolbar item-class="aspect-square max-h-full h-full overflow-hidden">
-      <!-- Define zones with their layout -->
-      <PluggableToolbarZone name="left" class="justify-start min-w-0" />
-      <PluggableToolbarZone name="center" class="flex-1 justify-center" />
-      <PluggableToolbarZone name="right" class="justify-end min-w-0" />
+      <!-- Define gates with their layout -->
+      <PluggableToolbarGate name="left" class="flex justify-start min-w-0 gap-2" />
+      <PluggableToolbarGate name="center" class="flex flex-1 justify-center" />
+      <PluggableToolbarGate name="right" class="flex justify-end min-w-0 gap-2" />
 
-      <!-- Items that register in zones -->
-      <SaveToolItem zone="left" />
+      <!-- Items that register in gates -->
+      <LoadToolItem gate="left" />
+      <SaveToolItem gate="left" />
 
-      <PluggableToolItem id="center-item" zone="center">
+      <PluggableToolItem id="center-item" gate="center">
         <div
           class="h-full aspect-square flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium"
         >
@@ -21,8 +28,8 @@ import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem
         </div>
       </PluggableToolItem>
 
-      <!-- Should not be rendered because zone is not allowed -->
-      <PluggableToolItem id="non-zone-item" zone="non-zone">
+      <!-- Should not be rendered because gate is not allowed -->
+      <PluggableToolItem id="non-gate-item" gate="non-gate">
         <div>Baaaaar</div>
       </PluggableToolItem>
     </PluggableToolbar>
