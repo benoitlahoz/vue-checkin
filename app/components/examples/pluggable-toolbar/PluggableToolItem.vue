@@ -26,7 +26,7 @@ const { desk } = checkIn(SLOTS_TOOLBAR_DESK_KEY, {
 
 // Compute container class
 const containerClass = computed(() =>
-  cn('flex h-full items-center justify-center overflow-hidden', desk?.itemClass.value)
+  cn('flex items-center justify-center overflow-hidden', desk?.itemClass.value)
 );
 
 defineOptions({

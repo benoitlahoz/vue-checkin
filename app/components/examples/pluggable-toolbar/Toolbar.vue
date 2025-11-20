@@ -14,7 +14,9 @@ import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem
       <SaveToolItem />
 
       <PluggableToolItem id="center-item" zone="center">
-        <div>Fooooooooo</div>
+        <div class="h-full aspect-square flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium">
+          ⭐
+        </div>
       </PluggableToolItem>
 
       <!-- Should not be rendered because zone is not allowed -->
