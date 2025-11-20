@@ -1,4 +1,4 @@
-import type { InjectionKey } from 'vue';
+import type { InjectionKey, Ref, ComputedRef } from 'vue';
 import type { DeskCore } from '#vue-airport';
 
 export interface ToolItemData {
@@ -10,6 +10,7 @@ export interface ToolItemData {
 export interface SlotsToolbarContext {
   toolItems: Ref<ToolItemData[]>;
   zones: string[];
+  itemClass: ComputedRef<string | undefined>;
 }
 
 export const SLOTS_TOOLBAR_DESK_KEY: InjectionKey<DeskCore<ToolItemData> & SlotsToolbarContext> =

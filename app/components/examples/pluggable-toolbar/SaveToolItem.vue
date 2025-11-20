@@ -6,8 +6,15 @@ import { Button } from '@/components/ui/button';
  * Save Tool Item
  *
  * Exemple de composant toolbar qui encapsule PluggableToolItem
- * et définit sa propre zone et son id
+ * et définit sa propre zone, son id, et ses données (plugin pattern)
  */
+
+// Définir les données du plugin en interne
+const toolData = {
+  id: 'save',
+  label: 'Save',
+  icon: '💾',
+};
 
 const handleSave = () => {
   console.log('Save action triggered');
@@ -16,9 +23,13 @@ const handleSave = () => {
 </script>
 
 <template>
-  <PluggableToolItem id="save" label="Save" icon="💾" zone="right">
-    <template #default="{ data }">
-      <Button size="sm" @click="handleSave"> {{ data?.icon }} {{ data?.label }} </Button>
-    </template>
+  <PluggableToolItem id="save" zone="left">
+    <Button
+      size="sm"
+      class="h-full w-full max-h-full max-w-full whitespace-nowrap text-ellipsis overflow-hidden"
+      @click="handleSave"
+    >
+      {{ toolData.icon }} {{ toolData.label }}
+    </Button>
   </PluggableToolItem>
 </template>

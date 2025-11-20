@@ -32,7 +32,6 @@ createDesk(SLOTS_TOOLBAR_DESK_KEY, {
   context: {
     toolItems: ref<Array<ToolItemData>>([]),
     zones: props.zones,
-    itemClass: computed(() => props.itemClass),
   },
 });
 
@@ -50,7 +49,7 @@ const extractZone = (vnode: VNode): string | undefined => {
   return vnode.props?.zone as string | undefined;
 };
 
-// Organiser les items par zone (sans clonage)
+// Organiser les items par zone
 const itemsByZone = computed(() => {
   const slotContent = slots.default?.() || [];
   const zones: Record<string, VNode[]> = {};
@@ -77,28 +76,32 @@ const itemsByZone = computed(() => {
 </script>
 
 <template>
-  <div
-    data-slot="pluggable-toolbar"
-    :class="cn('flex h-full w-full items-center gap-2', props.class)"
-  >
-    <!-- Rendu des zones définies dans l'ordre -->
+  <div :class="cn('flex h-fit w-full items-center gap-2', props.class)">
+    <!-- Rendu des zones définies -->
     <template v-for="zone in props.zones" :key="zone">
-      <template v-if="itemsByZone.zones[zone] && itemsByZone.zones[zone].length > 0">
-        <component
-          :is="item"
+      <div
+        v-if="itemsByZone.zones[zone] && itemsByZone.zones[zone].length > 0"
+        :class="cn('toolbar-zone flex items-center gap-1', `zone-${zone}`)"
+      >
+        <div
           v-for="(item, index) in itemsByZone.zones[zone]"
           :key="`${zone}-${index}`"
-        />
-      </template>
+          :class="cn('toolbar-item', props.itemClass)"
+        >
+          <component :is="item" />
+        </div>
+      </div>
     </template>
 
     <!-- Rendu des items sans zone ou avec zone inconnue -->
-    <div v-if="itemsByZone.unzoned.length > 0" class="flex items-center gap-1">
-      <component
-        :is="item"
+    <div v-if="itemsByZone.unzoned.length > 0" class="toolbar-unzoned flex items-center gap-1">
+      <div
         v-for="(item, index) in itemsByZone.unzoned"
         :key="`unzoned-${index}`"
-      />
+        :class="cn('toolbar-item', props.itemClass)"
+      >
+        <component :is="item" />
+      </div>
     </div>
   </div>
 </template>
