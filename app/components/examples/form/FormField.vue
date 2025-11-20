@@ -66,7 +66,7 @@ const updateFieldValue = (value: string | number) => {
     <FieldSet>
       <FieldLegend :for="String(props.id)">
         {{ fieldData?.label }}
-        <span v-if="fieldData?.required" class="text-red-500">*</span>
+        <span v-if="fieldData?.required" class="text-red-500 text-xs">*</span>
       </FieldLegend>
       <FieldDescription class="text-sm text-gray-500 dark:text-gray-400 mb-1">
         Please enter your {{ fieldData?.label.toLowerCase() }}.
