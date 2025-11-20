@@ -5,16 +5,18 @@ import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem
 <template>
   <div class="w-full h-12 border border-border rounded-md bg-muted overflow-hidden">
     <PluggableToolbar item-class="aspect-square max-h-full h-full overflow-hidden">
-      <!-- Définir les zones avec leur layout -->
+      <!-- Define zones with their layout -->
       <PluggableToolbarZone name="left" class="justify-start" />
       <PluggableToolbarZone name="center" class="flex-1 justify-center" />
       <PluggableToolbarZone name="right" class="justify-end" />
 
-      <!-- Items qui s'enregistrent dans les zones -->
+      <!-- Items that register in zones -->
       <SaveToolItem />
+
       <PluggableToolItem id="center-item" zone="center">
         <div>Fooooooooo</div>
       </PluggableToolItem>
+
       <!-- Should not be rendered because zone is not allowed -->
       <PluggableToolItem id="non-zone-item" zone="non-zone">
         <div>Baaaaar</div>

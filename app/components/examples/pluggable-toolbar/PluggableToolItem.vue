@@ -28,6 +28,10 @@ const { desk } = checkIn(SLOTS_TOOLBAR_DESK_KEY, {
 const containerClass = computed(() =>
   cn('flex h-full items-center justify-center overflow-hidden', desk?.itemClass.value)
 );
+
+defineOptions({
+  __isToolbarItem: true,
+});
 </script>
 
 <template>

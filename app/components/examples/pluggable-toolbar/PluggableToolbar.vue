@@ -56,8 +56,6 @@ createDesk(SLOTS_TOOLBAR_DESK_KEY, {
 
 // Fonction récursive pour extraire la zone d'un VNode
 const extractZone = (vnode: VNode): string | undefined => {
-  console.log('extractZone called for:', vnode.type, 'props:', vnode.props);
-
   // Si c'est un Fragment, chercher dans ses enfants
   if (vnode.type === Fragment) {
     const children = vnode.children as VNode[] | undefined;
@@ -68,30 +66,25 @@ const extractZone = (vnode: VNode): string | undefined => {
 
   // Chercher la prop zone directement sur le VNode
   if (vnode.props?.zone) {
-    console.log('Found zone in props:', vnode.props.zone);
     return vnode.props.zone as string;
   }
 
   // Si c'est un composant, chercher dans son slot default ou ses children
   const componentType = vnode.type as any;
-  const componentName = componentType?.name || componentType?.__name;
-  console.log('Component name:', componentName);
 
   // Si c'est un PluggableToolItem, il a directement la prop zone
-  if (componentName === 'PluggableToolItem') {
-    console.log('PluggableToolItem zone:', vnode.props?.zone);
+  if (componentType?.__isToolbarItem === true) {
     return vnode.props?.zone as string | undefined;
   }
 
   // Si c'est un wrapper (comme SaveToolItem), chercher dans les children du slot
   if (typeof componentType === 'object' || typeof componentType === 'function') {
     const children = vnode.children as any;
-    console.log('Children type:', typeof children, 'has default?', typeof children?.default);
 
     // Les children peuvent être une fonction (slot), un tableau, ou un objet avec default
     if (typeof children?.default === 'function') {
       const slotContent = children.default();
-      console.log('Slot content:', slotContent);
+
       if (Array.isArray(slotContent) && slotContent.length > 0) {
         return extractZone(slotContent[0]);
       }
@@ -100,7 +93,6 @@ const extractZone = (vnode: VNode): string | undefined => {
     }
   }
 
-  console.log('No zone found');
   return undefined;
 };
 
@@ -129,8 +121,6 @@ const isToolbarZone = (vnode: VNode): boolean => {
   const componentType = vnode.type as any;
   const isZone = componentType?.__isToolbarZone === true;
 
-  console.log('Checking VNode:', componentType?.__name, 'isZone:', isZone);
-
   return isZone;
 };
 
@@ -140,8 +130,6 @@ const slotSeparation = computed(() => {
   const zones: VNode[] = [];
   const items: VNode[] = [];
 
-  console.log('Slot content:', slotContent.length);
-
   slotContent.forEach((vnode) => {
     // Ignorer les commentaires Vue
     if (typeof vnode.type === 'symbol') {
@@ -149,7 +137,6 @@ const slotSeparation = computed(() => {
     }
 
     const isZone = isToolbarZone(vnode);
-    console.log('VNode:', vnode.type, 'isZone:', isZone);
 
     if (isZone) {
       zones.push(vnode);
@@ -158,7 +145,6 @@ const slotSeparation = computed(() => {
     }
   });
 
-  console.log('Zones found:', zones.length, 'Items found:', items.length);
   return { zoneVNodes: zones, itemVNodes: items };
 });
 
@@ -182,7 +168,6 @@ const itemsByZone = computed(() => {
   // Parcourir les items et les assigner aux zones
   itemVNodes.value.forEach((vnode) => {
     const zone = extractZone(vnode);
-    console.log('Extracting zone for item:', vnode.type, 'zone:', zone);
 
     if (zone) {
       // L'item a une zone spécifiée
@@ -197,12 +182,6 @@ const itemsByZone = computed(() => {
     }
   });
 
-  console.log(
-    'Items by zone:',
-    Object.entries(zones).map(([name, items]) => ({ name, count: items.length }))
-  );
-  console.log('Unzoned items:', unzoned.length);
-
   return { zones, unzoned };
 });
 
@@ -211,8 +190,6 @@ const renderedZones = computed(() => {
   return zoneVNodes.value.map((zoneVNode) => {
     const zoneName = extractZoneName(zoneVNode);
     const items = itemsByZone.value.zones[zoneName || ''] || [];
-
-    console.log('Zone:', zoneName, 'Items:', items.length);
 
     // Créer un nouveau VNode de zone avec une function slot pour de meilleures performances
     return h(zoneVNode.type as any, zoneVNode.props || {}, {

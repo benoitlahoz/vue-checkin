@@ -9,7 +9,6 @@ export interface PluggableToolbarZoneProps {
 
 const props = defineProps<PluggableToolbarZoneProps>();
 
-// Identifier ce composant comme une zone
 defineOptions({
   __isToolbarZone: true,
 });
