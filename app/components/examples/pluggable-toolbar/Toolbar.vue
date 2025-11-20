@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { PluggableToolbar, PluggableToolItem, SaveToolItem } from '.';
+import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem } from '.';
 </script>
 
 <template>
   <div class="w-full h-12 border border-border rounded-md bg-muted overflow-hidden">
-    <PluggableToolbar
-      :zones="['left', 'center', 'right']"
-      item-class="aspect-square max-h-full h-full overflow-hidden"
-    >
+    <PluggableToolbar item-class="aspect-square max-h-full h-full overflow-hidden">
+      <!-- Définir les zones avec leur layout -->
+      <PluggableToolbarZone name="left" class="justify-start" />
+      <PluggableToolbarZone name="center" class="flex-1 justify-center" />
+      <PluggableToolbarZone name="right" class="justify-end" />
+
+      <!-- Items qui s'enregistrent dans les zones -->
       <SaveToolItem />
       <PluggableToolItem id="center-item" zone="center">
         <div>Fooooooooo</div>
       </PluggableToolItem>
       <!-- Should not be rendered because zone is not allowed -->
-      <PluggableToolItem id="center-item" zone="non-zone">
+      <PluggableToolItem id="non-zone-item" zone="non-zone">
         <div>Baaaaar</div>
       </PluggableToolItem>
     </PluggableToolbar>
