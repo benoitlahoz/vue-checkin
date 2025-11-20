@@ -6,15 +6,17 @@ import { PluggableToolbar, PluggableToolbarZone, PluggableToolItem, SaveToolItem
   <div class="w-full h-12 border border-border rounded-md bg-muted overflow-hidden">
     <PluggableToolbar item-class="aspect-square max-h-full h-full overflow-hidden">
       <!-- Define zones with their layout -->
-      <PluggableToolbarZone name="left" class="justify-start" />
+      <PluggableToolbarZone name="left" class="justify-start min-w-0" />
       <PluggableToolbarZone name="center" class="flex-1 justify-center" />
-      <PluggableToolbarZone name="right" class="justify-end" />
+      <PluggableToolbarZone name="right" class="justify-end min-w-0" />
 
       <!-- Items that register in zones -->
-      <SaveToolItem />
+      <SaveToolItem zone="left" />
 
       <PluggableToolItem id="center-item" zone="center">
-        <div class="h-full aspect-square flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium">
+        <div
+          class="h-full aspect-square flex items-center justify-center bg-primary text-primary-foreground text-xs font-medium"
+        >
           ⭐
         </div>
       </PluggableToolItem>

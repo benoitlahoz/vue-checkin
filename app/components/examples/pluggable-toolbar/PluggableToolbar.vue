@@ -64,7 +64,7 @@ const extractZone = (vnode: VNode): string | undefined => {
     }
   }
 
-  // Chercher la prop zone directement sur le VNode
+  // Chercher la prop zone directement sur le VNode (fonctionne pour tous les composants avec une prop zone)
   if (vnode.props?.zone) {
     return vnode.props.zone as string;
   }
@@ -75,22 +75,6 @@ const extractZone = (vnode: VNode): string | undefined => {
   // Si c'est un PluggableToolItem, il a directement la prop zone
   if (componentType?.__isToolbarItem === true) {
     return vnode.props?.zone as string | undefined;
-  }
-
-  // Si c'est un wrapper (comme SaveToolItem), chercher dans les children du slot
-  if (typeof componentType === 'object' || typeof componentType === 'function') {
-    const children = vnode.children as any;
-
-    // Les children peuvent être une fonction (slot), un tableau, ou un objet avec default
-    if (typeof children?.default === 'function') {
-      const slotContent = children.default();
-
-      if (Array.isArray(slotContent) && slotContent.length > 0) {
-        return extractZone(slotContent[0]);
-      }
-    } else if (Array.isArray(children) && children.length > 0) {
-      return extractZone(children[0]);
-    }
   }
 
   return undefined;
