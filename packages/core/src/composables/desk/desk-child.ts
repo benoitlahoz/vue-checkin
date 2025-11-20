@@ -21,7 +21,7 @@ export interface CheckInOptions<T = any, TContext extends Record<string, any> = 
   generateId?: () => string | number;
   watchData?: boolean;
   shallow?: boolean;
-  watchCondition?: (() => boolean) | Ref<boolean>;
+  watchCondition?: ((desk: DeskCore<T> & TContext) => boolean) | Ref<boolean>;
   meta?: Record<string, any>;
   debug?: boolean;
 }
@@ -176,14 +176,14 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
     const condition = checkInOptions.watchCondition;
 
     // Immediate check
-    const shouldBeCheckedIn = typeof condition === 'function' ? condition() : condition.value;
+    const shouldBeCheckedIn = typeof condition === 'function' ? condition(desk!) : condition.value;
     if (shouldBeCheckedIn && checkInOptions?.autoCheckIn === true) {
       performCheckIn();
     }
 
     // Watch for changes
     conditionStopHandle = watch(
-      () => (typeof condition === 'function' ? condition() : condition.value),
+      () => (typeof condition === 'function' ? condition(desk!) : condition.value),
       async (shouldCheckIn) => {
         if (shouldCheckIn && !isCheckedIn.value) {
           await performCheckIn();
