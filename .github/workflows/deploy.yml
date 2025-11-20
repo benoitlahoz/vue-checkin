@@ -15,7 +15,9 @@ jobs:
         with:
           node-version: "20"
       - run: yarn
-      - run: yarn build --preset github_pages
+      - run: yarn build:docs
+        env:
+          NITRO_PRESET: github_pages
       - name: Add .nojekyll file
         run: touch ./.output/.nojekyll
       - name: Upload artifact

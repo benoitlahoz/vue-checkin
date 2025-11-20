@@ -190,7 +190,7 @@ See the full API reference and examples in the [documentation](https://benoitlah
 
 ## 🔌 Base Plugins
 
-The `@vue-airport/plugins-base` package includes four powerful plugins to extend desk functionality.
+The `@vue-airport/plugins-base` package includes four base plugins to extend desk functionality.
 
 ### Installation
 
