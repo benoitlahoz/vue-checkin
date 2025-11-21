@@ -6,6 +6,7 @@ import {
   type PluginItemData,
   PLUGIN_DESK_KEY,
 } from '.';
+import { Button } from '@/components/ui/button';
 
 /**
  * Plugin List Item Component
@@ -57,6 +58,7 @@ const remove = () => {
 
 <template>
   <li
+    :data-slot="`plugin-list-item-${props.id}`"
     class="flex items-center justify-between p-3 border border-muted rounded-md cursor-pointer transition-all duration-200 hover:bg-accent dark:hover:bg-accent-dark"
     :class="{
       'bg-primary-50 dark:bg-primary-900/20 border-primary-500': isActive,
@@ -67,12 +69,13 @@ const remove = () => {
       <strong>{{ data?.name }}</strong>
       <span class="text-xs text-gray-600 dark:text-gray-400">ID: {{ data?.id }}</span>
     </div>
-    <UButton
-      size="xs"
-      color="error"
-      variant="ghost"
-      icon="i-heroicons-trash"
+    <Button
+      size="icon"
+      aria-label="Remove item"
+      class="bg-transparent hover:bg-transparent border-0 text-destructive/80 hover:text-destructive"
       @click.stop="remove"
-    />
+    >
+      <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+    </Button>
   </li>
 </template>

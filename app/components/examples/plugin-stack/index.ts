@@ -24,5 +24,7 @@ export interface PluginItemContext {
 export const PLUGIN_DESK_KEY: InjectionKey<DeskCore<PluginItemData> & PluginItemContext> =
   Symbol('pluginDesk');
 
-export { default as MultiPlugin } from './MultiPlugin.vue';
-export { default as PluginListItem } from './PluginListItem.vue';
+export { default as PluginStack } from './PluginStack.vue';
+export { default as PluginStackListItem } from './PluginStackListItem.vue';
+export { default as PluginStackActiveItemPanel } from './PluginStackActiveItemPanel.vue';
+export { default as PluginStackHistoryPanel } from './PluginStackHistoryPanel.vue';

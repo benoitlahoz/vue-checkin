@@ -2,14 +2,15 @@
 import { ref } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import { createActiveItemPlugin, createHistoryPlugin } from '@vue-airport/plugins-base';
-import PluginListItem from './PluginListItem.vue';
+import PluginListItem from './PluginStackListItem.vue';
 import {
   type DeskWithPlugins,
   type PluginItemContext,
   type PluginItemData,
   PLUGIN_DESK_KEY,
 } from '.';
-
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 /**
  * Plugin Example - Active Item and History
  *
@@ -72,15 +73,18 @@ const { desk } = createDesk(PLUGIN_DESK_KEY, {
       const id = itemsData.value[newIndex]?.id;
       if (id) {
         deskWithPlugins.setActive?.(id);
+
+        // Scroll to the new active item
+        const el = document.querySelector(`[data-slot="plugin-list-item-${id}"]`);
+        if (el) {
+          (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }
   },
 });
 
 const deskWithPlugins = desk as DeskWithPlugins;
-
-// Computed property for history
-const history = computed(() => deskWithPlugins.getHistory?.() || []);
 
 // Function to add a new item
 const addItem = () => {
@@ -91,8 +95,16 @@ const addItem = () => {
     description: `Description of item ${itemsData.value.length + 1}`,
   });
 
-  // Automatically activate the new item
-  deskWithPlugins.setActive?.(id);
+  nextTick(() => {
+    // Automatically activate the new item
+    deskWithPlugins.setActive?.(id);
+
+    // Scroll to the new item in the list
+    const el = document.querySelector(`[data-slot="plugin-list-item-${id}"]`);
+    if (el) {
+      (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
 };
 
 // Activate the first item on component mount
@@ -106,17 +118,21 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="flex gap-3 mb-6 flex-wrap">
-      <UButton icon="i-heroicons-plus" @click="addItem"> Add Item </UButton>
-      <UBadge color="primary" variant="subtle"> {{ itemsData.length }} items </UBadge>
-      <UBadge color="neutral" variant="subtle"> {{ history.length }} operations logged </UBadge>
+    <div class="flex gap-3 mb-6 flex-wrap justify-between items-center">
+      <Button @click="addItem">
+        <UIcon name="i-heroicons-plus" class="mr-2 w-4 h-4" />
+        Add Item
+      </Button>
+      <Badge variant="outline" class="border-primary bg-primary/20 text-primary px-3 py-1">
+        {{ itemsData.length }} items
+      </Badge>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Items list -->
       <div class="p-4 bg-card border border-muted rounded-md">
         <h3 class="m-0 mb-4 text-base font-semibold">Items ({{ itemsData.length }})</h3>
-        <ul class="list-none p-0 m-0 flex flex-col gap-2">
+        <ul class="list-none p-0 m-0 flex flex-col gap-2 max-h-[400px] overflow-y-auto">
           <PluginListItem v-for="item in itemsData" :id="item.id" :key="item.id" />
         </ul>
       </div>
