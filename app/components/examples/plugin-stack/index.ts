@@ -10,6 +10,7 @@ export interface PluginItemData {
 // Extended type definition to include plugin methods
 export interface DeskWithPlugins {
   activeId?: Ref<string | number | null>;
+  maxHistory?: Ref<number>;
   getActive?: () => CheckInItem<PluginItemData> | null;
   getHistory?: () => Array<{ action: string; id: string | number; timestamp: number }>;
   setActive?: (id: string | number | null) => void;
@@ -17,10 +18,13 @@ export interface DeskWithPlugins {
 
 export interface PluginItemContext {
   pluginItems: Ref<PluginItemData[]>;
+  maxHistory: Ref<number>;
 }
 
 export const PLUGIN_DESK_KEY: InjectionKey<DeskCore<PluginItemData> & PluginItemContext> =
   Symbol('pluginDesk');
 
-export { default as MultiPlugin } from './MultiPlugin.vue';
-export { default as PluginListItem } from './PluginListItem.vue';
+export { default as PluginStack } from './PluginStack.vue';
+export { default as PluginStackListItem } from './PluginStackListItem.vue';
+export { default as PluginStackActiveItemPanel } from './PluginStackActiveItemPanel.vue';
+export { default as PluginStackHistoryPanel } from './PluginStackHistoryPanel.vue';
