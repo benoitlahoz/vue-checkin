@@ -3,6 +3,7 @@ import { useCheckIn } from '#vue-airport';
 import { createDebouncePlugin } from '@vue-airport/plugins-base';
 import SearchResultItem from './SearchResultItem.vue';
 import { type SearchContext, type SearchResult, SEARCH_DESK_KEY } from '.';
+import { addEventLog } from './helpers';
 
 /**
  * Debounce Plugin Example - Search Results
@@ -81,7 +82,6 @@ const mockDatabase = [
 
 // Search state
 const searchQuery = ref('');
-const debouncedSearchQuery = ref('');
 const isSearching = ref(false);
 const lastDebouncedEventTime = ref<string>('Never');
 const eventLog = ref<Array<{ time: string; message: string }>>([]);
@@ -93,12 +93,12 @@ const results = computed(() => {
 
 // Create debounce plugin with 500ms delay
 const debouncePlugin = createDebouncePlugin<SearchResult>({
-  checkInDelay: 300,
+  checkInDelay: 500,
   checkOutDelay: 300,
   maxWait: 2000, // Force execution after 2s max
 });
 
-// Create a desk with debounce plugin (NO logger to clearly see debouncing)
+// Create a desk with debounce plugin
 const { createDesk } = useCheckIn<SearchResult, SearchContext>();
 const { desk } = createDesk(SEARCH_DESK_KEY, {
   devTools: true,
@@ -107,14 +107,14 @@ const { desk } = createDesk(SEARCH_DESK_KEY, {
   context: {
     searchResults: results,
   },
-  onCheckIn(id, data) {
+  onCheckIn(id) {
     // Log check-in events
     lastDebouncedEventTime.value = new Date().toLocaleTimeString();
-    addEventLog(`Check-in fired for id: ${id}`);
+    addEventLog(`Check-in fired for id: ${id}`, eventLog);
   },
   onCheckOut(id) {
     // Remove from local results on check-out of a child
-    addEventLog(`Check-out fired for id: ${id}`);
+    addEventLog(`Check-out fired for id: ${id}`, eventLog);
     const index = results.value.findIndex((r) => r.id === id);
     if (index !== -1) {
       results.value.splice(index, 1);
@@ -122,26 +122,15 @@ const { desk } = createDesk(SEARCH_DESK_KEY, {
   },
 });
 
-// Met à jour la date/heure du dernier événement debounced
-if (typeof (desk as any).onDebouncedCheckIn === 'function') {
-  console.log('Setting onDebouncedCheckIn callback');
-  (desk as any).onDebouncedCheckIn(desk, () => {
-    lastDebouncedEventTime.value = new Date().toLocaleTimeString();
-  });
-}
 
-// Accès direct aux refs réactifs exposés par le plugin debounce
 const pendingCheckIns = (desk as any).pendingCheckInsCount;
-const hasPending = (desk as any).hasPendingDebounce;
+const hasPendingDebounce = (desk as any).hasPendingDebounce;
+const itemCount = computed(() => desk.size);
 
-// Add event to log
-const addEventLog = (message: string) => {
-  const time = new Date().toLocaleTimeString();
-  eventLog.value.unshift({ time, message });
-  if (eventLog.value.length > 10) {
-    eventLog.value = eventLog.value.slice(0, 10);
-  }
-};
+// Les boutons Flush/Cancel sont activés si le plugin a du pending OU si neverEndingPromise est actif
+const hasPending = computed(() => {
+  return hasPendingDebounce || !!neverEndingPromise;
+});
 
 // Simulate a never-ending async operation for flush/cancel demo
 let neverEndingPromise: Promise<void> | null = null;
@@ -151,12 +140,12 @@ let neverEndingResolve: (() => void) | null = null;
 const performSearch = async (query: string) => {
   if (query.trim() === '') {
     desk.clear();
-    addEventLog('Search cleared in performSearch');
+    addEventLog('Search cleared in performSearch', eventLog);
     return;
   }
 
   isSearching.value = true;
-  addEventLog(`Search executing: "${query}"`);
+  addEventLog(`Search executing: "${query}"`, eventLog);
 
   // Simulate a never-ending operation if query is 'neverend'
   if (query.trim().toLowerCase() === 'neverend') {
@@ -166,8 +155,8 @@ const performSearch = async (query: string) => {
     await neverEndingPromise;
     // After flush/cancel, continue
   } else {
-    // Simule un délai asynchrone aléatoire pour générer des pendings visibles
-    const delay = 600 + Math.random() * 1200; // entre 600ms et 1800ms
+    // Simulate variable delay for other searches
+    const delay = 600 + Math.random() * 1200; // between 600ms and 1800ms
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
@@ -179,13 +168,14 @@ const performSearch = async (query: string) => {
 
   // Clear previous results in the desk
   desk.clear();
-  // Add each result via desk.checkIn (debounced)
+
+  // Add each result via desk.checkIn (results appear immediately while check-in will be debounced)
   for (const result of results) {
     desk.checkIn(result.id, result);
   }
   isSearching.value = false;
 
-  addEventLog(`Found ${results.length} results`);
+  addEventLog(`Found ${results.length} results`, eventLog);
 };
 
 // Simulate a 500ms delay from the database
@@ -197,29 +187,19 @@ watch(searchQuery, (newQuery) => {
 
   if (newQuery.trim()) {
     // Show searching state immediately
-    addEventLog(`Typing: "${newQuery}" (waiting for pause...)`);
+    addEventLog(`Typing: "${newQuery}" (waiting for pause...)`, eventLog);
   } else {
     // If query is empty, clear results immediately
     desk.clear();
-    addEventLog('Search cleared');
+    addEventLog('Search cleared', eventLog);
   }
 
   // Set new timer to update debounced value
   searchDebounceTimer = setTimeout(() => {
-    debouncedSearchQuery.value = newQuery;
-    addEventLog(`Search debounced! Executing search...`);
+    performSearch(newQuery);
+    addEventLog(`Search debounced! Executing search...`, eventLog);
   }, 500);
 });
-
-// Watch debounced query and trigger actual search
-watch(debouncedSearchQuery, (newQuery) => {
-  performSearch(newQuery);
-});
-
-// Computed count of items
-const itemCount = computed(() => desk.size);
-
-// (supprimé, déjà défini plus haut)
 
 // Manually flush debounced events
 const flushNow = () => {
@@ -230,9 +210,9 @@ const flushNow = () => {
     neverEndingResolve();
     neverEndingResolve = null;
     neverEndingPromise = null;
-    addEventLog('Never-ending operation flushed!');
+    addEventLog('Never-ending operation flushed!', eventLog);
   }
-  addEventLog('Manually flushed debounced events');
+  addEventLog('Manually flushed debounced events', eventLog);
 };
 
 // Cancel pending debounced events
@@ -244,9 +224,9 @@ const cancelPending = () => {
     neverEndingResolve();
     neverEndingResolve = null;
     neverEndingPromise = null;
-    addEventLog('Never-ending operation cancelled!');
+    addEventLog('Never-ending operation cancelled!', eventLog);
   }
-  addEventLog('Cancelled pending debounced events');
+  addEventLog('Cancelled pending debounced events', eventLog);
 };
 
 // Reset search
@@ -255,12 +235,11 @@ const resetSearch = () => {
     clearTimeout(searchDebounceTimer);
   }
   searchQuery.value = '';
-  debouncedSearchQuery.value = '';
   desk.clear();
   cancelPending();
   isSearching.value = false;
   eventLog.value = [];
-  addEventLog('Search reset');
+  addEventLog('Search reset', eventLog);
 };
 </script>
 

@@ -8,8 +8,8 @@ const props = defineProps<{ id: string }>();
 const { checkIn } = useCheckIn<SearchResult, SearchContext>();
 const { desk } = checkIn(SEARCH_DESK_KEY, {
   id: props.id,
-  autoCheckIn: false, // This is handled by debounce plugin
-  watchData: false,
+  autoCheckIn: false, // This is handled by desk patched by debounce plugin
+  watchData: false, // No need to watch data changes here
   data: (desk) => {
     const field = desk.searchResults?.value?.find((r) => r.id === props.id);
     return {
@@ -21,10 +21,9 @@ const { desk } = checkIn(SEARCH_DESK_KEY, {
   },
 });
 
-// const data = computed(() => desk?.searchResults.value?.find((r) => r.id === props.id));
 const data = computed(() => desk?.searchResults.value?.find((r) => r.id === props.id));
 
-const handleRemove = () => {
+const onRemove = () => {
   desk?.checkOut(props.id);
 };
 </script>
@@ -40,7 +39,7 @@ const handleRemove = () => {
         size="xs"
         color="neutral"
         variant="ghost"
-        @click="handleRemove"
+        @click="onRemove"
       />
     </div>
 
