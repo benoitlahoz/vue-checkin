@@ -1,5 +1,35 @@
 import { ref } from 'vue';
 import type { CheckInPlugin } from 'vue-airport';
+import { requiredHandler } from './handlers/required';
+import { minLengthHandler } from './handlers/minLength';
+import { maxLengthHandler } from './handlers/maxLength';
+import { enumHandler } from './handlers/enum';
+import { patternHandler } from './handlers/pattern';
+import { uniqueHandler } from './handlers/unique';
+import { maxCountHandler } from './handlers/maxCount';
+import { customHandler } from './handlers/custom';
+import { rangeHandler } from './handlers/range';
+import { immutableHandler } from './handlers/immutable';
+import { forbiddenHandler } from './handlers/forbidden';
+import { compareHandler } from './handlers/compare';
+import { conditionalRequiredHandler } from './handlers/conditionalRequired';
+import { formatHandler } from './handlers/format';
+import { minValueHandler } from './handlers/minValue';
+import { maxValueHandler } from './handlers/maxValue';
+import { uniqueInScopeHandler } from './handlers/uniqueInScope';
+import { existsHandler } from './handlers/exists';
+import { relationHandler } from './handlers/relation';
+import { beforeCheckOutHandler } from './handlers/beforeCheckOut';
+import { relationCountHandler } from './handlers/relationCount';
+import { uniqueGroupHandler } from './handlers/uniqueGroup';
+import { dateRangeHandler } from './handlers/dateRange';
+import { dependencyHandler } from './handlers/dependency';
+
+export interface ConstraintError {
+  id: string | number;
+  errors: string[];
+  timestamp: number;
+}
 
 export type ConstraintFn<T = any> = (child: T, children: T[]) => string | null;
 
@@ -8,53 +38,29 @@ export type ConstraintFn<T = any> = (child: T, children: T[]) => string | null;
  * Each type enforces a specific business rule or data integrity check.
  */
 export enum ConstraintType {
-  /** Allows custom validation logic, sync or async. */
   Custom = 'custom',
-  /** Ensures a numeric field is within a given range. */
   Range = 'range',
-  /** Prevents modification of a field after creation. */
   Immutable = 'immutable',
-  /** Forbids certain values or combinations. */
   Forbidden = 'forbidden',
-  /** Compares two fields with a given operator. */
   Compare = 'compare',
-  /** Requires a field if a condition on another field is met. */
   ConditionalRequired = 'conditionalRequired',
-  /** Validates the format of a field (email, url, etc). */
   Format = 'format',
-  /** Requires a numeric field to be at least a minimum value. */
   MinValue = 'minValue',
-  /** Requires a numeric field to be at most a maximum value. */
   MaxValue = 'maxValue',
-  /** Ensures uniqueness within a sub-scope/group. */
   UniqueInScope = 'uniqueInScope',
-  /** Checks that a reference exists in another collection. */
   Exists = 'exists',
-  /** Ensures the value of a given key is unique among all children. */
   Unique = 'unique',
-  /** Limits the total number of children in the collection. */
   MaxCount = 'maxCount',
-  /** Custom relation rule between child and collection, via a function. */
   Relation = 'relation',
-  /** Custom rule to block removal (check-out) of an item. */
   BeforeCheckOut = 'beforeCheckOut',
-  /** Requires a field to be present and non-empty. */
   Required = 'required',
-  /** Requires a field to match a given regular expression. */
   Pattern = 'pattern',
-  /** Requires a string field to have at least a minimum length. */
   MinLength = 'minLength',
-  /** Requires a string field to have at most a maximum length. */
   MaxLength = 'maxLength',
-  /** Requires a field to be one of a set of allowed values. */
   Enum = 'enum',
-  /** Enforces a minimum/maximum count of children with a specific field value. */
   RelationCount = 'relationCount',
-  /** Ensures a combination of fields is unique among all children. */
   UniqueGroup = 'uniqueGroup',
-  /** Requires a date field to be within a specified range. */
   DateRange = 'dateRange',
-  /** Requires another field to be present if a given field has a specific value. */
   Dependency = 'dependency',
 }
 /**
@@ -223,8 +229,8 @@ export type ConstraintObj<T = any> =
   | {
       type: ConstraintType.DateRange;
       key: keyof T;
-      min: string | Date;
-      max: string | Date;
+      min: string | number | Date;
+      max: string | number | Date;
       message?: string;
     }
   /**
@@ -241,7 +247,7 @@ export type ConstraintObj<T = any> =
       message?: string;
     };
 
-export type Constraint<T = any> = ConstraintFn<T> | ConstraintObj<T>;
+export type Constraint<T = any> = ConstraintObj<T>;
 
 export interface ConstraintError {
   id: string | number;
@@ -253,6 +259,8 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
   constraints: Constraint<T>[]
 ): CheckInPlugin<T> {
   const constraintErrors = ref<ConstraintError[]>([]);
+
+  let deskInstance: any = null;
 
   const addErrors = (id: string | number, errors: string[]) => {
     constraintErrors.value.push({ id, errors, timestamp: Date.now() });
@@ -271,7 +279,6 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
         pluginName: 'constraints',
         data: {
           action,
-          errorCount: errors.length,
           hasErrors: errors.length > 0,
           errors,
         },
@@ -280,138 +287,135 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
   };
 
   async function validateData(id: string | number, data: T, children: T[]): Promise<boolean> {
-    removeErrorsForId(id);
     const errors: string[] = [];
     for (const constraint of constraints) {
-      if (typeof constraint === 'function') {
-        const result = constraint(data, children);
-        if (typeof result === 'string' && result) errors.push(result);
-      } else {
+      let err: string | null = null;
+      if ('type' in constraint) {
         switch (constraint.type) {
-          case ConstraintType.Forbidden: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Forbidden }>;
-            if (c.values.includes(data[c.key])) {
-              errors.push(c.message || `Value '${data[c.key]}' for ${String(c.key)} is forbidden.`);
-            }
+          case ConstraintType.Required:
+            err = requiredHandler(constraint.key, data, constraint.message);
             break;
-          }
-          case ConstraintType.Custom: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Custom }>;
-            const result = c.fn(data, children);
-            const resolved = result instanceof Promise ? await result : result;
-            if (typeof resolved === 'string' && resolved) errors.push(resolved);
+          case ConstraintType.MinLength:
+            err = minLengthHandler(constraint.key, constraint.length, data, constraint.message);
             break;
-          }
-          case ConstraintType.Unique: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Unique }>;
-            if (children.some((child: T) => child[c.key] === data[c.key])) {
-              errors.push(c.message || `Duplicate value for ${String(c.key)}`);
-            }
+          case ConstraintType.MaxLength:
+            err = maxLengthHandler(constraint.key, constraint.length, data, constraint.message);
             break;
-          }
-          case ConstraintType.MaxCount: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.MaxCount }>;
-            if (children.length >= c.count) {
-              errors.push(c.message || `Maximum count of ${c.count} exceeded`);
-            }
+          case ConstraintType.Enum:
+            err = enumHandler(constraint.key, constraint.values, data, constraint.message);
             break;
-          }
-          case ConstraintType.Required: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Required }>;
-            if (data[c.key] === undefined || data[c.key] === null || data[c.key] === '') {
-              errors.push(c.message || `Field ${String(c.key)} is required.`);
-            }
+          case ConstraintType.Pattern:
+            err = patternHandler(constraint.key, constraint.regex, data, constraint.message);
             break;
-          }
-          case ConstraintType.Pattern: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Pattern }>;
-            if (typeof data[c.key] === 'string' && !c.regex.test(data[c.key])) {
-              errors.push(c.message || `Field ${String(c.key)} does not match pattern.`);
-            }
+          case ConstraintType.Unique:
+            err = uniqueHandler(constraint.key, data, children, constraint.message);
             break;
-          }
-          case ConstraintType.MinLength: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.MinLength }>;
-            if (typeof data[c.key] === 'string' && data[c.key].length < c.length) {
-              errors.push(c.message || `Field ${String(c.key)} is too short.`);
-            }
+          case ConstraintType.MaxCount:
+            err = maxCountHandler(constraint.count, children, constraint.message);
             break;
-          }
-          case ConstraintType.MaxLength: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.MaxLength }>;
-            if (typeof data[c.key] === 'string' && data[c.key].length > c.length) {
-              errors.push(c.message || `Field ${String(c.key)} is too long.`);
-            }
+          case ConstraintType.Exists:
+            err = existsHandler(constraint.key, constraint.source, data, constraint.message);
             break;
-          }
-          case ConstraintType.Enum: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Enum }>;
-            if (!c.values.includes(data[c.key])) {
-              errors.push(
-                c.message || `Field ${String(c.key)} must be one of: ${c.values.join(', ')}.`
-              );
-            }
-            break;
-          }
-          case ConstraintType.RelationCount: {
-            const c = constraint as Extract<
-              ConstraintObj<T>,
-              { type: ConstraintType.RelationCount }
-            >;
-            const count = children.filter((child: T) => child[c.key] === c.value).length;
-            if (typeof c.min === 'number' && count < c.min) {
-              errors.push(c.message || `Minimum ${c.min} for ${String(c.key)}=${c.value}.`);
-            }
-            if (typeof c.max === 'number' && count > c.max) {
-              errors.push(c.message || `Maximum ${c.max} for ${String(c.key)}=${c.value}.`);
-            }
-            break;
-          }
-          case ConstraintType.UniqueGroup: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.UniqueGroup }>;
-            if (children.some((child: T) => c.keys.every((k) => child[k] === data[k]))) {
-              errors.push(c.message || `Combination of ${c.keys.join('+')} must be unique.`);
-            }
-            break;
-          }
-          case ConstraintType.DateRange: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.DateRange }>;
-            if (c.key && c.min && c.max) {
-              const value = new Date(data[c.key]);
-              const min = new Date(c.min);
-              const max = new Date(c.max);
-              if (value < min || value > max) {
-                errors.push(c.message || `Date ${String(c.key)} out of range.`);
+          case ConstraintType.Immutable:
+            {
+              let original: T | undefined = undefined;
+              if (deskInstance && deskInstance.getById) {
+                const found = deskInstance.getById(id);
+                if (found && found.data) original = found.data;
               }
+              err = immutableHandler(constraint.key, data, original, constraint.message);
             }
             break;
-          }
-          case ConstraintType.Dependency: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Dependency }>;
-            if (
-              data[c.key] === c.value &&
-              (data[c.required] === undefined ||
-                data[c.required] === null ||
-                data[c.required] === '')
-            ) {
-              errors.push(
-                c.message ||
-                  `Field ${String(c.required)} is required when ${String(c.key)} is ${c.value}.`
-              );
-            }
+          case ConstraintType.Dependency:
+            err = dependencyHandler(
+              constraint.key,
+              constraint.value,
+              constraint.required,
+              data,
+              constraint.message
+            );
             break;
-          }
-          case ConstraintType.Relation: {
-            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Relation }>;
-            if (c.rule) {
-              const result = c.rule(data, children);
-              if (typeof result === 'string' && result) errors.push(c.message || result);
-            }
+          case ConstraintType.Forbidden:
+            err = forbiddenHandler(constraint.key, constraint.values, data, constraint.message);
             break;
-          }
-          // beforeCheckOut handled i its own hook
+          case ConstraintType.Custom:
+            err = await customHandler(constraint.fn, data, children, constraint.message);
+            break;
+          case ConstraintType.Range:
+            err = rangeHandler(
+              constraint.key,
+              constraint.min,
+              constraint.max,
+              data,
+              constraint.message
+            );
+            break;
+          case ConstraintType.Compare:
+            err = compareHandler(
+              constraint.key,
+              constraint.otherKey,
+              constraint.operator,
+              data,
+              constraint.message
+            );
+            break;
+          case ConstraintType.ConditionalRequired:
+            err = conditionalRequiredHandler(
+              constraint.key,
+              constraint.conditionKey,
+              constraint.conditionValue,
+              data,
+              constraint.message
+            );
+            break;
+          case ConstraintType.Format:
+            err = formatHandler(constraint.key, constraint.format, data, constraint.message);
+            break;
+          case ConstraintType.MinValue:
+            err = minValueHandler(constraint.key, constraint.min, data, constraint.message);
+            break;
+          case ConstraintType.MaxValue:
+            err = maxValueHandler(constraint.key, constraint.max, data, constraint.message);
+            break;
+          case ConstraintType.UniqueInScope:
+            err = uniqueInScopeHandler(
+              constraint.key,
+              constraint.scopeKey,
+              data,
+              children,
+              constraint.message
+            );
+            break;
+          case ConstraintType.Relation:
+            err = relationHandler(constraint.rule, data, children, constraint.message);
+            break;
+          case ConstraintType.RelationCount:
+            err = relationCountHandler(
+              constraint.key,
+              constraint.value,
+              constraint.min,
+              constraint.max,
+              children,
+              constraint.message
+            );
+            break;
+          case ConstraintType.UniqueGroup:
+            err = uniqueGroupHandler(constraint.keys, data, children, constraint.message);
+            break;
+          case ConstraintType.DateRange:
+            err = dateRangeHandler(
+              constraint.key,
+              constraint.min,
+              constraint.max,
+              data,
+              constraint.message
+            );
+            break;
+          default:
+            break;
         }
       }
+      if (err) errors.push(err);
     }
     if (errors.length) {
       addErrors(id, errors);
@@ -421,8 +425,6 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
     emitToDevTools('validate-check-in', id, []);
     return true;
   }
-
-  let deskInstance: any = null;
 
   return {
     name: 'constraints',
@@ -450,16 +452,14 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
       const item = children.find((c: any) => c.id === id)?.data;
       const errors: string[] = [];
       for (const constraint of constraints) {
-        if (typeof constraint !== 'function' && constraint.type === ConstraintType.BeforeCheckOut) {
-          if (constraint.rule) {
-            const result = constraint.rule(
-              item,
-              children.map((c: any) => c.data)
-            );
-            if (typeof result === 'string' && result) {
-              errors.push(constraint.message || result);
-            }
-          }
+        if (constraint.type === ConstraintType.BeforeCheckOut) {
+          const err = beforeCheckOutHandler(
+            constraint.rule,
+            item,
+            children.map((c: any) => c.data),
+            constraint.message
+          );
+          if (err) errors.push(err);
         }
       }
       removeErrorsForId(id);
