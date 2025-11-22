@@ -145,11 +145,10 @@ const { desk } = createDesk(DESK_CONSTRAINTS_KEY, {
     },
   },
   onCheckOut(id, desk) {
-    const ctx = desk.getContext();
+    const ctx = desk.getContext<MemberListContext>();
     if (ctx && ctx.members) {
       ctx.members.value = ctx.members.value.filter((m) => m.id !== id);
     }
-    console.log('Checking out member with id:', id);
   },
 });
 
