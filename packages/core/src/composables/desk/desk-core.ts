@@ -34,25 +34,28 @@ export interface CheckInItem<T = any> {
   meta?: Record<string, any>;
 }
 
-export interface DeskCoreOptions<T = any> {
+export interface DeskCoreOptions<
+  T = any,
+  TContext extends Record<string, any> = Record<string, any>,
+> {
   onBeforeCheckIn?: (
     id: string | number,
     data: T
   ) => boolean | undefined | Promise<boolean | undefined>;
-  onCheckIn?: (id: string | number, data: T, desk: DeskCore<T>) => void | Promise<void>;
+  onCheckIn?: (id: string | number, data: T, desk: DeskCore<T, TContext>) => void | Promise<void>;
   onBeforeCheckOut?: (
     id: string | number,
-    desk: DeskCore<T>
+    desk: DeskCore<T, TContext>
   ) => boolean | undefined | Promise<boolean | undefined>;
-  onCheckOut?: (id: string | number, desk: DeskCore<T>) => void | Promise<void>;
+  onCheckOut?: (id: string | number, desk: DeskCore<T, TContext>) => void | Promise<void>;
   debug?: boolean;
   devTools?: boolean;
   plugins?: CheckInPlugin<T>[];
   deskId?: string; // For DevTools integration
-  context?: Record<string, any>;
+  context?: TContext;
 }
 
-export interface DeskCore<T = any> {
+export interface DeskCore<T = any, TContext extends Record<string, any> = {}> {
   /**
    * DevTools integration instance (either real or no-op)
    */
@@ -78,7 +81,7 @@ export interface DeskCore<T = any> {
    */
   readonly size: ComputedRef<number>;
 
-  getContext: () => Record<string, any> | undefined;
+  getContext: <U extends TContext>() => U | undefined;
 
   checkIn: (id: string | number, data: T, meta?: Record<string, any>) => Promise<boolean>;
   checkOut: (id: string | number) => Promise<boolean>;
@@ -112,7 +115,9 @@ const DebugPrefix = '[DeskCore]';
  * - Event batching (prevents event avalanche)
  * - Plugin lifecycle management (proper cleanup)
  */
-export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<T> => {
+export const createDeskCore = <T = any, TContext extends Record<string, any> = {}>(
+  options?: DeskCoreOptions<T>
+): DeskCore<T> => {
   const debug = options?.debug ? Debug : NoOp;
   const devTools = options?.devTools ? DevTools : NoOpDevTools;
   const deskId = options?.deskId || `desk-${Math.random().toString(36).substr(2, 9)}`;
@@ -173,7 +178,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
 
   const pluginCleanups: Array<() => void> = [];
 
-  const getContext = () => options?.context;
+  const getContext = <U extends TContext>() => options?.context as U | undefined;
 
   const checkIn = async (
     id: string | number,
@@ -561,7 +566,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     debug(`${DebugPrefix} Desk destroyed: ${deskId}`);
   };
 
-  const desk: DeskCore<T> = {
+  const desk: DeskCore<T, TContext> = {
     devTools,
     registryMap,
     registryList,

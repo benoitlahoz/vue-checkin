@@ -169,7 +169,7 @@ export const useCheckIn = <T = any, TContext extends Record<string, any> = {}>()
     const deskId = options?.deskId || (injectionKey as any).description || 'desk';
 
     // Create desk core with deskId
-    const deskCore = createDeskCore<T>({ ...options, deskId });
+    const deskCore = createDeskCore<T, TContext>({ ...options, deskId });
 
     // Provide to children with context
     const { desk, injectionKey: key } = provideDesk<T, TContext>(
