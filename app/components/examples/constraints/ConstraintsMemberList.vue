@@ -144,7 +144,11 @@ const { desk } = createDesk(DESK_CONSTRAINTS_KEY, {
       guest: 'bg-green-800/10 border border-green-800 text-green-800',
     },
   },
-  onCheckOut(id) {
+  onCheckOut(id, desk) {
+    const ctx = desk.getContext();
+    if (ctx && ctx.members) {
+      ctx.members.value = ctx.members.value.filter((m) => m.id !== id);
+    }
     console.log('Checking out member with id:', id);
   },
 });
