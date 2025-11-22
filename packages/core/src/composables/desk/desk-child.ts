@@ -147,7 +147,7 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
       return false;
     }
 
-    const success = desk!.checkIn(itemId, data, checkInOptions?.meta);
+    const success = await desk!.checkIn(itemId, data, checkInOptions?.meta);
 
     if (success) {
       isCheckedIn.value = true;
