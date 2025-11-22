@@ -1,8 +1,13 @@
 import type { ConstraintObj } from '../index';
 
-export function maxCountHandler<T>(count: number, children: T[], message?: string): string | null {
+import type { ConstraintHandler } from '../index';
+
+import { ConstraintType } from '../index';
+export const maxCountHandler: ConstraintHandler = (constraint, _data, children) => {
+  if (constraint.type !== ConstraintType.MaxCount) return null;
+  const count = constraint.count;
   if (children.length >= count) {
-    return message || `Maximum count of ${count} exceeded`;
+    return constraint.message || `Maximum count of ${count} exceeded`;
   }
   return null;
-}
+};

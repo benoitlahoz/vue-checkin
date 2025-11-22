@@ -1,13 +1,14 @@
-// ...existing code...
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
 
-export function minValueHandler<T>(
-  key: keyof T,
-  min: number,
-  data: T,
-  message?: string
-): string | null {
+export const minValueHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.MinValue) return null;
+  const key = constraint.key;
+  const min = constraint.min;
   if (typeof data[key] === 'number' && data[key] < min) {
-    return message || `Field ${String(key)} must be at least ${min}.`;
+    return constraint.message || `Field ${String(key)} must be at least ${min}.`;
   }
   return null;
-}
+};
+
+// ...existing code...

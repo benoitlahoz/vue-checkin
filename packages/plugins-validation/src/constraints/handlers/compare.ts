@@ -1,12 +1,11 @@
-// ...existing code...
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
 
-export function compareHandler<T>(
-  key: keyof T,
-  otherKey: keyof T,
-  operator: string,
-  data: T,
-  message?: string
-): string | null {
+export const compareHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.Compare) return null;
+  const key = constraint.key;
+  const otherKey = constraint.otherKey;
+  const operator = constraint.operator;
   const a = data[key];
   const b = data[otherKey];
   let valid = false;
@@ -33,7 +32,9 @@ export function compareHandler<T>(
       valid = false;
   }
   if (!valid) {
-    return message || `Comparison failed: ${String(key)} ${operator} ${String(otherKey)}`;
+    return (
+      constraint.message || `Comparison failed: ${String(key)} ${operator} ${String(otherKey)}`
+    );
   }
   return null;
-}
+};

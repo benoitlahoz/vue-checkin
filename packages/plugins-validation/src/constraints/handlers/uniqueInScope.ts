@@ -1,14 +1,21 @@
-// ...existing code...
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
 
-export function uniqueInScopeHandler<T>(
-  key: keyof T,
-  scopeKey: keyof T,
-  data: T,
-  children: T[],
-  message?: string
-): string | null {
-  if (children.some((child: T) => child[key] === data[key] && child[scopeKey] === data[scopeKey])) {
-    return message || `Value for ${String(key)} must be unique in scope ${String(scopeKey)}.`;
+export const uniqueInScopeHandler: ConstraintHandler = (constraint, data, children) => {
+  if (constraint.type !== ConstraintType.UniqueInScope) return null;
+  const key = constraint.key;
+  const scopeKey = constraint.scopeKey;
+  if (
+    children.some((child: any) => child[key] === data[key] && child[scopeKey] === data[scopeKey])
+  ) {
+    return (
+      constraint.message || `Value for ${String(key)} must be unique in scope ${String(scopeKey)}.`
+    );
   }
   return null;
-}
+};
+
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
+
+// ...existing code...

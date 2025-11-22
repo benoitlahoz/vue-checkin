@@ -1,13 +1,13 @@
 import type { ConstraintObj } from '../index';
 
-export function uniqueHandler<T>(
-  key: keyof T,
-  data: T,
-  children: T[],
-  message?: string
-): string | null {
-  if (children.some((child: T) => child[key] === data[key])) {
-    return message || `Duplicate value for ${String(key)}`;
+import type { ConstraintHandler } from '../index';
+
+import { ConstraintType } from '../index';
+export const uniqueHandler: ConstraintHandler = (constraint, data, children) => {
+  if (constraint.type !== ConstraintType.Unique) return null;
+  const key = constraint.key;
+  if (children.some((child: any) => child[key] === data[key])) {
+    return constraint.message || `Duplicate value for ${String(key)}`;
   }
   return null;
-}
+};

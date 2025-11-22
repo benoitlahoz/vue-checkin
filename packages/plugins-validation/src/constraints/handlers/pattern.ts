@@ -1,13 +1,12 @@
-import type { ConstraintObj } from '../index';
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
 
-export function patternHandler<T>(
-  key: keyof T,
-  regex: RegExp,
-  data: T,
-  message?: string
-): string | null {
+export const patternHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.Pattern) return null;
+  const key = constraint.key;
+  const regex = constraint.regex;
   if (typeof data[key] === 'string' && !regex.test(data[key])) {
-    return message || `Field ${String(key)} does not match pattern.`;
+    return constraint.message || `Field ${String(key)} does not match pattern.`;
   }
   return null;
-}
+};

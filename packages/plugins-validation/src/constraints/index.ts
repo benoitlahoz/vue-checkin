@@ -25,14 +25,6 @@ import { uniqueGroupHandler } from './handlers/uniqueGroup';
 import { dateRangeHandler } from './handlers/dateRange';
 import { dependencyHandler } from './handlers/dependency';
 
-export interface ConstraintError {
-  id: string | number;
-  errors: string[];
-  timestamp: number;
-}
-
-export type ConstraintFn<T = any> = (child: T, children: T[]) => string | null;
-
 /**
  * ConstraintType enumerates all supported constraint types for desk validation.
  * Each type enforces a specific business rule or data integrity check.
@@ -63,6 +55,51 @@ export enum ConstraintType {
   DateRange = 'dateRange',
   Dependency = 'dependency',
 }
+
+export interface ConstraintError {
+  id: string | number;
+  errors: string[];
+  timestamp: number;
+}
+
+export type ConstraintFn<T = any> = (child: T, children: T[]) => string | null;
+
+export type ConstraintHandler<T = any> = (
+  constraint: ConstraintObj<T>,
+  data: T,
+  children: T[],
+  deskInstance?: any
+) => string | null | Promise<string | null>;
+
+const noopHandler: ConstraintHandler = async () => null;
+
+const handlers: Record<ConstraintType, ConstraintHandler> = {
+  [ConstraintType.Required]: requiredHandler,
+  [ConstraintType.Forbidden]: forbiddenHandler,
+  [ConstraintType.Unique]: uniqueHandler,
+  [ConstraintType.MaxCount]: maxCountHandler,
+  [ConstraintType.Pattern]: patternHandler,
+  [ConstraintType.Custom]: customHandler,
+  [ConstraintType.Range]: rangeHandler,
+  [ConstraintType.BeforeCheckOut]: beforeCheckOutHandler,
+  [ConstraintType.Immutable]: immutableHandler,
+  [ConstraintType.Compare]: compareHandler,
+  [ConstraintType.ConditionalRequired]: conditionalRequiredHandler,
+  [ConstraintType.Format]: formatHandler,
+  [ConstraintType.MinValue]: minValueHandler,
+  [ConstraintType.MaxValue]: maxValueHandler,
+  [ConstraintType.UniqueInScope]: uniqueInScopeHandler,
+  [ConstraintType.Exists]: existsHandler,
+  [ConstraintType.Relation]: relationHandler,
+  [ConstraintType.RelationCount]: relationCountHandler,
+  [ConstraintType.UniqueGroup]: uniqueGroupHandler,
+  [ConstraintType.DateRange]: dateRangeHandler,
+  [ConstraintType.Dependency]: dependencyHandler,
+  [ConstraintType.Enum]: enumHandler,
+  [ConstraintType.MinLength]: minLengthHandler,
+  [ConstraintType.MaxLength]: maxLengthHandler,
+};
+
 /**
  * ConstraintObj describes the configuration for each constraint type.
  * Each variant documents its expected properties and validation behavior.
@@ -289,133 +326,13 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
   async function validateData(id: string | number, data: T, children: T[]): Promise<boolean> {
     const errors: string[] = [];
     for (const constraint of constraints) {
-      let err: string | null = null;
-      if ('type' in constraint) {
-        switch (constraint.type) {
-          case ConstraintType.Required:
-            err = requiredHandler(constraint.key, data, constraint.message);
-            break;
-          case ConstraintType.MinLength:
-            err = minLengthHandler(constraint.key, constraint.length, data, constraint.message);
-            break;
-          case ConstraintType.MaxLength:
-            err = maxLengthHandler(constraint.key, constraint.length, data, constraint.message);
-            break;
-          case ConstraintType.Enum:
-            err = enumHandler(constraint.key, constraint.values, data, constraint.message);
-            break;
-          case ConstraintType.Pattern:
-            err = patternHandler(constraint.key, constraint.regex, data, constraint.message);
-            break;
-          case ConstraintType.Unique:
-            err = uniqueHandler(constraint.key, data, children, constraint.message);
-            break;
-          case ConstraintType.MaxCount:
-            err = maxCountHandler(constraint.count, children, constraint.message);
-            break;
-          case ConstraintType.Exists:
-            err = existsHandler(constraint.key, constraint.source, data, constraint.message);
-            break;
-          case ConstraintType.Immutable:
-            {
-              let original: T | undefined = undefined;
-              if (deskInstance && deskInstance.getById) {
-                const found = deskInstance.getById(id);
-                if (found && found.data) original = found.data;
-              }
-              err = immutableHandler(constraint.key, data, original, constraint.message);
-            }
-            break;
-          case ConstraintType.Dependency:
-            err = dependencyHandler(
-              constraint.key,
-              constraint.value,
-              constraint.required,
-              data,
-              constraint.message
-            );
-            break;
-          case ConstraintType.Forbidden:
-            err = forbiddenHandler(constraint.key, constraint.values, data, constraint.message);
-            break;
-          case ConstraintType.Custom:
-            err = await customHandler(constraint.fn, data, children, constraint.message);
-            break;
-          case ConstraintType.Range:
-            err = rangeHandler(
-              constraint.key,
-              constraint.min,
-              constraint.max,
-              data,
-              constraint.message
-            );
-            break;
-          case ConstraintType.Compare:
-            err = compareHandler(
-              constraint.key,
-              constraint.otherKey,
-              constraint.operator,
-              data,
-              constraint.message
-            );
-            break;
-          case ConstraintType.ConditionalRequired:
-            err = conditionalRequiredHandler(
-              constraint.key,
-              constraint.conditionKey,
-              constraint.conditionValue,
-              data,
-              constraint.message
-            );
-            break;
-          case ConstraintType.Format:
-            err = formatHandler(constraint.key, constraint.format, data, constraint.message);
-            break;
-          case ConstraintType.MinValue:
-            err = minValueHandler(constraint.key, constraint.min, data, constraint.message);
-            break;
-          case ConstraintType.MaxValue:
-            err = maxValueHandler(constraint.key, constraint.max, data, constraint.message);
-            break;
-          case ConstraintType.UniqueInScope:
-            err = uniqueInScopeHandler(
-              constraint.key,
-              constraint.scopeKey,
-              data,
-              children,
-              constraint.message
-            );
-            break;
-          case ConstraintType.Relation:
-            err = relationHandler(constraint.rule, data, children, constraint.message);
-            break;
-          case ConstraintType.RelationCount:
-            err = relationCountHandler(
-              constraint.key,
-              constraint.value,
-              constraint.min,
-              constraint.max,
-              children,
-              constraint.message
-            );
-            break;
-          case ConstraintType.UniqueGroup:
-            err = uniqueGroupHandler(constraint.keys, data, children, constraint.message);
-            break;
-          case ConstraintType.DateRange:
-            err = dateRangeHandler(
-              constraint.key,
-              constraint.min,
-              constraint.max,
-              data,
-              constraint.message
-            );
-            break;
-          default:
-            break;
-        }
+      // Ne pas appliquer BeforeCheckOut lors du check-in
+      if ('type' in constraint && constraint.type === ConstraintType.BeforeCheckOut) continue;
+      const handler = handlers[constraint.type];
+      if (handler) {
+        const err = await handler(constraint, data, children, deskInstance);
+        if (err) errors.push(err);
       }
-      if (err) errors.push(err);
     }
     if (errors.length) {
       addErrors(id, errors);
@@ -451,15 +368,23 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
       const children = deskInstance?.getAll ? deskInstance.getAll() : [];
       const item = children.find((c: any) => c.id === id)?.data;
       const errors: string[] = [];
-      for (const constraint of constraints) {
+      const beforeCheckOutConstraints = constraints.filter(
+        (c) => c.type === ConstraintType.BeforeCheckOut
+      );
+      for (const constraint of beforeCheckOutConstraints) {
         if (constraint.type === ConstraintType.BeforeCheckOut) {
           const err = beforeCheckOutHandler(
-            constraint.rule,
+            constraint,
             item,
-            children.map((c: any) => c.data),
-            constraint.message
+            children.map((c: any) => c.data)
           );
-          if (err) errors.push(err);
+          if (err instanceof Promise) {
+            err.then((res) => {
+              if (res) errors.push(res);
+            });
+          } else if (err) {
+            errors.push(err);
+          }
         }
       }
       removeErrorsForId(id);

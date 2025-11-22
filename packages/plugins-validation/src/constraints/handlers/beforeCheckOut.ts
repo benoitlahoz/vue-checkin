@@ -1,10 +1,10 @@
-export function beforeCheckOutHandler<T>(
-  rule: ((child: T, children: T[]) => string | null) | undefined,
-  child: T,
-  children: T[],
-  message?: string
-): string | null {
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
+
+export const beforeCheckOutHandler: ConstraintHandler = (constraint, data, children) => {
+  if (constraint.type !== ConstraintType.BeforeCheckOut) return null;
+  const rule = constraint.rule;
   if (!rule) return null;
-  const result = rule(child, children);
-  return typeof result === 'string' && result ? message || result : null;
-}
+  const result = rule(data, children);
+  return typeof result === 'string' && result ? constraint.message || result : null;
+};

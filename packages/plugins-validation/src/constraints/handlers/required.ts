@@ -1,8 +1,11 @@
-import type { ConstraintObj } from '../index';
+import type { ConstraintHandler } from '../index';
 
-export function requiredHandler<T>(key: keyof T, data: T, message?: string): string | null {
+import { ConstraintType } from '../index';
+export const requiredHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.Required) return null;
+  const key = constraint.key;
   if (data[key] === undefined || data[key] === null || data[key] === '') {
-    return message || `Field ${String(key)} is required.`;
+    return constraint.message || `Field ${String(key)} is required.`;
   }
   return null;
-}
+};

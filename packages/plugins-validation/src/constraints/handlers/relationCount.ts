@@ -1,19 +1,21 @@
 // ...existing code...
 
-export function relationCountHandler<T>(
-  key: keyof T,
-  value: any,
-  min: number | undefined,
-  max: number | undefined,
-  children: T[],
-  message?: string
-): string | null {
-  const count = children.filter((child: T) => child[key] === value).length;
+// ...existing code...
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
+
+export const relationCountHandler: ConstraintHandler = (constraint, _data, children) => {
+  if (constraint.type !== ConstraintType.RelationCount) return null;
+  const key = constraint.key;
+  const value = constraint.value;
+  const min = constraint.min;
+  const max = constraint.max;
+  const count = children.filter((child: any) => child[key] === value).length;
   if (typeof min === 'number' && count < min) {
-    return message || `Minimum ${min} for ${String(key)}=${value}.`;
+    return constraint.message || `Minimum ${min} for ${String(key)}=${value}.`;
   }
   if (typeof max === 'number' && count > max) {
-    return message || `Maximum ${max} for ${String(key)}=${value}.`;
+    return constraint.message || `Maximum ${max} for ${String(key)}=${value}.`;
   }
   return null;
-}
+};

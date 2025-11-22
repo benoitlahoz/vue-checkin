@@ -1,11 +1,12 @@
-export function existsHandler<T>(
-  key: keyof T,
-  source: any[],
-  data: T,
-  message?: string
-): string | null {
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
+
+export const existsHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.Exists) return null;
+  const key = constraint.key;
+  const source = constraint.source;
   if (!source.includes(data[key])) {
-    return message || `Reference for ${String(key)} does not exist.`;
+    return constraint.message || `Reference for ${String(key)} does not exist.`;
   }
   return null;
-}
+};

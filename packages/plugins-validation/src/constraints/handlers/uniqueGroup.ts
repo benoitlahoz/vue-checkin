@@ -1,13 +1,13 @@
-// ...existing code...
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
 
-export function uniqueGroupHandler<T>(
-  keys: (keyof T)[],
-  data: T,
-  children: T[],
-  message?: string
-): string | null {
-  if (children.some((child: T) => keys.every((k) => child[k] === data[k]))) {
-    return message || `Combination of ${keys.join('+')} must be unique.`;
+export const uniqueGroupHandler: ConstraintHandler = (constraint, data, children) => {
+  if (constraint.type !== ConstraintType.UniqueGroup) return null;
+  const keys = constraint.keys;
+  if (children.some((child: any) => keys.every((k: any) => child[k] === data[k]))) {
+    return constraint.message || `Combination of ${keys.join('+')} must be unique.`;
   }
   return null;
-}
+};
+
+// ...existing code...

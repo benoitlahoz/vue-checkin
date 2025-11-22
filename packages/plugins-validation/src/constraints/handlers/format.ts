@@ -1,9 +1,10 @@
-export function formatHandler<T>(
-  key: keyof T,
-  format: string,
-  data: T,
-  message?: string
-): string | null {
+import type { ConstraintHandler } from '../index';
+import { ConstraintType } from '../index';
+
+export const formatHandler: ConstraintHandler = (constraint, data) => {
+  if (constraint.type !== ConstraintType.Format) return null;
+  const key = constraint.key;
+  const format = constraint.format;
   const value = data[key];
   let valid = true;
   switch (format) {
@@ -20,7 +21,7 @@ export function formatHandler<T>(
       valid = true;
   }
   if (!valid) {
-    return message || `Field ${String(key)} is not a valid ${format}.`;
+    return constraint.message || `Field ${String(key)} is not a valid ${format}.`;
   }
   return null;
-}
+};
