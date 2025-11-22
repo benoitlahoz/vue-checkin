@@ -49,11 +49,7 @@ export interface DeskCoreOptions<T = any> {
   devTools?: boolean;
   plugins?: CheckInPlugin<T>[];
   deskId?: string; // For DevTools integration
-
-  /**
-   * Contexte dynamique à attacher au desk, accessible dans les hooks et plugins
-   */
-  context?: any;
+  context?: Record<string, any>;
 }
 
 export interface DeskCore<T = any> {
@@ -82,6 +78,8 @@ export interface DeskCore<T = any> {
    */
   readonly size: ComputedRef<number>;
 
+  getContext: () => Record<string, any> | undefined;
+
   checkIn: (id: string | number, data: T, meta?: Record<string, any>) => Promise<boolean>;
   checkOut: (id: string | number) => Promise<boolean>;
   get: (id: string | number) => CheckInItem<T> | undefined;
@@ -101,11 +99,6 @@ export interface DeskCore<T = any> {
   off: (event: DeskEventType, callback: DeskEventCallback<T>) => void;
   emit: (event: DeskEventType, payload: { id?: string | number; data?: T }) => void;
   destroy: () => void;
-
-  /**
-   * Contexte dynamique attaché au desk, accessible dans les hooks et plugins
-   */
-  context?: any;
 }
 
 const DebugPrefix = '[DeskCore]';
@@ -179,6 +172,8 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
   const size = computed(() => registryList.value.length);
 
   const pluginCleanups: Array<() => void> = [];
+
+  const getContext = () => options?.context;
 
   const checkIn = async (
     id: string | number,
@@ -572,6 +567,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     registryList,
     sortedRegistry,
     size,
+    getContext,
     checkIn,
     checkOut,
     get,
@@ -586,9 +582,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     off,
     emit,
     destroy,
-    // Ajout dynamique du contexte
-    context: options?.context,
-  } as DeskCore<T> & { context?: any };
+  };
 
   // Add deskId as internal property for plugin access
   (desk as any).__deskId = deskId;
