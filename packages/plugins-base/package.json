@@ -1,6 +1,6 @@
 {
   "name": "@vue-airport/plugins-base",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Base plugins for vue-airport (activeItem, debounce, history)",
   "author": "Benoit Lahoz",
   "license": "MIT",

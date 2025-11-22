@@ -16,8 +16,8 @@ Think of it like an airport check-in desk: parent components provide a check-in 
 VueAirport is organized as a monorepo with separate packages:
 
 - **[vue-airport](./packages/core)** - Core composable and desk system
-- **[@vue-airport/plugins-base](./packages/plugins)** - Base plugins (activeItem, validation, debounce, history)
 - **[vue-airport-devtools](./packages/devtools)** - Vue DevTools integration
+- **[@vue-airport/plugins-base](./packages/plugins)** - Base plugins (activeItem, validation, debounce, history)
 
 ## 📖 Documentation
 
@@ -26,6 +26,7 @@ Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](
 ## ✨ Features
 
 - 🎯 **Inversion of Control** - Children register themselves with parents for clean decoupling
+- 🎭 **Generic** - No more props drilling: components manage their own data
 - 🔒 **Type-Safe** - Full TypeScript support with generic types
 - 🔌 **Plugin Architecture** - Extensible system with built-in plugins
 - 📡 **Event System** - Subscribe to check-in, check-out, update, and clear events
@@ -33,7 +34,7 @@ Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](
 - 🧩 **Dependency Injection** - Uses Vue's provide/inject pattern
 - 🛠️ **Batch Operations** - Handle multiple items efficiently
 - 📝 **Auto Check-In** - Components can register automatically on mount
-- 🔍 **Watch Data** - Automatic updates when component props change
+- 🔍 **Watch Data** - Automatic updates when component data change
 - 🎨 **Shared Context** - Share context between components via the desk
 
 ## 📦 Installation
@@ -80,32 +81,55 @@ See the [DevTools section](#-devtools) below for setup instructions.
 
 ```vue
 <script setup lang="ts">
-import { useCheckIn } from 'vue-airport';
+// ...
 
-interface TabItem {
-  label: string;
-  content: string;
-  icon?: string;
-}
+// State to manage all tabs
+const tabsData = ref<
+  Array<TabItemData>
+>([
+  {
+    id: 'tab-1',
+    label: 'Nuxt',
+    url: 'https://nuxt.com',
+    icon: 'material-icon-theme:nuxt',
+  },
+  {
+    id: 'tab-2',
+    label: 'Tailwind',
+    url: 'https://tailwindcss.com',
+    icon: 'vscode-icons:file-type-tailwind',
+  },
+  {
+    id: 'tab-3',
+    label: 'VueAirport',
+    url: 'https://benoitlahoz.github.io/vue-airport',
+    icon: 'mdi:airplane',
+  },
+]);
 
-// Create a desk with shared context
-const activeTabId = ref<string | number>('tab-1');
-const { createDesk } = useCheckIn<TabItem, { activeTab: Ref<string | number> }>();
-const { desk } = createDesk('tabs', {
-  context: { activeTab: activeTabId }
+// Create a desk with context to share the active tab state and helpers
+const { createDesk } = useCheckIn<TabItemData, TabItemContext>();
+createDesk(TABS_DESK_KEY, {
+  devTools: true,
+  debug: false,
+  context: {
+    // Provide context data and method to the children
+
+    activeTab: activeTabId,
+    selectTab,
+    closeTab,
+    tabsCount: computed(() => tabsData.value.length),
+    tabsData,
+  },
 });
 
-// Access registered items
-const tabs = computed(() => desk.getAll());
+// ...
 </script>
 
 <template>
   <div>
-    <div v-for="item in tabs" :key="item.id">
-      <button @click="activeTabId = item.id">
-        {{ item.data.label }}
-      </button>
-    </div>
+    <!-- No props, just id ! -->
+    <TabItem v-for="tab in tabsData" :id="tab.id" :key="tab.id" />
   </div>
 </template>
 ```
@@ -114,40 +138,59 @@ const tabs = computed(() => desk.getAll());
 
 ```vue
 <script setup lang="ts">
-import { useCheckIn } from 'vue-airport';
+// ...
 
 const props = defineProps<{
-  id: string;
-  label: string;
-  content: string;
-  icon?: string;
+  id?: string | number;
 }>();
 
-interface TabItem {
-  label: string;
-  content: string;
-  icon?: string;
-}
-
-// Automatically register with data watching enabled
-useCheckIn<TabItem>().checkIn('tabs', {
+// Check in to the tabs desk and capture the desk (which contains provided context)
+const { checkIn } = useCheckIn<TabItemData, TabItemContext>();
+const { desk } = checkIn(TABS_DESK_KEY, {
   id: props.id,
   autoCheckIn: true,
+  // For devTools.
   watchData: true,
-  data: () => ({
-    label: props.label,
-    content: props.content,
-    icon: props.icon
-  })
+  data: (desk) => {
+    const tab = desk.tabsData?.value.find((t) => t.id === props.id);
+    if (!tab) return { icon: '', label: '', content: '' };
+    return tab;
+  },
 });
+
+// Get tab data from tabsData
+const tabData = computed(() => {
+  return desk?.tabsData?.value.find((t) => t.id === props.id);
+});
+
+const onSelect = () => {
+  if (desk && typeof desk.selectTab === 'function') {
+    desk.selectTab(props.id as any);
+  } 
+};
+
+const onClose = () => {
+  if (desk && typeof desk.closeTab === 'function') {
+    desk.closeTab(props.id as any);
+  } 
+};
+
+// ...
 </script>
+
+<template>
+  <div @click="onSelect">
+    <span>{{ tabData?.label }}</span>
+    <button @click.stop="onClose">x</button>
+  </div>
+</template>
 ```
 
 See the full API reference and examples in the [documentation](https://benoitlahoz.github.io/vue-airport).
 
 ## 🔌 Base Plugins
 
-The `@vue-airport/plugins-base` package includes four powerful plugins to extend desk functionality.
+The `@vue-airport/plugins-base` package includes four base plugins to extend desk functionality.
 
 ### Installation
 
