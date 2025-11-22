@@ -64,13 +64,14 @@ export interface CheckInPlugin<T = any> {
    */
   onBeforeCheckIn?: (
     id: string | number,
-    data: T
+    data: T,
+    desk: DeskCore<T>
   ) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully checked in.
    */
-  onCheckIn?: (id: string | number, data: T) => void | Promise<void>;
+  onCheckIn?: (id: string | number, data: T, desk: DeskCore<T>) => void | Promise<void>;
 
   /**
    * Called before an item is updated.
@@ -78,24 +79,28 @@ export interface CheckInPlugin<T = any> {
    */
   onBeforeUpdate?: (
     id: string | number,
-    data: Partial<T>
+    data: Partial<T>,
+    desk: DeskCore<T>
   ) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully updated.
    */
-  onUpdate?: (id: string | number, data: Partial<T>) => void | Promise<void>;
+  onUpdate?: (id: string | number, data: Partial<T>, desk: DeskCore<T>) => void | Promise<void>;
 
   /**
    * Called before an item is checked out.
    * Return false to cancel the check-out.
    */
-  onBeforeCheckOut?: (id: string | number) => boolean | undefined | Promise<boolean | undefined>;
+  onBeforeCheckOut?: (
+    id: string | number,
+    desk: DeskCore<T>
+  ) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully checked out.
    */
-  onCheckOut?: (id: string | number) => void | Promise<void>;
+  onCheckOut?: (id: string | number, desk: DeskCore<T>) => void | Promise<void>;
 
   /**
    * Custom methods to add to the desk.

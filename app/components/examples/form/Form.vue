@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useCheckIn, type DeskWithContext } from '#vue-airport';
-import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-base';
+import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-validation';
 import { type FieldData, FORM_DESK_KEY, type FormContext, FormField } from '.';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

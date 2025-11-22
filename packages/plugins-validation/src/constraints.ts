@@ -288,6 +288,13 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
         if (typeof result === 'string' && result) errors.push(result);
       } else {
         switch (constraint.type) {
+          case ConstraintType.Forbidden: {
+            const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Forbidden }>;
+            if (c.values.includes(data[c.key])) {
+              errors.push(c.message || `Value '${data[c.key]}' for ${String(c.key)} is forbidden.`);
+            }
+            break;
+          }
           case ConstraintType.Custom: {
             const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Custom }>;
             const result = c.fn(data, children);
@@ -402,7 +409,7 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
             }
             break;
           }
-          // beforeCheckOut handled ailleurs
+          // beforeCheckOut handled i its own hook
         }
       }
     }
