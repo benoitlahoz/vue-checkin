@@ -1,3 +1,9 @@
+/**
+ * DateRange: Requires a date field to be within a specified range.
+ * - key: The date field to check.
+ * - min: Minimum allowed date.
+ * - max: Maximum allowed date.
+ */
 import type { ConstraintHandler } from '..';
 
 export const dateRangeHandler: ConstraintHandler = (constraint, data) => {

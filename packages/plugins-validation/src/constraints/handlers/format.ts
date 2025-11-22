@@ -1,3 +1,8 @@
+/**
+ * Format: Validates the format of a field (email, url, etc).
+ * - key: The field to check.
+ * - format: Format type ('email', 'url', 'phone', etc).
+ */
 import type { ConstraintHandler } from '..';
 
 export const formatHandler: ConstraintHandler = (constraint, data) => {

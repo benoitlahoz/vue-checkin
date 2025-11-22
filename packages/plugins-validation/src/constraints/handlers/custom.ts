@@ -1,3 +1,7 @@
+/**
+ * Custom: Allows custom validation logic, sync or async.
+ * - fn: Validation function, can return string | null or Promise<string | null>.
+ */
 import type { ConstraintHandler } from '..';
 
 export const customHandler: ConstraintHandler = async (constraint, data, children) => {

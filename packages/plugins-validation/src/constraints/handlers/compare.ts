@@ -1,3 +1,9 @@
+/**
+ * Compare: Compares two fields with a given operator.
+ * - key: The first field.
+ * - otherKey: The second field.
+ * - operator: Comparison operator ('<', '>', '<=', '>=', '===', '!==').
+ */
 import type { ConstraintHandler } from '..';
 import { ConstraintType } from '..';
 

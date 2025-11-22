@@ -1,3 +1,8 @@
+/**
+ * MinValue: Requires a numeric field to be at least a minimum value.
+ * - key: The field to check.
+ * - min: Minimum allowed value.
+ */
 import type { ConstraintHandler } from '..';
 
 export const minValueHandler: ConstraintHandler = (constraint, data) => {

@@ -1,3 +1,7 @@
+/**
+ * MaxCount: Limits the total number of children in the collection.
+ * - count: Maximum allowed number of children.
+ */
 import type { ConstraintHandler } from '..';
 
 export const maxCountHandler: ConstraintHandler = (constraint, _data, children) => {

@@ -1,3 +1,7 @@
+/**
+ * Relation: Custom relation rule between child and collection, via a function.
+ * - rule: Function to validate relation.
+ */
 import type { ConstraintHandler } from '..';
 
 export const relationHandler: ConstraintHandler = (constraint, data, children) => {

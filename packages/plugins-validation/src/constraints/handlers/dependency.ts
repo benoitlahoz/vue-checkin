@@ -1,3 +1,9 @@
+/**
+ * Dependency: Requires another field to be present if a given field has a specific value.
+ * - key: The field to check for value.
+ * - value: The value that triggers dependency.
+ * - required: The dependent field that must be present.
+ */
 import type { ConstraintHandler } from '..';
 
 export const dependencyHandler: ConstraintHandler = (constraint, data) => {
