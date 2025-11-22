@@ -62,34 +62,40 @@ export interface CheckInPlugin<T = any> {
    * Called before an item is checked in.
    * Return false to cancel the check-in.
    */
-  onBeforeCheckIn?: (id: string | number, data: T) => boolean | undefined;
+  onBeforeCheckIn?: (
+    id: string | number,
+    data: T
+  ) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully checked in.
    */
-  onCheckIn?: (id: string | number, data: T) => void;
+  onCheckIn?: (id: string | number, data: T) => void | Promise<void>;
 
   /**
    * Called before an item is updated.
    * Return false to cancel the update.
    */
-  onBeforeUpdate?: (id: string | number, data: Partial<T>) => boolean | undefined;
+  onBeforeUpdate?: (
+    id: string | number,
+    data: Partial<T>
+  ) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully updated.
    */
-  onUpdate?: (id: string | number, data: Partial<T>) => void;
+  onUpdate?: (id: string | number, data: Partial<T>) => void | Promise<void>;
 
   /**
    * Called before an item is checked out.
    * Return false to cancel the check-out.
    */
-  onBeforeCheckOut?: (id: string | number) => boolean | undefined;
+  onBeforeCheckOut?: (id: string | number) => boolean | undefined | Promise<boolean | undefined>;
 
   /**
    * Called after an item is successfully checked out.
    */
-  onCheckOut?: (id: string | number) => void;
+  onCheckOut?: (id: string | number) => void | Promise<void>;
 
   /**
    * Custom methods to add to the desk.

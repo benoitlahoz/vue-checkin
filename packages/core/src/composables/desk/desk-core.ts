@@ -35,10 +35,13 @@ export interface CheckInItem<T = any> {
 }
 
 export interface DeskCoreOptions<T = any> {
-  onBeforeCheckIn?: (id: string | number, data: T) => boolean | undefined;
-  onCheckIn?: (id: string | number, data: T) => void;
-  onBeforeCheckOut?: (id: string | number) => boolean | undefined;
-  onCheckOut?: (id: string | number) => void;
+  onBeforeCheckIn?: (
+    id: string | number,
+    data: T
+  ) => boolean | undefined | Promise<boolean | undefined>;
+  onCheckIn?: (id: string | number, data: T) => void | Promise<void>;
+  onBeforeCheckOut?: (id: string | number) => boolean | undefined | Promise<boolean | undefined>;
+  onCheckOut?: (id: string | number) => void | Promise<void>;
   debug?: boolean;
   devTools?: boolean;
   plugins?: CheckInPlugin<T>[];
@@ -71,19 +74,21 @@ export interface DeskCore<T = any> {
    */
   readonly size: ComputedRef<number>;
 
-  checkIn: (id: string | number, data: T, meta?: Record<string, any>) => boolean;
-  checkOut: (id: string | number) => boolean;
+  checkIn: (id: string | number, data: T, meta?: Record<string, any>) => Promise<boolean>;
+  checkOut: (id: string | number) => Promise<boolean>;
   get: (id: string | number) => CheckInItem<T> | undefined;
   getAll: (options?: {
     sortBy?: keyof T | 'timestamp';
     order?: 'asc' | 'desc';
   }) => CheckInItem<T>[];
-  update: (id: string | number, data: Partial<T>) => boolean;
+  update: (id: string | number, data: Partial<T>) => Promise<boolean>;
   has: (id: string | number) => boolean;
   clear: () => void;
-  checkInMany: (items: Array<{ id: string | number; data: T; meta?: Record<string, any> }>) => void;
-  checkOutMany: (ids: Array<string | number>) => void;
-  updateMany: (updates: Array<{ id: string | number; data: Partial<T> }>) => void;
+  checkInMany: (
+    items: Array<{ id: string | number; data: T; meta?: Record<string, any> }>
+  ) => Promise<void>;
+  checkOutMany: (ids: Array<string | number>) => Promise<void>;
+  updateMany: (updates: Array<{ id: string | number; data: Partial<T> }>) => Promise<void>;
   on: (event: DeskEventType, callback: DeskEventCallback<T>) => () => void;
   off: (event: DeskEventType, callback: DeskEventCallback<T>) => void;
   emit: (event: DeskEventType, payload: { id?: string | number; data?: T }) => void;
@@ -162,14 +167,18 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
 
   const pluginCleanups: Array<() => void> = [];
 
-  const checkIn = (id: string | number, data: T, meta?: Record<string, any>): boolean => {
+  const checkIn = async (
+    id: string | number,
+    data: T,
+    meta?: Record<string, any>
+  ): Promise<boolean> => {
     debug(`${DebugPrefix} checkIn`, { id, data, meta });
 
     // Lifecycle: before (plugins first, then user hook)
     if (options?.plugins) {
       for (const plugin of options.plugins) {
         if (plugin.onBeforeCheckIn) {
-          const result = plugin.onBeforeCheckIn(id, data);
+          const result = await plugin.onBeforeCheckIn(id, data);
           if (result === false) {
             debug(`${DebugPrefix} checkIn cancelled by plugin:`, plugin.name);
             return false;
@@ -179,7 +188,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     }
 
     if (options?.onBeforeCheckIn) {
-      const result = options.onBeforeCheckIn(id, data);
+      const result = await options.onBeforeCheckIn(id, data);
       if (result === false) {
         debug(`${DebugPrefix} checkIn cancelled by onBeforeCheckIn`, id);
         return false;
@@ -220,7 +229,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
       for (const plugin of options.plugins) {
         if (plugin.onCheckIn) {
           const startTime = performance.now();
-          plugin.onCheckIn(id, data);
+          await plugin.onCheckIn(id, data);
           const duration = performance.now() - startTime;
 
           devTools.emit({
@@ -237,7 +246,9 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     }
 
     // Lifecycle: after
-    options?.onCheckIn?.(id, data);
+    if (options?.onCheckIn) {
+      await options.onCheckIn(id, data);
+    }
 
     if (options?.debug) {
       debug(`${DebugPrefix} Registry state after check-in:`, {
@@ -249,7 +260,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     return true;
   };
 
-  const checkOut = (id: string | number): boolean => {
+  const checkOut = async (id: string | number): Promise<boolean> => {
     debug(`${DebugPrefix} checkOut`, id);
 
     const existed = registryMap.has(id);
@@ -259,7 +270,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     if (options?.plugins) {
       for (const plugin of options.plugins) {
         if (plugin.onBeforeCheckOut) {
-          const result = plugin.onBeforeCheckOut(id);
+          const result = await plugin.onBeforeCheckOut(id);
           if (result === false) {
             debug(`${DebugPrefix} checkOut cancelled by plugin:`, plugin.name);
             return false;
@@ -269,7 +280,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     }
 
     if (options?.onBeforeCheckOut) {
-      const result = options.onBeforeCheckOut(id);
+      const result = await options.onBeforeCheckOut(id);
       if (result === false) {
         debug(`${DebugPrefix} checkOut cancelled by onBeforeCheckOut`, id);
         return false;
@@ -303,7 +314,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
       for (const plugin of options.plugins) {
         if (plugin.onCheckOut) {
           const startTime = performance.now();
-          plugin.onCheckOut(id);
+          await plugin.onCheckOut(id);
           const duration = performance.now() - startTime;
 
           devTools.emit({
@@ -320,7 +331,9 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     }
 
     // Lifecycle: after
-    options?.onCheckOut?.(id);
+    if (options?.onCheckOut) {
+      await options.onCheckOut(id);
+    }
 
     if (options?.debug) {
       debug(`${DebugPrefix} Registry state after check-out:`, {
@@ -373,7 +386,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     return sorted;
   };
 
-  const update = (id: string | number, data: Partial<T>): boolean => {
+  const update = async (id: string | number, data: Partial<T>): Promise<boolean> => {
     const existing = registryMap.get(id);
     if (!existing) {
       debug(`${DebugPrefix} update failed: item not found`, id);
@@ -384,7 +397,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     if (options?.plugins) {
       for (const plugin of options.plugins) {
         if (plugin.onBeforeUpdate) {
-          const result = plugin.onBeforeUpdate(id, data);
+          const result = await plugin.onBeforeUpdate(id, data);
           if (result === false) {
             debug(`${DebugPrefix} update cancelled by plugin:`, plugin.name);
             return false;
@@ -410,7 +423,7 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
         for (const plugin of options.plugins) {
           if (plugin.onUpdate) {
             const startTime = performance.now();
-            plugin.onUpdate(id, existing.data);
+            await plugin.onUpdate(id, existing.data);
             const duration = performance.now() - startTime;
 
             devTools.emit({
@@ -485,21 +498,29 @@ export const createDeskCore = <T = any>(options?: DeskCoreOptions<T>): DeskCore<
     debug(`${DebugPrefix} Cleared ${count} items from registry`);
   };
 
-  const checkInMany = (
+  const checkInMany = async (
     items: Array<{ id: string | number; data: T; meta?: Record<string, any> }>
-  ) => {
+  ): Promise<void> => {
     debug(`${DebugPrefix} checkInMany`, items.length, 'items');
-    items.forEach(({ id, data, meta }) => checkIn(id, data, meta));
+    for (const { id, data, meta } of items) {
+      await checkIn(id, data, meta);
+    }
   };
 
-  const checkOutMany = (ids: Array<string | number>) => {
+  const checkOutMany = async (ids: Array<string | number>): Promise<void> => {
     debug(`${DebugPrefix} checkOutMany`, ids.length, 'items');
-    ids.forEach((id) => checkOut(id));
+    for (const id of ids) {
+      await checkOut(id);
+    }
   };
 
-  const updateMany = (updates: Array<{ id: string | number; data: Partial<T> }>) => {
+  const updateMany = async (
+    updates: Array<{ id: string | number; data: Partial<T> }>
+  ): Promise<void> => {
     debug(`${DebugPrefix} updateMany`, updates.length, 'items');
-    updates.forEach(({ id, data }) => update(id, data));
+    for (const { id, data } of updates) {
+      await update(id, data);
+    }
   };
 
   /**
