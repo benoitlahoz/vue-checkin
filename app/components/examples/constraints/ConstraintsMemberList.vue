@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useCheckIn, getRegistry } from 'vue-airport';
+import { useCheckIn } from 'vue-airport';
 import { createConstraintsPlugin, ConstraintType } from '@vue-airport/plugins-validation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MemberItem, DESK_CONSTRAINTS_KEY } from './index';
+import { MemberItem, DESK_CONSTRAINTS_KEY, type MemberData, type MemberListContext } from '.';
 
 /**
  * Constraints Example - Desk usage
@@ -15,8 +15,7 @@ import { MemberItem, DESK_CONSTRAINTS_KEY } from './index';
  * - Real-time error feedback
  * - UI inspired by PluginStack
  */
-
-import type { MemberData } from './index';
+const members = ref<MemberData[]>([]);
 
 const constraints = [
   // Unique name
@@ -68,7 +67,7 @@ const constraints = [
     },
     message: undefined,
   },
-  // BeforeCheckOut: cannot remove last admin
+  // beforeCheckOut: cannot remove last admin
   {
     type: ConstraintType.BeforeCheckOut,
     rule: (member: MemberData, members: MemberData[]) => {
@@ -88,37 +87,54 @@ const newName = ref('');
 const newRole = ref<MemberData['role']>('user');
 const error = ref<string | null>(null);
 
-// Desk pattern
-const { createDesk } = useCheckIn<MemberData>();
-const { desk } = createDesk(DESK_CONSTRAINTS_KEY, {
-  plugins: [createConstraintsPlugin<MemberData>(constraints)],
-  devTools: true,
-  debug: false,
-});
-
-const registry = getRegistry<MemberData>(desk);
-
-const constraintErrors = computed(() =>
-  (desk as any).getConstraintErrors ? (desk as any).getConstraintErrors() : []
-);
-
-const addMember = async () => {
+const addMember = async (name: string, role: MemberData['role']) => {
   error.value = null;
-  const id = Date.now() % 100000;
-  const member: MemberData = { id, name: newName.value.trim(), role: newRole.value };
-  // Support async constraints
-  const result = await desk.checkIn(id, member);
-  if (result === false) {
-    error.value = 'Validation failed.';
-    return;
+  const id = Math.floor(((Date.now() % 100000) + Math.random() * 100000) % 100000) + 1;
+  const member: MemberData = {
+    id,
+    name: name.trim(),
+    role,
+  };
+  const isValid = await desk.checkIn(id, member);
+  if (isValid) {
+    members.value.push(member);
+  } else {
+    const errors = (desk as any).getConstraintErrorsForItem
+      ? (desk as any).getConstraintErrorsForItem(id)
+      : [];
+    error.value = errors.map((e: any) => e.message).join('; ');
   }
   newName.value = '';
   newRole.value = 'user';
 };
 
-const removeMember = (id: number) => {
-  desk.checkOut(id);
-};
+const { createDesk } = useCheckIn<MemberData, MemberListContext>();
+const { desk } = createDesk(DESK_CONSTRAINTS_KEY, {
+  plugins: [createConstraintsPlugin<MemberData>(constraints)],
+  devTools: true,
+  debug: false,
+  context: {
+    members,
+  },
+  onCheckOut(id) {
+    console.log('Checking out member with id:', id);
+    const index = members.value.findIndex((m) => m.id === id);
+    if (index !== -1) {
+      members.value.splice(index, 1);
+    }
+  },
+});
+
+addMember('Alice', 'admin');
+addMember('Bob', 'user');
+addMember('Charlie', 'guest');
+
+const items = computed(() => {
+  return (desk as any).members.value || [];
+});
+const constraintErrors = computed(() =>
+  (desk as any).getConstraintErrors ? (desk as any).getConstraintErrors() : []
+);
 </script>
 
 <template>
@@ -131,12 +147,12 @@ const removeMember = (id: number) => {
           <option value="admin">Admin</option>
           <option value="guest">Guest</option>
         </select>
-        <Button :disabled="!newName" @click="addMember">
+        <Button :disabled="!newName" @click="() => addMember(newName, newRole)">
           <span class="mr-2">+</span>Add Member
         </Button>
       </div>
       <Badge variant="outline" class="border-primary bg-primary/20 text-primary px-3 py-1">
-        {{ registry.length }} members
+        {{ items.length }} members
       </Badge>
     </div>
 
@@ -152,26 +168,15 @@ const removeMember = (id: number) => {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Members list -->
       <div class="p-4 bg-card border border-muted rounded-md">
-        <h3 class="m-0 mb-4 text-base font-semibold">Members ({{ registry.length }})</h3>
+        <h3 class="m-0 mb-4 text-base font-semibold">Members ({{ items.length }})</h3>
         <ul class="list-none p-0 m-0 flex flex-col gap-2 max-h-[400px] overflow-y-auto">
           <li
-            v-for="item in registry"
+            v-for="item in items"
             :key="item.id"
             :data-slot="`constraints-list-item-${item.id}`"
             class="flex items-center justify-between p-3 border border-muted rounded-md cursor-pointer transition-all duration-200 hover:bg-accent dark:hover:bg-accent-dark"
           >
-            <div class="flex flex-col gap-1">
-              <MemberItem :member="item.data" />
-              <span class="text-xs text-gray-600 dark:text-gray-400">ID: {{ item.data.id }}</span>
-            </div>
-            <Button
-              size="icon"
-              aria-label="Remove member"
-              class="bg-transparent hover:bg-transparent border-0 text-destructive/80 hover:text-destructive"
-              @click.stop="removeMember(Number(item.id))"
-            >
-              <span class="icon">🗑️</span>
-            </Button>
+            <MemberItem :id="item.id" />
           </li>
         </ul>
       </div>

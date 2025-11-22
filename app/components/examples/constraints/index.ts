@@ -4,9 +4,14 @@ export { default as ConstraintsMemberList } from './ConstraintsMemberList.vue';
 export { default as MemberItem } from './MemberItem.vue';
 
 export interface MemberData {
-  id: number;
+  id: string | number;
   name: string;
   role: 'admin' | 'user' | 'guest';
 }
 
-export const DESK_CONSTRAINTS_KEY: InjectionKey<Ref<MemberData>> = Symbol('constraints-desk');
+export interface MemberListContext {
+  members: Ref<MemberData[]>;
+}
+
+export const DESK_CONSTRAINTS_KEY: InjectionKey<Ref<MemberData> & MemberListContext> =
+  Symbol('constraintsDesk');
