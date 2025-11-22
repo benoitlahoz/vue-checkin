@@ -6,7 +6,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VueAirportPlugins',
+      name: 'VueAirportPluginsBase',
       formats: ['es', 'cjs'],
       fileName: (format) => `vue-airport-plugins.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
