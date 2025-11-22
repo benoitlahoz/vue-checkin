@@ -19,6 +19,11 @@ import type { CheckInPlugin, DeskCore } from 'vue-airport';
  * console.log(desk.hasActive); // true
  * ```
  */
+
+export enum ActiveItemEvent {
+  Changed = 'active:changed',
+}
+
 export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
   name: 'active-item',
   version: '1.0.0',
@@ -46,7 +51,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
       if (id === null) {
         deskWithActive.activeId.value = null;
         // Emit with undefined instead of null for type safety
-        desk.emit('active-changed' as any, {
+        desk.emit(ActiveItemEvent.Changed, {
           id: undefined,
           data: undefined,
         });
@@ -70,7 +75,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
       if (!desk.has(id)) return false;
 
       deskWithActive.activeId.value = id;
-      desk.emit('active-changed' as any, {
+      desk.emit(ActiveItemEvent.Changed, {
         id,
         data: desk.get(id)?.data,
       });

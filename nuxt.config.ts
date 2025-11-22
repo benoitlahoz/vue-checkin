@@ -29,6 +29,9 @@ export default defineNuxtConfig({
     '@vue-airport/plugins-base': fileURLToPath(
       new URL('./packages/plugins-base/src', import.meta.url)
     ),
+    '@vue-airport/plugins-validation': fileURLToPath(
+      new URL('./packages/plugins-validation/src', import.meta.url)
+    ),
     'vue-airport-devtools': fileURLToPath(new URL('./packages/devtools/src', import.meta.url)),
     'vue-airport-devtools/nuxt': fileURLToPath(
       new URL('./packages/devtools/src/nuxt-module.ts', import.meta.url)

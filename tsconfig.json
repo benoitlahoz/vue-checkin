@@ -8,6 +8,8 @@
       "#vue-airport/*": ["./packages/core/src/*"],
       "@vue-airport/plugins-base": ["./packages/plugins-base/src"],
       "@vue-airport/plugins-base/*": ["./packages/plugins-base/src/*"],
+      "@vue-airport/plugins-validation": ["./packages/plugins-validation/src"],
+      "@vue-airport/plugins-validation/*": ["./packages/plugins-validation/src/*"],
       "vue-airport": ["./packages/core/src"],
       "vue-airport/*": ["./packages/core/src/*"],
       "vue-airport-devtools": ["./packages/devtools/src"],
