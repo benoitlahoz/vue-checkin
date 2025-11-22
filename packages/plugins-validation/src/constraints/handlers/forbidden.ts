@@ -1,3 +1,8 @@
+/**
+ * Forbidden: Forbids certain values or combinations.
+ * - key: The field to check.
+ * - values: Forbidden values.
+ */
 import type { ConstraintHandler } from '..';
 
 export const forbiddenHandler: ConstraintHandler = (constraint, data) => {

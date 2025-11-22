@@ -1,3 +1,8 @@
+/**
+ * UniqueInScope: Ensures uniqueness within a sub-scope/group.
+ * - key: The field to check.
+ * - scopeKey: The field defining the scope/group.
+ */
 import type { ConstraintHandler } from '..';
 
 export const uniqueInScopeHandler: ConstraintHandler = (constraint, data, children) => {

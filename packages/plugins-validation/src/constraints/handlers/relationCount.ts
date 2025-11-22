@@ -1,3 +1,10 @@
+/**
+ * RelationCount: Enforces a minimum/maximum count of children with a specific field value.
+ * - key: The field to check.
+ * - value: The value to count.
+ * - min: Minimum required count.
+ * - max: Maximum allowed count.
+ */
 import type { ConstraintHandler } from '..';
 
 export const relationCountHandler: ConstraintHandler = (constraint, _data, children) => {

@@ -1,3 +1,8 @@
+/**
+ * MaxValue: Requires a numeric field to be at most a maximum value.
+ * - key: The field to check.
+ * - max: Maximum allowed value.
+ */
 import type { ConstraintHandler } from '..';
 
 export const maxValueHandler: ConstraintHandler = (constraint, data) => {

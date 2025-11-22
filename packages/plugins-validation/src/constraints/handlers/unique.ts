@@ -1,3 +1,7 @@
+/**
+ * Unique: Ensures the value of a given key is unique among all children.
+ * - key: The field to check for uniqueness.
+ */
 import type { ConstraintHandler } from '..';
 
 export const uniqueHandler: ConstraintHandler = (constraint, data, children) => {

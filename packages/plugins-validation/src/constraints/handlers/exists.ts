@@ -1,3 +1,8 @@
+/**
+ * Exists: Checks that a reference exists in another collection.
+ * - key: The field to check.
+ * - source: Array of valid values.
+ */
 import type { ConstraintHandler } from '..';
 
 export const existsHandler: ConstraintHandler = (constraint, data) => {

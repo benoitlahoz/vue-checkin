@@ -1,3 +1,7 @@
+/**
+ * BeforeCheckOut: Custom rule to block removal (check-out) of an item.
+ * - rule: Function to validate removal.
+ */
 import type { ConstraintHandler } from '..';
 
 export const beforeCheckOutHandler: ConstraintHandler = (constraint, data, children) => {

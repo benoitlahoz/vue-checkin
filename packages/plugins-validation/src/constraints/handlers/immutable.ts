@@ -1,3 +1,7 @@
+/**
+ * Immutable: Prevents modification of a field after creation.
+ * - key: The field to protect.
+ */
 import type { ConstraintHandler } from '..';
 
 export const immutableHandler: ConstraintHandler = (constraint, data, _children, deskInstance) => {

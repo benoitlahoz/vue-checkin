@@ -1,3 +1,7 @@
+/**
+ * UniqueGroup: Ensures a combination of fields is unique among all children.
+ * - keys: Array of fields to check for unique combination.
+ */
 import type { ConstraintHandler } from '..';
 
 export const uniqueGroupHandler: ConstraintHandler = (constraint, data, children) => {

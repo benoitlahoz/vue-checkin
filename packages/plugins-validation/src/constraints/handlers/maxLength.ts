@@ -1,3 +1,8 @@
+/**
+ * MaxLength: Requires a string field to have at most a maximum length.
+ * - key: The field to check.
+ * - length: Maximum allowed length.
+ */
 import type { ConstraintHandler } from '..';
 
 export const maxLengthHandler: ConstraintHandler = (constraint, data) => {

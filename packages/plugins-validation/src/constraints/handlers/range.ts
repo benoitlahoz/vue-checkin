@@ -1,3 +1,9 @@
+/**
+ * Range: Ensures a numeric field is within a given range.
+ * - key: The field to check.
+ * - min: Minimum allowed value.
+ * - max: Maximum allowed value.
+ */
 import type { ConstraintHandler } from '..';
 
 export const rangeHandler: ConstraintHandler = (constraint, data) => {

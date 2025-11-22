@@ -1,3 +1,9 @@
+/**
+ * ConditionalRequired: Requires a field if a condition on another field is met.
+ * - key: The field to require.
+ * - conditionKey: The field to check condition on.
+ * - conditionValue: The value that triggers requirement.
+ */
 import type { ConstraintHandler } from '..';
 
 export const conditionalRequiredHandler: ConstraintHandler = (constraint, data) => {

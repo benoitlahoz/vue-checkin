@@ -1,3 +1,8 @@
+/**
+ * Pattern: Requires a field to match a given regular expression.
+ * - key: The field to check.
+ * - regex: The regular expression to match.
+ */
 import type { ConstraintHandler } from '..';
 
 export const patternHandler: ConstraintHandler = (constraint, data) => {

@@ -1,3 +1,8 @@
+/**
+ * MinLength: Requires a string field to have at least a minimum length.
+ * - key: The field to check.
+ * - length: Minimum required length.
+ */
 import type { ConstraintHandler } from '..';
 
 export const minLengthHandler: ConstraintHandler = (constraint, data) => {
