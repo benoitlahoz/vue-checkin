@@ -279,7 +279,7 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
     }
   };
 
-  function validateData(id: string | number, data: T, children: T[]): boolean {
+  async function validateData(id: string | number, data: T, children: T[]): Promise<boolean> {
     removeErrorsForId(id);
     const errors: string[] = [];
     for (const constraint of constraints) {
@@ -291,7 +291,8 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
           case ConstraintType.Custom: {
             const c = constraint as Extract<ConstraintObj<T>, { type: ConstraintType.Custom }>;
             const result = c.fn(data, children);
-            if (typeof result === 'string' && result) errors.push(result);
+            const resolved = result instanceof Promise ? await result : result;
+            if (typeof resolved === 'string' && resolved) errors.push(resolved);
             break;
           }
           case ConstraintType.Unique: {
@@ -428,9 +429,9 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
       };
     },
 
-    onBeforeCheckIn: (id: string | number, data: T): boolean => {
+    onBeforeCheckIn: async (id: string | number, data: T): Promise<boolean> => {
       const children = deskInstance?.getAll ? deskInstance.getAll() : [];
-      return validateData(
+      return await validateData(
         id,
         data,
         children.map((c: any) => c.data)

@@ -1,10 +1,14 @@
+
 # @vue-airport/plugins-validation
 
 > **Advanced validation for VueAirport**
 >
 > This package provides validation and constraint plugins for the VueAirport ecosystem. It allows you to express complex business rules on data and relationships, both declaratively and functionally.
+>
+> **Note:** The validation plugin was moved here from `@vue-airport/plugins-base` to improve modularity and maintainability. Please update your imports accordingly.
 
 ---
+
 
 ## Table of Contents
 
@@ -121,3 +125,11 @@ A: Yes, they are chainable and compatible.
 ## License
 
 MIT
+
+
+## 🔗 Links
+
+- [Documentation](https://benoitlahoz.github.io/vue-airport)
+- [GitHub Repository](https://github.com/benoitlahoz/vue-airport)
+- [npm Package](https://www.npmjs.com/package/@vue-airport/plugins-validation)
+- [Core Package](https://www.npmjs.com/package/vue-airport)

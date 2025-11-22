@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from 'vue';
 
-export { default as ConstraintsExample } from './ConstraintsExample.vue';
+export { default as ConstraintsMemberList } from './ConstraintsMemberList.vue';
 export { default as MemberItem } from './MemberItem.vue';
 
 export interface MemberData {

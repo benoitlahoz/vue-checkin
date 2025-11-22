@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@vue-airport/plugins-base.svg)](https://www.npmjs.com/package/@vue-airport/plugins-base)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Official plugin collection for [vue-airport](https://github.com/benoitlahoz/vue-airport) - A generic check-in system for Vue 3 component registration patterns.
+Base plugin collection for [vue-airport](https://github.com/benoitlahoz/vue-airport) - A generic check-in system for Vue 3 component registration patterns.
 
 ## 📖 Documentation
 
@@ -12,7 +12,6 @@ Full documentation is available at: [https://benoitlahoz.github.io/vue-airport](
 ## ✨ Plugins Included
 
 - 🎯 **Active Item** - Manage active/selected items in your desk
-- ✅ **Validation** - Validate data before check-in with custom rules
 - 📜 **History** - Track all check-in/check-out/update operations
 - ⏱️ **Debounce** - Debounce event notifications for batch processing
 
@@ -78,79 +77,6 @@ desk.on('active-changed', ({ id, data }) => {
 - `desk.clearActive()` - Clear active selection
 - `desk.hasActive` - Computed boolean indicating if there's an active item
 - `desk.activeId` - Ref containing the active item ID
-
-### Validation Plugin
-
-Validate data before check-in with custom validation rules.
-
-```vue
-<script setup lang="ts">
-import { useCheckIn } from 'vue-airport';
-import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-base';
-
-interface FormField {
-  name: string;
-  email: string;
-  age: number;
-}
-
-const { createDesk } = useCheckIn<FormField>();
-const { desk } = createDesk('form', {
-  plugins: [
-    createValidationPlugin({
-      // Required fields
-      required: ['name', 'email'],
-      
-      // Custom validation
-      validate: (data) => {
-        if (!data.email.includes('@')) {
-          return 'Invalid email format';
-        }
-        if (data.age < 18) {
-          return 'Must be 18 or older';
-        }
-        return true;
-      },
-      
-      // Maximum errors to keep in cache
-      maxErrors: 100
-    })
-  ]
-});
-
-// Check-in will fail if validation fails
-desk.checkIn('user-1', {
-  name: 'John',
-  email: 'invalid-email', // Will fail validation
-  age: 25
-});
-
-// Get validation errors
-const errors = desk.getValidationErrors();
-const lastError = desk.getLastValidationError();
-
-// Clear validation errors
-desk.clearValidationErrors();
-
-// Listen to validation events
-desk.on('validation-error', (error: ValidationError) => {
-  console.log('Validation failed:', error.message);
-});
-
-desk.on('validation-success', ({ id, data }) => {
-  console.log('Validation passed:', id, data);
-});
-</script>
-```
-
-**API:**
-- `desk.getValidationErrors()` - Get all validation errors
-- `desk.getLastValidationError()` - Get most recent validation error
-- `desk.clearValidationErrors()` - Clear all validation errors
-
-**Events:**
-- `validation-error` - Emitted when validation fails
-- `validation-success` - Emitted when validation passes
 
 ### History Plugin
 
@@ -277,7 +203,7 @@ const pendingCheckOuts = desk.getPendingCheckOutCount?.();
 
 ## 🔌 Combining Plugins
 
-You can use multiple plugins together:
+You can use multiple plugins together. For validation, please use [`@vue-airport/plugins-validation`](./plugins-validation):
 
 ```vue
 <script setup lang="ts">
@@ -285,9 +211,9 @@ import { useCheckIn } from 'vue-airport';
 import {
   createActiveItemPlugin,
   createHistoryPlugin,
-  createValidationPlugin,
   createDebouncePlugin
 } from '@vue-airport/plugins-base';
+import { createValidationPlugin } from '@vue-airport/plugins-validation';
 
 const { createDesk } = useCheckIn<MyData>();
 const { desk } = createDesk('my-desk', {
