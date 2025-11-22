@@ -1,6 +1,6 @@
 {
   "name": "vue-airport-monorepo",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Vue Airport - Monorepo for core, plugins and documentation",
   "author": "Benoit Lahoz",
