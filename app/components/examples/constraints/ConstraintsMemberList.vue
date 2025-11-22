@@ -5,7 +5,6 @@ import {
   createConstraintsPlugin,
   ConstraintType,
   type Constraint,
-  type ConstraintError,
 } from '@vue-airport/plugins-validation';
 import {
   ConstraintsMemberItem,
@@ -121,6 +120,7 @@ const addMember = async (name: string, role: MemberData['role']) => {
   };
   const isValid = await desk.checkIn(id, member);
   if (isValid) {
+    // Update local state
     (desk as any).members.value.push(member);
   }
   newName.value = '';
@@ -152,12 +152,12 @@ const items = computed(() => {
   return (desk as any).members.value || [];
 });
 
-const errors = computed(() => {
-  return (desk as any)
+const errors = computed(() =>
+  (desk as any)
     .getConstraintErrors()
-    .map((err: ConstraintError) => err.errors)
-    .flat();
-});
+    .map((e: any) => e.errors)
+    .flat()
+);
 
 onMounted(async () => {
   await addMember('Alice', 'admin');
