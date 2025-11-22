@@ -6,11 +6,13 @@ export { default as ConstraintsMemberItem } from './ConstraintsMemberItem.vue';
 export interface MemberData {
   id: string | number;
   name: string;
+  avatar?: string;
   role: 'admin' | 'user' | 'guest';
 }
 
 export interface MemberListContext {
   members: Ref<MemberData[]>;
+  rolesColors: Record<MemberData['role'], string>;
 }
 
 export const DESK_CONSTRAINTS_KEY: InjectionKey<Ref<MemberData> & MemberListContext> =

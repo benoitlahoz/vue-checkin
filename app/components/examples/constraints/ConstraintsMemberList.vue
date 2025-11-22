@@ -108,10 +108,14 @@ const errorHistory = ref<string[]>([]);
 const addMember = async (name: string, role: MemberData['role']) => {
   errorHistory.value = [];
   const id = Math.floor(((Date.now() % 100000) + Math.random() * 100000) % 100000) + 1;
+  // Download a random user image for avatar
+  const gender = Math.random() < 0.5 ? 'men' : 'women';
+  const avatar = `https://randomuser.me/api/portraits/${gender}/${Math.floor(Math.random() * 99)}.jpg`;
   const member: MemberData = {
     id,
     name: name.trim(),
     role,
+    avatar,
   };
   const isValid = await desk.checkIn(id, member);
   if (isValid) {
@@ -120,7 +124,6 @@ const addMember = async (name: string, role: MemberData['role']) => {
     const errors = (desk as any).getConstraintErrorsById
       ? (desk as any).getConstraintErrorsById(id)
       : [];
-    console.log('Error adding member:', errors);
     errorHistory.value = errors;
   }
   newName.value = '';
@@ -134,6 +137,11 @@ const { desk } = createDesk(DESK_CONSTRAINTS_KEY, {
   debug: false,
   context: {
     members: ref([]),
+    rolesColors: {
+      admin: 'red',
+      user: 'blue',
+      guest: 'green',
+    },
   },
   onCheckOut(id) {
     console.log('Checking out member with id:', id);
@@ -192,7 +200,7 @@ onMounted(async () => {
           </li>
         </ul>
       </div>
-      <!-- Panels à droite -->
+      <!-- Errors and rules -->
       <div class="flex flex-col gap-4">
         <div class="p-4 bg-card border border-muted rounded-md flex-1">
           <h3 class="m-0 mb-2 text-base font-semibold">Errors</h3>
