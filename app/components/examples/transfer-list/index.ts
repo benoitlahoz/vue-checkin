@@ -1,24 +1,22 @@
-import type { DeskWithContext } from '#vue-airport';
+/**
+ * This example creates a desk for a transfer list.
+ * It demonstrates how to use a transfer list component with Vue Airport.
+ */
+
 import type { InjectionKey, Ref } from 'vue';
 
-export { default as TransferList } from './TransferList.vue';
-export { default as TransferListItem } from './TransferListItem.vue';
-
-export interface TransferItemData {
-  id: string | number;
-  name: string;
-  firstname?: string;
-  lastname?: string;
+export interface TransferListItem {
+  id: number | string;
+  [key: string]: any;
+  transferred?: boolean;
 }
 
 export interface TransferListContext {
-  transferItems: Ref<TransferItemData[]>;
-  availableItems: Ref<TransferItemData[]>;
-  addToTransfer: (row: TransferItemData) => void;
-  applyTransform: () => void;
+  data: Ref<TransferListItem[]>;
 }
 
-export type DeskWithTransferList = DeskWithContext<TransferItemData, TransferListContext>;
+export const TransferListKey: InjectionKey<Ref<TransferListItem> & TransferListContext> =
+  Symbol('TransferList');
 
-export const DESK_TRANSFER_LIST_KEY: InjectionKey<DeskWithTransferList> =
-  Symbol('transferListDesk');
+export { default as TransferList } from './TransferList.vue';
+export { default as TransferListItem } from './TransferListItem.vue';
