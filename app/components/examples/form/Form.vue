@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { useCheckIn, type DeskWithContext } from '#vue-airport';
+import { useCheckIn } from '#vue-airport';
 import { createValidationPlugin, type ValidationError } from '@vue-airport/plugins-validation';
-import { type FieldData, FORM_DESK_KEY, type FormContext, FormField } from '.';
+import {
+  type DeskWithValidation,
+  type FieldData,
+  FORM_DESK_KEY,
+  type FormContext,
+  FormField,
+} from '.';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FieldSeparator, FieldGroup } from '@/components/ui/field';
@@ -73,12 +79,6 @@ const fieldData = ref<Array<FieldData>>([
   },
 ]);
 
-type DeskWithValidation = DeskWithContext<FieldData, FormContext> & {
-  getValidationErrors?: () => ValidationError[];
-  clearValidationErrors?: () => void;
-  count?: number;
-};
-
 // Create a desk with validation plugin
 const { createDesk } = useCheckIn<FieldData, FormContext>();
 const { desk } = createDesk(FORM_DESK_KEY, {
@@ -88,17 +88,15 @@ const { desk } = createDesk(FORM_DESK_KEY, {
   context: {
     fieldData,
     errorById: (id: string) => {
-      const allErrors = (desk as any)?.getValidationErrors?.() || [];
+      const allErrors = (desk as DeskWithValidation)?.getValidationErrors?.() || [];
       return allErrors.find((e: ValidationError) => e.id === id);
     },
   },
 });
 
-const validatedDesk = desk as DeskWithValidation;
-
 // Computed properties for validation
 const validationErrors = computed(() => {
-  return validatedDesk.getValidationErrors?.() || [];
+  return (desk as DeskWithValidation).getValidationErrors?.() || [];
 });
 
 // Check if form is valid (all fields filled and no validation errors)
@@ -128,7 +126,7 @@ const submitForm = () => {
     alert('Form submitted successfully!\n\n' + JSON.stringify(formData, null, 2));
 
     // Clear validation errors after successful submission
-    validatedDesk.clearValidationErrors?.();
+    (desk as DeskWithValidation).clearValidationErrors?.();
   } else {
     const errorList = validationErrors.value
       .map((e: ValidationError) => `- ${e.message}`)
@@ -145,7 +143,7 @@ const resetForm = () => {
   });
 
   // Clear validation errors when resetting
-  validatedDesk.clearValidationErrors?.();
+  (desk as DeskWithValidation).clearValidationErrors?.();
 };
 </script>
 

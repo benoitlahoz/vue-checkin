@@ -7,7 +7,7 @@ import { shallowRef, computed, type ComputedRef, type ShallowRef } from 'vue';
 import { EventManager } from '../helpers/event-manager';
 import { SortedRegistryCache } from '../helpers/sorted-registry-cache';
 import { DevTools, NoOpDevTools } from '../helpers/devtools';
-import type { CheckInPlugin } from '../types';
+import type { CheckInPlugin, CheckInPluginComputed, CheckInPluginMethods } from '../types';
 import { NoOp, Debug } from '../utils';
 
 /**
@@ -50,7 +50,7 @@ export interface DeskCoreOptions<
   onCheckOut?: (id: string | number, desk: DeskCore<T, TContext>) => void | Promise<void>;
   debug?: boolean;
   devTools?: boolean;
-  plugins?: CheckInPlugin<T>[];
+  plugins?: CheckInPlugin<T, CheckInPluginMethods<T>, CheckInPluginComputed<T>>[];
   deskId?: string; // For DevTools integration
   context?: TContext;
 }

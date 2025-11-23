@@ -18,4 +18,4 @@ export { checkInToDesk, type CheckInOptions, type CheckInResult } from './desk/d
 
 export { generateId, memoizedId, clearIdCache, isCheckedIn, getRegistry } from './useCheckIn';
 
-export type { CheckInPlugin } from './types';
+export type { CheckInPlugin, CheckInPluginMethods, CheckInPluginComputed } from './types';

@@ -1,10 +1,16 @@
 import type { DeskCore } from './desk/desk-core';
 
+export type CheckInPluginMethod<T = any> = (...args: (T | any)[]) => any;
+export type CheckInPluginComputedProp<T = any> = (desk: DeskCore<T, {}>) => any;
+
+export type CheckInPluginMethods<T = any> = Record<string, CheckInPluginMethod<T>>;
+export type CheckInPluginComputed<T = any> = Record<string, CheckInPluginComputedProp<T>>;
+
 /**
  * Plugin interface for extending CheckInDesk functionality.
  * Plugins can hook into the desk lifecycle and add custom methods/properties.
  *
- * Warning: Plugins MUST implement dispose() for proper cleanup.
+ * Warning: Plugins MUST implement dispose() for proper cleanup if they allocate resources or subscribe to events.
  *
  * @example
  * ```ts
@@ -35,7 +41,11 @@ import type { DeskCore } from './desk/desk-core';
  * };
  * ```
  */
-export interface CheckInPlugin<T = any> {
+export interface CheckInPlugin<
+  T = any,
+  M extends object = CheckInPluginMethods<T>,
+  C extends object = CheckInPluginComputed<T>,
+> {
   /** Unique plugin name */
   name: string;
 
@@ -49,14 +59,6 @@ export interface CheckInPlugin<T = any> {
    * @required This is now required for proper plugin lifecycle management.
    */
   install: (desk: DeskCore<T>) => undefined | (() => void);
-
-  /**
-   * Called when the plugin is explicitly disposed or desk is cleared.
-   * Use this for additional cleanup beyond the install() cleanup function.
-   *
-   * @required This is now required for proper plugin lifecycle management.
-   */
-  dispose?: (desk: DeskCore<T>) => void;
 
   /**
    * Called before an item is checked in.
@@ -106,11 +108,11 @@ export interface CheckInPlugin<T = any> {
    * Custom methods to add to the desk.
    * First parameter is always the desk itself.
    */
-  methods?: Record<string, (desk: DeskCore<T>, ...args: any[]) => any>;
+  methods?: M;
 
   /**
    * Computed properties to add to the desk.
    * Getters receive the desk as parameter.
    */
-  computed?: Record<string, (desk: DeskCore<T>) => any>;
+  computed?: C;
 }

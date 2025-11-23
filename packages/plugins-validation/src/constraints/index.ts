@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { CheckInPlugin } from 'vue-airport';
+import type { CheckInPlugin, CheckInPluginMethods, CheckInPluginComputed } from 'vue-airport';
 import { requiredHandler } from './handlers/required';
 import { minLengthHandler } from './handlers/minLength';
 import { maxLengthHandler } from './handlers/maxLength';
@@ -24,6 +24,48 @@ import { relationCountHandler } from './handlers/relationCount';
 import { uniqueGroupHandler } from './handlers/uniqueGroup';
 import { dateRangeHandler } from './handlers/dateRange';
 import { dependencyHandler } from './handlers/dependency';
+
+export interface ConstraintsPluginMethods extends CheckInPluginMethods {
+  /**
+   * Get all constraint errors.
+   */
+  getConstraintErrors(): ConstraintError[];
+
+  /**
+   * Get constraint errors for a specific item.
+   */
+  getConstraintErrorsById(id: string | number): ConstraintError[];
+
+  /**
+   * Clear all constraint errors.
+   */
+  clearConstraintErrors(): void;
+}
+
+export interface ConstraintsPluginComputed<T> extends CheckInPluginComputed<T> {
+  /**
+   * Get the number of constraint errors.
+   */
+  constraintErrorCount(): number;
+
+  /**
+   * Check if there are any constraint errors.
+   */
+  hasConstraintErrors(): boolean;
+}
+
+export interface ConstraintsPlugin<T>
+  extends CheckInPlugin<T, ConstraintsPluginMethods, ConstraintsPluginComputed<T>> {
+  /**
+   * Methods for constraint error management.
+   */
+  methods: ConstraintsPluginMethods;
+
+  /**
+   * Computed properties for constraint error state.
+   */
+  computed: ConstraintsPluginComputed<T>;
+}
 
 /**
  * ConstraintType enumerates all supported constraint types for desk validation.
@@ -294,7 +336,7 @@ export interface ConstraintError {
 
 export function createConstraintsPlugin<T extends Record<string, any> = any>(
   constraints: Constraint<T>[]
-): CheckInPlugin<T> {
+): ConstraintsPlugin<T> {
   const constraintErrors = ref<ConstraintError[]>([]);
 
   let deskInstance: any = null;
@@ -399,8 +441,8 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
 
     methods: {
       getConstraintErrors: () => constraintErrors.value,
-      getConstraintErrorsById: (_desk: any, id: string | number) =>
-        constraintErrors.value.find((e) => e.id === id)?.errors ?? [],
+      getConstraintErrorsById: (id: string | number) =>
+        constraintErrors.value.filter((e) => e.id === id) ?? [],
       clearConstraintErrors: () => {
         constraintErrors.value = [];
       },

@@ -27,8 +27,7 @@ const roleColor = computed(
 );
 
 const remove = async () => {
-  const result = await desk!.checkOut(props.id);
-  console.log('Result of checkOut:', result);
+  await desk!.checkOut(props.id);
 };
 </script>
 

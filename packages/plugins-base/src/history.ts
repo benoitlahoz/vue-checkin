@@ -1,6 +1,35 @@
 import { ref } from 'vue';
 import type { CheckInPlugin, DeskCore } from 'vue-airport';
 
+export interface HistoryPluginMethods<T> {
+  /**
+   * Get the history of operations.
+   */
+  getHistory(desk: DeskCore<T>): HistoryEntry<T>[];
+
+  /**
+   * Clear the history.
+   */
+  clearHistory(desk: DeskCore<T>): void;
+
+  /**
+   * Get last N history entries.
+   */
+  getLastHistory(desk: DeskCore<T>, count: number): HistoryEntry<T>[];
+
+  /**
+   * Get history filtered by action type.
+   */
+  getHistoryByAction(
+    desk: DeskCore<T>,
+    action: 'check-in' | 'check-out' | 'update'
+  ): HistoryEntry<T>[];
+}
+
+export interface HistoryPlugin<T> extends CheckInPlugin<T, HistoryPluginMethods<T>> {
+  methods: HistoryPluginMethods<T>;
+}
+
 export interface HistoryEntry<T = unknown> {
   action: 'check-in' | 'check-out' | 'update';
   id: string | number;
@@ -38,7 +67,7 @@ export interface HistoryOptions {
  * desk.clearHistory();
  * ```
  */
-export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): CheckInPlugin<T> => {
+export const createHistoryPlugin = <T = unknown>(options?: HistoryOptions): HistoryPlugin<T> => {
   const maxHistory = options?.maxHistory || 50;
   const history = ref<HistoryEntry<T>[]>([]);
 

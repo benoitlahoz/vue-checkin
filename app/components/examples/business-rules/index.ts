@@ -1,3 +1,8 @@
+import type { DeskWithContext } from '#vue-airport';
+import type {
+  ConstraintsPluginComputed,
+  ConstraintsPluginMethods,
+} from '@vue-airport/plugins-validation';
 import type { InjectionKey, Ref } from 'vue';
 
 export { default as ConstraintsMemberList } from './ConstraintsMemberList.vue';
@@ -14,6 +19,10 @@ export interface MemberListContext {
   members: Ref<MemberData[]>;
   roleClasses: Record<MemberData['role'], string>;
 }
+
+export type DeskWithConstraints = DeskWithContext<MemberData, MemberListContext> &
+  ConstraintsPluginMethods &
+  ConstraintsPluginComputed<MemberData>;
 
 export const DESK_CONSTRAINTS_KEY: InjectionKey<Ref<MemberData> & MemberListContext> =
   Symbol('constraintsDesk');

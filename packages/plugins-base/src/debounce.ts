@@ -1,5 +1,61 @@
 import { ref, computed } from 'vue';
-import type { CheckInPlugin, DeskWithContext } from 'vue-airport';
+import type { Ref, ComputedRef } from 'vue';
+import type { CheckInPlugin, DeskCore } from 'vue-airport';
+
+export interface DebouncePluginMethods<T> {
+  /**
+   * Immediately flush all pending debounced event notifications.
+   * @param desk The desk instance.
+   */
+  flushDebounce(desk: DeskCore<T>): void;
+
+  /**
+   * Cancel all pending debounced event notifications.
+   * @param desk The desk instance.
+   */
+  cancelDebounce(desk: DeskCore<T>): void;
+
+  /**
+   * Set callback to be notified about debounced check-in events.
+   * @param _desk The desk instance (unused).
+   * @param callback Function called with item id and data when debounced check-in occurs.
+   */
+  onDebouncedCheckIn(_desk: DeskCore<T>, callback: (id: string | number, data: T) => void): void;
+
+  /**
+   * Set callback to be notified about debounced check-out events.
+   * @param _desk The desk instance (unused).
+   * @param callback Function called with item id when debounced check-out occurs.
+   */
+  onDebouncedCheckOut(_desk: DeskCore<T>, callback: (id: string | number) => void): void;
+}
+
+export interface DebouncePluginComputed<T> {
+  /**
+   * Reactive ref for the number of pending check-ins.
+   */
+  pendingCheckInsCount(desk: DeskCore<T>): Ref<number>;
+
+  /**
+   * Reactive ref for the number of pending check-outs.
+   */
+  pendingCheckOutsCount(desk: DeskCore<T>): Ref<number>;
+
+  /**
+   * Reactive computed boolean indicating if there are any pending debounced events.
+   */
+  hasPendingDebounce(desk: DeskCore<T>): ComputedRef<boolean>;
+}
+
+/**
+ * Interface for the Debounce plugin, extending CheckInPlugin.
+ * Provides methods and computed properties for debouncing check-in/check-out events.
+ */
+export interface DebouncePlugin<T>
+  extends CheckInPlugin<T, DebouncePluginMethods<T>, DebouncePluginComputed<T>> {
+  methods: DebouncePluginMethods<T>;
+  computed: DebouncePluginComputed<T>;
+}
 
 export interface DebounceOptions {
   /** Debounce delay in milliseconds for check-in operations */
@@ -33,7 +89,7 @@ export interface DebounceOptions {
  */
 export const createDebouncePlugin = <T = unknown>(
   options: DebounceOptions = {}
-): CheckInPlugin<T> => {
+): DebouncePlugin<T> => {
   const { checkInDelay = 300, checkOutDelay = 300, maxWait } = options;
 
   let checkInTimer: ReturnType<typeof setTimeout> | null = null;
@@ -138,7 +194,7 @@ export const createDebouncePlugin = <T = unknown>(
     name: 'debounce',
     version: '1.0.0',
 
-    install: (desk: DeskWithContext) => {
+    install: (desk: DeskCore<T>) => {
       deskInstance = desk;
       return () => {
         clearCheckInTimer();
@@ -151,13 +207,6 @@ export const createDebouncePlugin = <T = unknown>(
         userCheckOutCallback = null;
         deskInstance = null;
       };
-    },
-
-    dispose: () => {
-      clearCheckInTimer();
-      clearCheckOutTimer();
-      pendingCheckInEvents.clear();
-      pendingCheckOutEvents.clear();
     },
 
     onCheckIn: (id: string | number, data: T) => {

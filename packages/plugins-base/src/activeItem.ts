@@ -1,6 +1,49 @@
 import { ref } from 'vue';
 import type { CheckInPlugin, DeskCore } from 'vue-airport';
 
+export interface ActiveItemPluginMethods<T> {
+  /**
+   * Set the active item by ID.
+   * @param desk The desk instance.
+   * @param id The item ID or null to clear.
+   * @returns True if set/cleared, false if not found.
+   */
+  setActive(desk: DeskCore<T>, id: string | number | null): boolean;
+
+  /**
+   * Get the currently active item.
+   * @param desk The desk instance.
+   * @returns The active item or null.
+   */
+  getActive(desk: DeskCore<T>): T | null;
+
+  /**
+   * Clear the active item.
+   * @param desk The desk instance.
+   * @returns True if cleared.
+   */
+  clearActive(desk: DeskCore<T>): boolean;
+}
+
+export interface ActiveItemPluginComputed<T> {
+  /**
+   * Check if there is an active item.
+   * @param desk The desk instance.
+   * @returns True if an active item exists.
+   */
+  hasActive(desk: DeskCore<T>): boolean;
+}
+
+/**
+ * Interface for the ActiveItem plugin, extending CheckInPlugin.
+ * Provides methods and computed properties for managing an active item in the desk.
+ */
+export interface ActiveItemPlugin<T>
+  extends CheckInPlugin<T, ActiveItemPluginMethods<T>, ActiveItemPluginComputed<T>> {
+  methods: ActiveItemPluginMethods<T>;
+  computed: ActiveItemPluginComputed<T>;
+}
+
 /**
  * Plugin to manage an active item in the desk.
  * Adds methods: setActive, getActive, clearActive
@@ -24,7 +67,13 @@ export enum ActiveItemEvent {
   Changed = 'active:changed',
 }
 
-export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
+/**
+ * Create an ActiveItem plugin for DeskCore.
+ * Adds methods and computed properties to manage an active item.
+ *
+ * @returns {ActiveItemPlugin<T>} The plugin instance.
+ */
+export const createActiveItemPlugin = <T = unknown>(): ActiveItemPlugin<T> => ({
   name: 'active-item',
   version: '1.0.0',
 
@@ -51,7 +100,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
       if (id === null) {
         deskWithActive.activeId.value = null;
         // Emit with undefined instead of null for type safety
-        desk.emit(ActiveItemEvent.Changed, {
+        desk.emit(ActiveItemEvent.Changed as any, {
           id: undefined,
           data: undefined,
         });
@@ -75,7 +124,7 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
       if (!desk.has(id)) return false;
 
       deskWithActive.activeId.value = id;
-      desk.emit(ActiveItemEvent.Changed, {
+      desk.emit(ActiveItemEvent.Changed as any, {
         id,
         data: desk.get(id)?.data,
       });
@@ -103,7 +152,9 @@ export const createActiveItemPlugin = <T = unknown>(): CheckInPlugin<T> => ({
     getActive(desk: DeskCore<T>) {
       const deskWithActive = desk as any;
       const id = deskWithActive.activeId?.value;
-      return id ? desk.get(id) : null;
+      if (!id) return null;
+      const item = desk.get(id);
+      return item?.data ?? null;
     },
 
     /**

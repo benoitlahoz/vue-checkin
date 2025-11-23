@@ -9,6 +9,7 @@ import {
 import {
   ConstraintsMemberItem,
   DESK_CONSTRAINTS_KEY,
+  type DeskWithConstraints,
   type MemberData,
   type MemberListContext,
 } from '.';
@@ -93,7 +94,7 @@ const constraints: Constraint<MemberData>[] = [
         const adminCount = members.filter((m) => m.role === 'admin').length;
         if (adminCount <= 1) {
           // Clear previous errors to avoid stacking
-          (desk as any).clearConstraintErrors();
+          (desk as DeskWithConstraints).clearConstraintErrors();
           return 'Cannot remove the last admin.';
         }
       }
@@ -107,7 +108,7 @@ const newName = ref('');
 const newRole = ref<MemberData['role']>('user');
 
 const addMember = async (name: string, role: MemberData['role']) => {
-  (desk as any).clearConstraintErrors();
+  (desk as DeskWithConstraints).clearConstraintErrors();
   const id = Math.floor(((Date.now() % 100000) + Math.random() * 100000) % 100000) + 1;
   // Download a random user image for avatar
   const gender = Math.random() < 0.5 ? 'men' : 'women';
@@ -120,8 +121,11 @@ const addMember = async (name: string, role: MemberData['role']) => {
   };
   const isValid = await desk.checkIn(id, member);
   if (isValid) {
-    // Update local state
-    (desk as any).members.value.push(member);
+    const ctx = desk.getContext<MemberListContext>();
+    if (ctx && ctx.members) {
+      // Update context state
+      ctx.members.value.push(member);
+    }
   }
   newName.value = '';
   newRole.value = 'user';
@@ -157,7 +161,7 @@ const items = computed(() => {
 });
 
 const errors = computed(() =>
-  (desk as any)
+  (desk as DeskWithConstraints)
     .getConstraintErrors()
     .map((e: any) => e.errors)
     .flat()

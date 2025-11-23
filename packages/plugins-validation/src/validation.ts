@@ -1,5 +1,50 @@
 import { ref } from 'vue';
-import type { CheckInPlugin } from 'vue-airport';
+import type { CheckInPlugin, CheckInPluginComputed, CheckInPluginMethods } from 'vue-airport';
+
+export interface ValidationPluginMethods<T> extends CheckInPluginMethods<T> {
+  /**
+   * Get all validation errors.
+   */
+  getValidationErrors(): ValidationError[];
+
+  /**
+   * Get the last validation error.
+   */
+  getLastValidationError(): ValidationError | null;
+
+  /**
+   * Get validation errors for a specific item.
+   */
+  getValidationErrorsById(id: string | number): ValidationError[];
+
+  /**
+   * Clear all validation errors.
+   */
+  clearValidationErrors(): void;
+
+  /**
+   * Get validation errors by type.
+   */
+  getValidationErrorsByType(type: string): ValidationError[];
+}
+
+export interface ValidationPluginComputed<T> extends CheckInPluginComputed<T> {
+  /**
+   * Get the number of validation errors.
+   */
+  validationErrorCount(): number;
+
+  /**
+   * Check if there are any validation errors.
+   */
+  hasValidationErrors(): boolean;
+}
+
+export interface ValidationPlugin<T>
+  extends CheckInPlugin<T, ValidationPluginMethods<T>, ValidationPluginComputed<T>> {
+  methods: ValidationPluginMethods<T>;
+  computed: ValidationPluginComputed<T>;
+}
 
 export interface ValidationOptions<T = unknown> {
   /** List of required fields */
@@ -52,7 +97,7 @@ export interface ValidationError {
  */
 export const createValidationPlugin = <T = unknown>(
   options: ValidationOptions<T>
-): CheckInPlugin<T> => {
+): ValidationPlugin<T> => {
   const { maxErrors = 50 } = options;
   const validationErrors = ref<ValidationError[]>([]);
 
@@ -175,15 +220,15 @@ export const createValidationPlugin = <T = unknown>(
       /**
        * Get validation errors for a specific item ID
        */
-      getValidationErrorsById: (_desk: any, id: string | number) =>
+      getValidationErrorsById: (id: string | number) =>
         validationErrors.value.filter((error) => error.id === id),
 
       /**
        * Clear all validation errors
        */
-      clearValidationErrors: (desk: any) => {
+      clearValidationErrors: () => {
         const startTime = performance.now();
-        const deskId = desk?.__deskId;
+        const deskId = deskInstance?.__deskId;
         const errorCount = validationErrors.value.length;
 
         validationErrors.value = [];
@@ -191,7 +236,7 @@ export const createValidationPlugin = <T = unknown>(
         // Track in DevTools
         const duration = performance.now() - startTime;
         if (deskId) {
-          desk.devTools.emit({
+          deskInstance.devTools.emit({
             type: 'plugin-execute',
             timestamp: Date.now(),
             deskId,
@@ -208,7 +253,7 @@ export const createValidationPlugin = <T = unknown>(
       /**
        * Get validation errors by type
        */
-      getValidationErrorsByType: (_desk: any, type: ValidationError['type']) =>
+      getValidationErrorsByType: (type: ValidationError['type']) =>
         validationErrors.value.filter((error) => error.type === type),
     },
 
