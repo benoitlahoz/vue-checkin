@@ -164,7 +164,6 @@ function applyTransformsToHeaders() {
   padding: 1rem;
   border: 1px solid #ccc;
   border-radius: 8px;
-  background: var(--background-muted, #f8f9fa);
 }
 .transfer-list-example h2 {
   margin-bottom: 1rem;
