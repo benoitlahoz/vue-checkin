@@ -18,7 +18,8 @@
     "dependency-injection",
     "dependency-lookup",
     "plugins",
-    "validation",
+    "active",
+    "pinia",
     "debounce",
     "history"
   ],
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "pinia": "^3.0.0",
     "rimraf": "^6.1.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.5",

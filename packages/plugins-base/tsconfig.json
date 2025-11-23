@@ -17,6 +17,6 @@
       "vue-airport": ["../core/src/index.ts"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../.private/piniaSync.ts"],
   "exclude": ["node_modules", "dist"]
 }
