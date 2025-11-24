@@ -3,24 +3,14 @@ import { ref } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import { createTransformValuePlugin } from '@vue-airport/plugins-base';
 import { useTransferList, type TransferableItem } from './useTransferList';
+import { useCsv } from './useCsv';
 import { CsvFile } from './fixtures';
 import { type TransferListContext, TransferListKey, Transferable } from '.';
 
 import { Separator } from '@/components/ui/separator';
 
-const { rows } = ((csv: string) => {
-  const lines = csv.split(/\r?\n/).filter(Boolean);
-  const headers = lines[0]!.split(',');
-  const rows = lines.slice(1).map((line) => {
-    const cols = line.split(',');
-    const obj: Record<string, any> = {};
-    headers.forEach((h, i) => {
-      obj[h] = cols[i]!;
-    });
-    return obj;
-  });
-  return { rows };
-})(CsvFile);
+const { parse } = useCsv();
+const { rows } = parse(CsvFile);
 
 const transforms = ref({
   name: {
