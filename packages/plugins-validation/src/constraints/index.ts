@@ -370,7 +370,7 @@ export function createConstraintsPlugin<T extends Record<string, any> = any>(
   async function validateData(id: string | number, data: T, children: T[]): Promise<boolean> {
     const errors: string[] = [];
     for (const constraint of constraints) {
-      // Ne pas appliquer BeforeCheckOut lors du check-in
+      // Skip BeforeCheckOut constraints during check-in validation
       if ('type' in constraint && constraint.type === ConstraintType.BeforeCheckOut) continue;
       const handler = handlers[constraint.type];
       if (handler) {
