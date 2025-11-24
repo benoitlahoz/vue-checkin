@@ -9,8 +9,8 @@ import { type TransferListContext, TransferListKey, Transferable } from '.';
 
 import { Separator } from '@/components/ui/separator';
 
-const { parse } = useCsv();
-const { rows } = parse(CsvFile);
+const { fromCsv } = useCsv();
+const { rows } = fromCsv(CsvFile, true, ',');
 
 const transforms = ref({
   name: {
