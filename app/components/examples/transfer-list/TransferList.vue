@@ -1,31 +1,26 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue';
-import { onClickOutside } from '@vueuse/core';
+import { ref } from 'vue';
 import { useCheckIn } from 'vue-airport';
-import {
-  type TransferListItem,
-  type TransferListContext,
-  type TransferListDesk,
-  TransferListKey,
-} from '.';
-import { createActiveItemPlugin, createTransformValuePlugin } from '@vue-airport/plugins-base';
+import { useTransferList, type TransferableItem } from './useTransferList';
+import { type TransferListContext, TransferListKey, Transferable } from '.';
+import { createTransformValuePlugin } from '@vue-airport/plugins-base';
 
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 const MockCsv = `name,age,city\nJohn Doe,32,Paris\nJane Smith,28,Lyon\nAlice Cooper,40,Bordeaux`;
-const lines = MockCsv.split(/\r?\n/).filter(Boolean);
-const headers = lines[0]!.split(',');
-const rows = lines.slice(1).map((line) => {
-  const cols = line.split(',');
-  const obj: Record<string, string> = {};
-  headers.forEach((h, i) => {
-    obj[h] = cols[i]!;
+const { rows } = ((csv: string) => {
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  const headers = lines[0]!.split(',');
+  const rows = lines.slice(1).map((line) => {
+    const cols = line.split(',');
+    const obj: Record<string, any> = {};
+    headers.forEach((h, i) => {
+      obj[h] = cols[i]!;
+    });
+    return obj;
   });
-  return obj;
-});
-
-const selectedTransforms = ref<Record<string, string>>({});
+  return { rows };
+})(MockCsv);
 
 const transforms = ref({
   name: {
@@ -37,120 +32,32 @@ const transforms = ref({
 });
 
 const plugins = [
-  createActiveItemPlugin<TransferListItem>(),
-  createTransformValuePlugin<TransferListItem>({
+  createTransformValuePlugin<TransferableItem>({
     name: transforms.value.name,
   }),
 ];
 
-const { createDesk } = useCheckIn<TransferListItem, TransferListContext>();
+const { createDesk } = useCheckIn<TransferableItem, TransferListContext>();
 const { desk } = createDesk(TransferListKey, {
   devTools: true,
   debug: false,
   plugins,
-  context: {
-    available: ref(headers.map((r, index) => ({ id: `item-${index + 1}`, name: r }))),
-    transferred: ref([]),
-  },
 });
+desk.setContext(useTransferList<TransferableItem, TransferListContext>(desk, rows));
+const ctx = desk.getContext<TransferListContext>();
 
-const deskWithPlugins = desk as TransferListDesk;
-
-const mainContainer = useTemplateRef<HTMLElement>('mainContainer');
-onClickOutside(mainContainer, () => {
-  const deskWithPlugins = desk as typeof desk & TransferListDesk;
-  deskWithPlugins.clearActive();
-});
-
-onMounted(() => {
-  const ctx = desk.getContext<TransferListContext>();
-  for (const item of ctx?.available.value || []) {
-    console.log('Will check-in item:', item);
-    desk.checkIn(item.id, item);
-  }
-});
-
-const availableItems = computed(() => {
-  return desk.getContext<TransferListContext>()?.available.value || [];
-});
-const transferredItems = computed(
-  () => desk.getContext<TransferListContext>()?.transferred.value || []
-);
-
-const hasActiveInAvailable = computed(() => {
-  const ctx = desk.getContext<TransferListContext>();
-  const activeId = (desk as typeof desk & TransferListDesk).activeId?.value;
-  return ctx?.available.value.some((item) => item.id === activeId);
-});
-
-const hasActiveInTransferred = computed(() => {
-  const ctx = desk.getContext<TransferListContext>();
-  const activeId = (desk as typeof desk & TransferListDesk).activeId?.value;
-  return ctx?.transferred.value.some((item) => item.id === activeId);
-});
-
-const transfer = () => {
-  const ctx = desk.getContext<TransferListContext>();
-  const activeId = (desk as typeof desk & TransferListDesk).activeId?.value;
-  if (!activeId) return;
-
-  const availableIndex = ctx?.available.value.findIndex((item) => item.id === activeId);
-  if (availableIndex !== -1 && availableIndex !== undefined) {
-    const [item] = ctx!.available.value.splice(availableIndex, 1);
-    if (item) ctx!.transferred.value.push(item);
-    deskWithPlugins.clearActive();
-    return;
-  }
-};
-
-const retrieve = () => {
-  const ctx = desk.getContext<TransferListContext>();
-  const activeId = (desk as typeof desk & TransferListDesk).activeId?.value;
-  if (!activeId) return;
-
-  const transferredIndex = ctx?.transferred.value.findIndex((item) => item.id === activeId);
-  if (transferredIndex !== -1 && transferredIndex !== undefined) {
-    const [item] = ctx!.transferred.value.splice(transferredIndex, 1);
-    if (item) ctx!.available.value.push(item);
-    deskWithPlugins.clearActive();
-    return;
-  }
-};
-
-const transferredHeaders = computed(() => {
-  const ctx = desk.getContext<TransferListContext>();
-  if (!ctx || ctx?.transferred.value.length === 0) return [];
-  return ctx?.transferred.value.map((item) => item.name);
-});
-
-const transferredData = computed(() => {
-  const headersValue = transferredHeaders.value;
-  if (headersValue.length === 0) return [];
-  const dataRows = rows.map((row) => {
-    const obj: Record<string, string | number> = {};
-    for (const header of headersValue) {
-      obj[header] = row[header]!;
-    }
-    return obj;
-  });
-  return dataRows;
-});
+const available = computed(() => ctx?.available.value || []);
+const transferred = computed(() => ctx?.transferred.value || []);
 </script>
 
 <template>
   <div class="w-full flex flex-col gap-4">
     <div ref="mainContainer" class="flex gap-2 h-64 min-h-64">
       <div class="flex-1 flex flex-col p-2 border border-border rounded-md gap-1">
-        <TransferListItem v-for="item in availableItems" :id="item.id" :key="item.id" />
-      </div>
-      <div>
-        <div class="flex flex-col h-full justify-center gap-2">
-          <Button size="sm" :disabled="!hasActiveInAvailable" @click="transfer">→</Button>
-          <Button size="sm" :disabled="!hasActiveInTransferred" @click="retrieve">←</Button>
-        </div>
+        <Transferable v-for="item in available" :id="item.id" :key="item.id" />
       </div>
       <div class="flex-1 flex flex-col p-2 border border-border rounded-md gap-1">
-        <TransferListItem v-for="item in transferredItems" :id="item.id" :key="item.id" />
+        <Transferable v-for="item in transferred" :id="item.id" :key="item.id" />
       </div>
     </div>
     <Separator />
@@ -161,18 +68,22 @@ const transferredData = computed(() => {
         <thead>
           <tr>
             <th
-              v-for="header in transferredHeaders"
-              :key="header"
+              v-for="header in transferred"
+              :key="header.id"
               class="font-bold uppercase p-2 border-b"
             >
-              {{ header }}
+              {{ header.name }}
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in transferredData" :key="row.id">
-            <td v-for="header in transferredHeaders" :key="`row-${row.id}-col-${header}`">
-              {{ row[header] }}
+          <tr v-for="row in ctx?.data" :key="row.id">
+            <td
+              v-for="header in transferred"
+              :key="`row-${row.id}-col-${header.id}`"
+              class="p-2 border-b"
+            >
+              {{ row[header.name] }}
             </td>
           </tr>
         </tbody>

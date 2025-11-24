@@ -2,29 +2,25 @@
  * This example creates a desk for a transfer list.
  * It demonstrates how to use a transfer list component with Vue Airport.
  */
-
-import type { DeskWithContext } from '#vue-airport';
-import type { ActiveItemPluginExports } from '@vue-airport/plugins-base/activeItem';
-import type { TransformValuePluginExports } from '@vue-airport/plugins-base/transformValue';
 import type { InjectionKey, Ref } from 'vue';
+import type { DeskWithContext } from '#vue-airport';
+import type { TransformValuePluginExports } from '@vue-airport/plugins-base/transformValue';
+import type { TransferableItem, UseTransferListReturn } from './useTransferList';
 
-export interface TransferListItem {
+// The actual data item structure used in the transfer list
+export interface TransferListDataItem {
   id: string;
-  name: string;
-  transferred?: boolean;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
-export interface TransferListContext {
-  available: Ref<TransferListItem[]>;
-  transferred: Ref<TransferListItem[]>;
-}
+export type TransferListContext = UseTransferListReturn;
 
-export type TransferListDesk = DeskWithContext<TransferListItem, TransferListContext> &
-  ActiveItemPluginExports<TransferListItem> &
-  TransformValuePluginExports<TransferListItem>;
+// What we want to transfer are headers.
+export type TransferListDesk = DeskWithContext<TransferableItem, TransferListContext> &
+  TransformValuePluginExports<TransferableItem>;
 
-export const TransferListKey: InjectionKey<Ref<TransferListItem> & TransferListContext> =
+export const TransferListKey: InjectionKey<Ref<TransferableItem> & TransferListContext> =
   Symbol('TransferList');
 
 export { default as TransferList } from './TransferList.vue';
-export { default as TransferListItem } from './TransferListItem.vue';
+export { default as Transferable } from './Transferable.vue';
