@@ -58,9 +58,15 @@ const deskWithPlugins = desk as TransferListDesk;
 
 const mainContainer = useTemplateRef<HTMLElement>('mainContainer');
 onClickOutside(mainContainer, () => {
-  console.log('Clearing active item');
   const deskWithPlugins = desk as typeof desk & TransferListDesk;
   deskWithPlugins.clearActive();
+});
+
+onMounted(() => {
+  const ctx = desk.getContext<TransferListContext>();
+  for (const item of ctx?.available.value || []) {
+    desk.checkIn(item.id, item);
+  }
 });
 
 const availableItems = computed(() => {
@@ -69,13 +75,6 @@ const availableItems = computed(() => {
 const transferredItems = computed(
   () => desk.getContext<TransferListContext>()?.transferred.value || []
 );
-
-onMounted(() => {
-  const ctx = desk.getContext<TransferListContext>();
-  for (const item of ctx?.available.value || []) {
-    desk.checkIn(item.id, item);
-  }
-});
 
 const hasActiveInAvailable = computed(() => {
   const ctx = desk.getContext<TransferListContext>();
@@ -126,21 +125,20 @@ const transferredHeaders = computed(() => {
 const transferredData = computed(() => {
   const headersValue = transferredHeaders.value;
   if (headersValue.length === 0) return [];
-  const dataRows = rows.map((row, index) => {
-    const obj: Record<string, string | number> = { id: `row-${index + 1}` };
+  const dataRows = rows.map((row) => {
+    const obj: Record<string, string | number> = {};
     for (const header of headersValue) {
       obj[header] = row[header]!;
     }
     return obj;
   });
-  console.log('transferredData', dataRows);
   return dataRows;
 });
 </script>
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <div ref="mainContainer" class="flex gap-2">
+    <div ref="mainContainer" class="flex gap-2 h-64 min-h-64">
       <div class="flex-1 flex flex-col p-2 border border-border rounded-md gap-1">
         <TransferListItem v-for="item in availableItems" :id="item.id" :key="item.id" />
       </div>
@@ -155,19 +153,25 @@ const transferredData = computed(() => {
       </div>
     </div>
     <Separator />
-    <div class="border border-border rounded-md">
-      <table>
+    <div class="text-lg font-bold">Available Transformations</div>
+    <Separator />
+    <div class="w-full border border-border rounded-md">
+      <table class="w-full border-collapse table-fixed">
         <thead>
           <tr>
-            <th v-for="header in transferredHeaders" :key="header">
+            <th
+              v-for="header in transferredHeaders"
+              :key="header"
+              class="font-bold uppercase p-2 border-b"
+            >
               {{ header }}
             </th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in transferredData" :key="row.id">
-            <td v-for="(col, index) in row" :key="`rox-${row.id}-col-${index}`">
-              {{ col }}
+            <td v-for="header in transferredHeaders" :key="`row-${row.id}-col-${header}`">
+              {{ row[header] }}
             </td>
           </tr>
         </tbody>
