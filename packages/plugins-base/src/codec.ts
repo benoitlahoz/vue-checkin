@@ -77,7 +77,7 @@ export function createCodecPlugin<I, Ts extends [Codec<any, any>, ...Codec<any, 
         Object.assign(item as any, result);
       } catch (e: unknown) {
         const error = e instanceof Error ? e : new Error('Unknown error during encoding');
-        if (options.onError) {
+        if (options?.onError) {
           options.onError(error);
         }
         errors.value.push(error);
@@ -102,13 +102,13 @@ export function createCodecPlugin<I, Ts extends [Codec<any, any>, ...Codec<any, 
             (acc, t) => (typeof t === 'function' ? t(acc) : t.encode(acc, deskInstance!)),
             input
           ) as CodecOutput<Ts, I>;
-          if (options.onEncode) {
+          if (options?.onEncode) {
             options.onEncode(input, result);
           }
           return result;
         } catch (e) {
           const error = e instanceof Error ? e : new Error('Unknown error during encoding');
-          if (options.onError) {
+          if (options?.onError) {
             options.onError(error);
           }
           errors.value.push(error);
@@ -124,9 +124,14 @@ export function createCodecPlugin<I, Ts extends [Codec<any, any>, ...Codec<any, 
             if (typeof t !== 'function' && t.decode) {
               return t.decode(acc, deskInstance!);
             }
-            throw new Error('Cannot decode: decode method not defined for the codec');
+            const error = new Error('Cannot decode: decode method not defined for the codec');
+            errors.value.push(error);
+            if (options?.onError) {
+              options.onError(error);
+            }
+            return output;
           }, output) as I;
-          if (options.onDecode) {
+          if (options?.onDecode) {
             options.onDecode(output, result);
           }
           return result;
