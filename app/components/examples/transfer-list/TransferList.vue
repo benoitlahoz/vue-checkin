@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 import { useCheckIn } from 'vue-airport';
 import { createActiveItemPlugin } from '@vue-airport/plugins-base';
 import { useTransferList, type TransferableItem } from './useTransferList';
 import { useCsv } from './useCsv';
 import { CsvFile } from './fixtures';
-import { type TransferListContext, TransferListKey, Transferable } from '.';
+import { type TransferListContext, type TransferListDesk, TransferListKey, Transferable } from '.';
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,11 @@ const { desk } = createDesk(TransferListKey, {
 });
 const ctx = desk.setContext(useTransferList<TransferableItem>(desk, rows));
 
+const main = useTemplateRef('main');
+onClickOutside(main, () => {
+  (desk as TransferListDesk).clearActive();
+});
+
 const available = computed(() => ctx?.available.value || []);
 const transferred = computed(() => ctx?.transferred.value || []);
 const size = computed(() => ctx?.size.value || 0);
@@ -46,7 +53,7 @@ const download = () => {
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <div class="flex flex-col h-64 min-h-64 md:flex-row gap-4 md:gap-2">
+    <div ref="main" class="flex flex-col h-64 min-h-64 md:flex-row gap-4 md:gap-2">
       <div
         v-if="available.length > 0"
         class="flex-1 flex flex-col p-2 border border-border rounded-md gap-1"
