@@ -81,7 +81,7 @@ export interface DeskCore<T = any, TContext extends Record<string, any> = {}> {
    */
   readonly size: ComputedRef<number>;
 
-  setContext: <U extends TContext>(context: U) => void;
+  setContext: <U extends TContext>(context: U) => U | undefined;
   getContext: <U extends TContext>() => U | undefined;
 
   checkIn: (id: string | number, data: T, meta?: Record<string, any>) => Promise<boolean>;
@@ -181,9 +181,10 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
 
   const getContext = <U extends TContext>() => options?.context as U | undefined;
 
-  const setContext = (context: TContext) => {
+  const setContext = <U extends TContext>(context: U) => {
     if (options) {
       options.context = context;
+      return context;
     }
   };
 
