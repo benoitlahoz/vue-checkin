@@ -17,7 +17,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { resultTyped } from './useTransforms';
 
 const { fromCsv, toCsv, downloadCsv } = useCsv();
 const { rows } = fromCsv(CsvFile, true, ',');
@@ -55,8 +54,6 @@ const download = () => {
     downloadCsv(obj, 'transfer-list.csv', true, ',');
   }
 };
-
-console.log(resultTyped);
 </script>
 
 <template>
