@@ -512,10 +512,6 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
     });
     devTools.updateRegistry(deskId, registryMap);
 
-    // Cleanup plugins
-    pluginCleanups.forEach((cleanup) => cleanup());
-    pluginCleanups.length = 0;
-
     debug(`${DebugPrefix} Cleared ${count} items from registry`);
   };
 
