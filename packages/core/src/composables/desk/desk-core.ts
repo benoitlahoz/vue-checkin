@@ -13,16 +13,20 @@ import { NoOp, Debug } from '../utils';
 /**
  * Types of events emitted by the desk
  */
-export type DeskEventType = 'check-in' | 'check-out' | 'update' | 'clear';
+export type DeskEventType = 'check-in' | 'check-out' | 'update' | 'switch' | 'clear';
+
+export interface DeskEventPayload<T = any> {
+  id?: string | number;
+  data?: T;
+  from?: string | number;
+  to?: string | number;
+  timestamp?: number;
+}
 
 /**
  * Callback signature for desk events
  */
-export type DeskEventCallback<T = any> = (payload: {
-  id?: string | number;
-  data?: T;
-  timestamp: number;
-}) => void;
+export type DeskEventCallback<T = any> = (payload: DeskEventPayload<T>) => void;
 
 /**
  * Represents an item checked into the desk
@@ -92,6 +96,7 @@ export interface DeskCore<T = any, TContext extends Record<string, any> = {}> {
     order?: 'asc' | 'desc';
   }) => CheckInItem<T>[];
   update: (id: string | number, data: Partial<T>) => Promise<boolean>;
+  switchItems: (from: string | number, to: string | number) => Promise<void>;
   has: (id: string | number) => boolean;
   clear: () => void;
   checkInMany: (
@@ -101,7 +106,7 @@ export interface DeskCore<T = any, TContext extends Record<string, any> = {}> {
   updateMany: (updates: Array<{ id: string | number; data: Partial<T> }>) => Promise<void>;
   on: (event: DeskEventType, callback: DeskEventCallback<T>) => () => void;
   off: (event: DeskEventType, callback: DeskEventCallback<T>) => void;
-  emit: (event: DeskEventType, payload: { id?: string | number; data?: T }) => void;
+  emit: (event: DeskEventType, payload: DeskEventPayload) => void;
   destroy: () => void;
 }
 
@@ -307,7 +312,6 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
         return false;
       }
     }
-
     // Update registry (O(1))
     registryMap.delete(id);
 
@@ -316,7 +320,6 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
 
     // Invalidate sort cache
     sortCache.invalidate();
-
     // Emit event
     emit('check-out', { id });
 
@@ -366,7 +369,7 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
     return true;
   };
 
-  const get = (id: string | number) => registryMap.get(id);
+  const get = (id: string | number) => registryList.value.find((item) => item.id === id);
 
   const getAll = (sortOptions?: { sortBy?: keyof T | 'timestamp'; order?: 'asc' | 'desc' }) => {
     // Check cache first
@@ -383,9 +386,10 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
       return result;
     }
 
+    syncList();
+
     // Perform sort
-    const items = Array.from(registryMap.values());
-    const sorted = items.sort((a, b) => {
+    const sorted = registryList.value.sort((a, b) => {
       let aVal: any, bVal: any;
 
       if (sortOptions.sortBy === 'timestamp') {
@@ -490,7 +494,47 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
     return false;
   };
 
-  const has = (id: string | number) => registryMap.has(id);
+  const switchItems = async (from: string | number, to: string | number): Promise<void> => {
+    const itemFrom = registryMap.get(from);
+    const itemTo = registryMap.get(to);
+
+    if (!itemFrom || !itemTo) {
+      debug(`${DebugPrefix} switch failed: one or both items not found`, { from, to });
+      return;
+    }
+
+    // Swap data
+    const tempData = itemFrom.data;
+    itemFrom.data = itemTo.data;
+    itemTo.data = tempData;
+
+    // Sync list
+    syncList();
+
+    // Invalidate sort cache
+    sortCache.invalidate();
+
+    // Emit events
+    // TODO: Not 2 events, but a single "switch" event with from/to info
+    emit('switch', { from, to });
+
+    // DevTools integration
+    devTools.emit({
+      type: 'switch',
+      timestamp: Date.now(),
+      deskId,
+      fromId: from,
+      toId: to,
+      registrySize: registryMap.size,
+    });
+    devTools.updateRegistry(deskId, registryMap);
+
+    if (options?.debug) {
+      debug(`${DebugPrefix} switch completed:`, { from, to });
+    }
+  };
+
+  const has = (id: string | number) => registryList.value.some((item) => item.id === id);
 
   const clear = () => {
     debug(`${DebugPrefix} clear`);
@@ -583,6 +627,7 @@ export const createDeskCore = <T = any, TContext extends Record<string, any> = {
     get,
     getAll,
     update,
+    switchItems,
     has,
     clear,
     checkInMany,
