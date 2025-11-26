@@ -67,6 +67,11 @@ export function attachGlobalHook(app: App) {
               desk.metadata.lastUpdate = event.timestamp;
             }
             break;
+          case 'switch':
+            if (desk.metadata) {
+              desk.metadata.lastSwitch = event.timestamp;
+            }
+            break;
         }
       }
     },

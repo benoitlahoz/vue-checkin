@@ -33,6 +33,7 @@ function addTimelineEvent(api: any, event: AirportEvent) {
     'check-in': COLORS.checkIn,
     'check-out': COLORS.checkOut,
     update: COLORS.update,
+    switch: COLORS.switch,
     'plugin-execute': COLORS.plugin,
     clear: COLORS.warning,
   };
@@ -41,6 +42,7 @@ function addTimelineEvent(api: any, event: AirportEvent) {
     'check-in': '✓ Check In',
     'check-out': '✗ Check Out',
     update: '↻ Update',
+    switch: '⇄ Switch',
     'plugin-execute': '⚡ Plugin',
     clear: '🗑 Clear',
   };

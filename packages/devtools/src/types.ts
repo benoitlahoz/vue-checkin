@@ -1,5 +1,5 @@
 export interface AirportEvent {
-  type: 'check-in' | 'check-out' | 'update' | 'plugin-execute' | 'clear';
+  type: 'check-in' | 'check-out' | 'update' | 'switch' | 'plugin-execute' | 'clear';
   timestamp: number;
   deskId: string;
   childId?: string | number;
