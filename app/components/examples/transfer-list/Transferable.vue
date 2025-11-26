@@ -1,30 +1,51 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-airport';
 import { cn } from '@/lib/utils';
-import { type TransferListContext, type TransferListDesk, TransferListKey } from '.';
+import {
+  AvailableDeskKey,
+  type TransferListContext,
+  type TransferListDesk,
+  TransferredDeskKey,
+} from '.';
 import { Button } from '@/components/ui/button';
 import type { TransferableItem } from './useTransferList';
+
+type AvailableDesk = typeof availableDesk & TransferListDesk;
+type TransferredDesk = typeof transferredDesk & TransferListDesk;
 
 const props = defineProps<{ id: string }>();
 
 const { checkIn } = useCheckIn<TransferableItem, TransferListContext>();
-const { desk } = checkIn(TransferListKey);
-const deskWithPlugins = desk as typeof desk & TransferListDesk;
-const ctx = desk?.getContext<TransferListContext>();
+const { desk: availableDesk } = checkIn(AvailableDeskKey);
+const { desk: transferredDesk } = checkIn(TransferredDeskKey);
 
 const item = computed(() => {
-  const item = ctx?.getTransferableByKey(props.id) || null;
-  return item;
+  return availableDesk!.get(props.id)?.data || transferredDesk!.get(props.id)?.data;
 });
-
-const isTransferred = computed(() => ctx?.isTransferred(props.id) || false);
+const isTransferred = computed(() => availableDesk!.get(props.id) === undefined);
+const checkOut = () => {
+  if (isTransferred.value) {
+    transferredDesk!.checkOut(props.id);
+  } else {
+    availableDesk!.checkOut(props.id);
+  }
+};
 
 const isActive = computed(() => {
-  return deskWithPlugins.activeId.value === props.id;
+  return (
+    (availableDesk as AvailableDesk).activeId.value === props.id ||
+    (transferredDesk as TransferredDesk).activeId.value === props.id
+  );
 });
 
 const setActive = () => {
-  deskWithPlugins.setActive(props.id);
+  console.log('setActive called for', props.id, isTransferred.value);
+  if (isTransferred.value) {
+    (transferredDesk as TransferredDesk).setActive(props.id);
+  } else {
+    console.log(availableDesk);
+    (availableDesk as AvailableDesk).setActive(props.id);
+  }
 };
 </script>
 
@@ -35,7 +56,7 @@ const setActive = () => {
       cn(
         'p-2 border border-border rounded-md flex items-center justify-between select-none hover:bg-accent hover:text-accent-foreground group',
         isTransferred ? 'pr-4' : 'pl-4',
-        isActive ? 'bg-accent text-accent-foreground' : ''
+        isActive ? 'bg-accent text-accent-foreground font-medium' : ''
       )
     "
     @click="setActive"
@@ -45,7 +66,7 @@ const setActive = () => {
         size="icon"
         variant="ghost"
         class="md:invisible md:group-hover:visible"
-        @click="ctx?.retrieve(props.id)"
+        @click="checkOut"
       >
         <UIcon name="lucide:arrow-left" class="hidden md:block" />
         <UIcon name="lucide:arrow-up" class="md:hidden" />
@@ -63,7 +84,7 @@ const setActive = () => {
         size="icon"
         variant="ghost"
         class="md:invisible md:group-hover:visible"
-        @click="ctx?.transfer(props.id)"
+        @click="checkOut"
       >
         <UIcon name="lucide:arrow-right" class="hidden md:block" />
         <UIcon name="lucide:arrow-down" class="md:hidden" />
