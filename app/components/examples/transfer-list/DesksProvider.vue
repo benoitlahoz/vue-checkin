@@ -7,7 +7,7 @@ import {
   type TransferableHeader,
   type TransferredDataItem,
 } from '.';
-import { createActiveItemPlugin } from '@vue-airport/plugins-base';
+import { createActiveItemPlugin, createCodecPlugin } from '@vue-airport/plugins-base';
 
 export type TransferDesksProviderProps = {
   data: Record<string, any>[];
@@ -117,8 +117,8 @@ const { createDesk: createDataDesk } = useCheckIn<TransferredDataItem>();
 const { desk: encodedDataDesk } = createDataDesk(EncodedDataDeskKey, {
   devTools: true,
   debug: false,
+  plugins: [createCodecPlugin<TransferredDataItem, any>()],
 });
-
 watch(
   () => headers.value,
   (newHeaders) => {

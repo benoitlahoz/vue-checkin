@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { useCheckIn } from '#vue-airport';
 import { cn } from '@/lib/utils';
-import { AvailableDeskKey, type TransferListDesk, TransferredDeskKey } from '.';
+import {
+  AvailableDeskKey,
+  type TransferableHeader,
+  type TransferListDesk,
+  TransferredDeskKey,
+} from '.';
 import { Button } from '@/components/ui/button';
-import type { TransferableItem } from './useTransferList';
 
 type AvailableDesk = typeof availableDesk & TransferListDesk;
 type TransferredDesk = typeof transferredDesk & TransferListDesk;
 
 const props = defineProps<{ id: string }>();
 
-const { checkIn } = useCheckIn<TransferableItem>();
+const { checkIn } = useCheckIn<TransferableHeader>();
 const { desk: availableDesk } = checkIn(AvailableDeskKey, {
   watchData: true,
 });
