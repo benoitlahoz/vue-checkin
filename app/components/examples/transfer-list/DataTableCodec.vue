@@ -9,9 +9,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { reactive, ref, computed } from 'vue';
 
 const originalValue = ref<any>('John Doe');
-const value = ref<any>(originalValue.value);
 
 type TransformParam = {
   name: string;
@@ -84,86 +84,108 @@ const transforms: Transform[] = [
   },
 ];
 
-const selectedTransform = ref<string | null>(null);
-const transformParams = ref<Record<string, any>>({});
+type SelectedTransform = {
+  name: string;
+  params: Record<string, any>;
+};
 
-const onUpdateTransform = (transformName: any) => {
+const selectedTransforms = ref<SelectedTransform[]>([]);
+const nextTransform = ref<string | null>(null);
+
+const addTransform = async (transformName: any) => {
+  console.log('Adding transform:', transformName);
   const transform = transforms.find((t) => t.name === transformName);
   if (transform) {
-    // Réinitialiser la valeur à l'original
-    value.value = originalValue.value;
-    // Initialiser les paramètres avec les valeurs par défaut
+    console.log('Found transform:', transform);
+    // Utiliser reactive pour garantir la réactivité des params
+    const params: Record<string, any> = reactive({});
     if (transform.params && transform.params.length > 0) {
       transform.params.forEach((param) => {
-        transformParams.value[param.name] = param.default;
+        params[param.name] = param.default;
       });
     }
-    applyTransform();
+    transform.params?.forEach((param) => {
+      if (!(param.name in params)) params[param.name] = '';
+    });
+    selectedTransforms.value.push({ name: transformName, params });
+    nextTransform.value = null;
   }
 };
 
-const applyTransform = () => {
-  const transform = transforms.find((t) => t.name === selectedTransform.value);
-  if (transform) {
-    // Toujours partir de la valeur originale
-    const valid = transform.if(originalValue.value);
-    if (valid) {
-      const paramsValues = transform.params
-        ? transform.params.map((p) => transformParams.value[p.name])
-        : [];
-      value.value = transform.fn(originalValue.value, ...paramsValues);
+const updateTransformParams = (index: number, paramName: string, paramValue: any) => {
+  if (!selectedTransforms.value[index]) return;
+  selectedTransforms.value[index].params[paramName] = paramValue;
+};
+
+const removeTransform = (index: number) => {
+  selectedTransforms.value.splice(index, 1);
+};
+
+const resultValue = computed(() => {
+  let result = originalValue.value;
+  for (const sel of selectedTransforms.value) {
+    const transform = transforms.find((t) => t.name === sel.name);
+    if (transform && transform.if(result)) {
+      const paramsValues = transform.params ? transform.params.map((p) => sel.params[p.name]) : [];
+      console.log('Appel de', transform.name, 'avec', result, paramsValues);
+      result = transform.fn(result, ...paramsValues);
+      console.log('Résultat intermédiaire:', result);
     } else {
-      value.value = originalValue.value;
+      console.log('Transform ignorée ou non applicable:', sel.name, result);
     }
-  } else {
-    value.value = originalValue.value;
   }
-};
-
-watch(
-  transformParams,
-  () => {
-    // Relancer la transformation à chaque changement de paramètre
-    applyTransform();
-  },
-  { deep: true }
-);
+  console.log('Résultat final:', result);
+  return result;
+});
 </script>
 
 <template>
   <div>
     <div class="mb-4 space-y-2">
-      <Select v-model="selectedTransform" @update:model-value="onUpdateTransform">
-        <SelectTrigger>
-          <SelectValue placeholder="Choisir une transformation" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem v-for="t in transforms" :key="t.name" :value="t.name">
-              <SelectLabel>{{ t.name }}</SelectLabel>
-            </SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-
-      <!-- Affichage dynamique des paramètres -->
-      <div v-if="selectedTransform">
-        <template v-for="param in transforms.find((t) => t.name === selectedTransform)?.params">
-          <div v-if="param.type === 'string'" :key="param.name" class="mt-2">
-            <label :for="param.name" class="block text-sm font-medium mb-1">{{
-              param.label
-            }}</label>
-            <Input
-              :id="param.name"
-              v-model="transformParams[param.name]"
-              type="text"
-              :placeholder="param.default"
-            />
-          </div>
-        </template>
+      <!-- Séquence des transformations -->
+      <div v-for="(sel, idx) in selectedTransforms" :key="idx" class="mb-4 p-2 border rounded">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="font-semibold">{{ sel.name }}</span>
+          <button class="text-red-500 text-xs" @click="removeTransform(idx)">Retirer</button>
+        </div>
+        <div
+          v-for="param in transforms.find((t) => t.name === sel.name)?.params"
+          :key="param.name"
+          class="mt-2"
+        >
+          <label :for="`param-${idx}-${param.name}`" class="block text-sm font-medium mb-1">{{
+            param.label
+          }}</label>
+          <Input
+            :id="`param-${idx}-${param.name}`"
+            v-model="sel.params[param.name]"
+            type="text"
+            :placeholder="param.default"
+            @input="updateTransformParams(idx, param.name, sel.params[param.name])"
+          />
+        </div>
       </div>
 
-      <div class="mt-4">{{ value }}</div>
+      <!-- Ajout d'une nouvelle transformation -->
+      <div class="flex items-center gap-2 mt-2">
+        <Select v-model="nextTransform" @update:model-value="addTransform">
+          <SelectTrigger>
+            <SelectValue placeholder="Ajouter une transformation" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="t in transforms" :key="t.name" :value="t.name">
+                <SelectLabel>{{ t.name }}</SelectLabel>
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div class="mt-4 font-mono">
+        <div><strong>Valeur d'origine :</strong> {{ originalValue || '—' }}</div>
+        <div><strong>Résultat :</strong> {{ resultValue }}</div>
+      </div>
     </div>
   </div>
 </template>
