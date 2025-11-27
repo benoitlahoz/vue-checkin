@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCsv } from './useCsv';
 import { CsvFile } from './fixtures';
-import { DesksProvider, TransferList, DataTable } from '.';
+import { DesksProvider, TransferList, DataTable, DataTableCodec } from '.';
 import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
@@ -55,6 +55,7 @@ const handleFileUpload = (e: Event) => {
       <Accordion>
         <DataTable />
       </Accordion>
+      <DataTableCodec />
     </DesksProvider>
   </div>
 </template>

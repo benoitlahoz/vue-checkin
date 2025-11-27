@@ -3,7 +3,12 @@ import { useTemplateRef, watch, computed, ref } from 'vue';
 import { watchOnce } from '@vueuse/core';
 import { useSortable } from '@vueuse/integrations/useSortable';
 import { useCheckIn } from '#vue-airport';
-import { EncodedDataDeskKey, type TransferDataContext, type TransferredDataItem } from '.';
+import {
+  EncodedDataDeskKey,
+  type TransferDataContext,
+  type TransferredDataItem,
+  DataTableHeader,
+} from '.';
 
 const colsRef = useTemplateRef('colsRef');
 
@@ -19,14 +24,12 @@ const size = computed(() => desk!.registryList.value.length || 0);
 const keysOrder = computed(
   () => (desk as TransferDeskWithContext).getContext<TransferDataContext>()?.keysOrder.value || []
 );
-// Flat array of strings for useSortable.
 const headers = ref<string[]>([]);
 
 watch(
   () => keysOrder.value,
   () => {
     headers.value = [...keysOrder.value];
-    console.log('DataTable', keysOrder.value, headers.value);
   },
   { immediate: true }
 );
@@ -59,20 +62,16 @@ watchOnce(
       <div
         class="w-full h-128 max-h-128 border border-border rounded-md overflow-auto flex flex-col"
       >
-        <div ref="colsRef" class="w-full flex">
+        <div ref="colsRef" class="w-full flex sticky top-0 z-10 bg-card">
           <div
             v-for="(header, headerIdx) in headers"
             :key="`header-base-${header}-${headerIdx}`"
             class="flex flex-col border-r flex-1"
           >
-            <div
-              class="p-2 border-b uppercase truncate font-bold flex items-center justify-center select-none cursor-move"
-            >
-              {{ header }}
-            </div>
+            <DataTableHeader :header="header" />
           </div>
         </div>
-        <div class="w-full flex">
+        <div class="flex-1 w-full flex">
           <div
             v-for="(header, headerIdx) in headers"
             :key="`header-${header}-content-${headerIdx}`"
@@ -81,7 +80,7 @@ watchOnce(
             <div
               v-for="(row, rowIdx) in registry"
               :key="header + '-row-' + rowIdx + headerIdx"
-              class="p-2 border-b flex truncate items-center justify-center"
+              class="flex-1 p-2 border-b flex truncate items-center justify-center"
             >
               {{ row.data[header] }}
             </div>

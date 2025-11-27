@@ -41,4 +41,6 @@ export { default as DesksProvider } from './DesksProvider.vue';
 export { default as TransferList } from './TransferList.vue';
 export { default as Transferable } from './Transferable.vue';
 export { default as DataTable } from './DataTable.vue';
+export { default as DataTableHeader } from './DataTableHeader.vue';
+export { default as DataTableCodec } from './DataTableCodec.vue';
 export { default as CsvDownloader } from './CsvDownloader.vue';
