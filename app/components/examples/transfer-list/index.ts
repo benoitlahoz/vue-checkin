@@ -4,7 +4,6 @@
  */
 import type { InjectionKey, Ref } from 'vue';
 import type { DeskWithContext } from '#vue-airport';
-import type { ActiveItemPluginExports } from '@vue-airport/plugins-base/activeItem';
 import type { CodecPluginExports } from '@vue-airport/plugins-base';
 
 // Definition of transferable header item
@@ -20,8 +19,7 @@ export interface TransferredDataItem {
 }
 
 // What we want to transfer are headers.
-export type TransferListDesk = DeskWithContext<TransferableHeader> &
-  ActiveItemPluginExports<TransferableHeader>;
+export type TransferListDesk = DeskWithContext<TransferableHeader>;
 
 export interface TransferDataContext {
   keysOrder: Ref<string[]>;
@@ -43,5 +41,4 @@ export { default as DesksProvider } from './DesksProvider.vue';
 export { default as TransferList } from './TransferList.vue';
 export { default as Transferable } from './Transferable.vue';
 export { default as DataTable } from './DataTable.vue';
-export { default as DataEncoder } from './DataEncoder.vue';
 export { default as CsvDownloader } from './CsvDownloader.vue';

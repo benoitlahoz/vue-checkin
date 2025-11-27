@@ -26,6 +26,7 @@ watch(
   () => keysOrder.value,
   () => {
     headers.value = [...keysOrder.value];
+    console.log('DataTable', keysOrder.value, headers.value);
   },
   { immediate: true }
 );
@@ -65,7 +66,7 @@ watchOnce(
             class="flex flex-col border-r flex-1"
           >
             <div
-              class="p-2 border-b min-w-20 uppercase truncate font-bold flex items-center justify-center select-none cursor-move"
+              class="p-2 border-b uppercase truncate font-bold flex items-center justify-center select-none cursor-move"
             >
               {{ header }}
             </div>
@@ -80,7 +81,7 @@ watchOnce(
             <div
               v-for="(row, rowIdx) in registry"
               :key="header + '-row-' + rowIdx + headerIdx"
-              class="p-2 border-b min-w-20 flex truncate items-center justify-center"
+              class="p-2 border-b flex truncate items-center justify-center"
             >
               {{ row.data[header] }}
             </div>

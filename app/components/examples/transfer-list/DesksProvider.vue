@@ -9,7 +9,7 @@ import {
   type TransferredDataItem,
   type TransferDataContext,
 } from '.';
-import { createActiveItemPlugin, createCodecPlugin } from '@vue-airport/plugins-base';
+import { createCodecPlugin } from '@vue-airport/plugins-base';
 
 export type TransferDesksProviderProps = {
   data: Record<string, any>[];
@@ -42,6 +42,7 @@ const dataForHeaders = (...headers: string[]) => {
 const removeKeyFromData = (item: CheckInItem<TransferredDataItem>, key: string) => {
   const { [key]: _, ...rest } = item.data;
   if (Object.keys(rest).length === 0) {
+    updateKeysOrder();
     return undefined;
   }
 
@@ -90,6 +91,9 @@ const onRetrieved = async (id: string | number) => {
       .map((dataItem) => removeKeyFromData(dataItem, id as string))
       .filter((dataItem): dataItem is CheckInItem<TransferredDataItem> => !!dataItem);
     encodedDataDesk.clear();
+    if (newRegistryData.length === 0) {
+      return;
+    }
     await encodedDataDesk.checkInMany(newRegistryData);
   }
 };
@@ -118,7 +122,6 @@ const { createDesk: createHeadersDesk } = useCheckIn<TransferableHeader>();
 const { desk: availableHeadersDesk } = createHeadersDesk(AvailableDeskKey, {
   devTools: true,
   debug: false,
-  plugins: [createActiveItemPlugin<TransferableHeader>()],
   onBeforeCheckOut: onTransfer,
 });
 
@@ -126,7 +129,6 @@ const { desk: availableHeadersDesk } = createHeadersDesk(AvailableDeskKey, {
 const { desk: transferredHeadersDesk } = createHeadersDesk(TransferredDeskKey, {
   devTools: true,
   debug: false,
-  plugins: [createActiveItemPlugin<TransferableHeader>()],
   onCheckIn: onTransferred,
   onBeforeCheckOut: onRetrieve,
   onCheckOut: onRetrieved,

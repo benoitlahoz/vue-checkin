@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCsv } from './useCsv';
 import { CsvFile } from './fixtures';
-import { DesksProvider, TransferList, DataEncoder, DataTable } from '.';
+import { DesksProvider, TransferList, DataTable } from '.';
 import { Accordion } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
@@ -52,7 +52,6 @@ const handleFileUpload = (e: Event) => {
     </div>
     <DesksProvider :data="rows">
       <TransferList />
-      <DataEncoder />
       <Accordion>
         <DataTable />
       </Accordion>
