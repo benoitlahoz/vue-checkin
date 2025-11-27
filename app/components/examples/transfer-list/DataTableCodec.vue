@@ -132,11 +132,9 @@ const resultValue = computed(() => {
     const transform = transforms.find((t) => t.name === sel.name);
     if (transform) {
       const paramsValues = transform.params ? transform.params.map((p) => sel.params[p.name]) : [];
-      // Appliquer la transformation à chaque valeur du tableau
       results = results.flatMap((val) => {
         if (transform.if(val)) {
           const res = transform.fn(val, ...paramsValues);
-          // Si la transformation retourne un tableau, le flatten
           return Array.isArray(res) ? res : [res];
         }
         return [val];
@@ -147,9 +145,7 @@ const resultValue = computed(() => {
         if (splitTransforms.value.length !== results.length) {
           splitTransforms.value = results.map(() => ({ name: null, params: {} }));
         }
-      }
-      // Si on est après Split, appliquer splitTransforms à chaque partie
-      if (splitIndex >= 0 && transform.name !== 'Split') {
+        // Appliquer splitTransforms à chaque partie immédiatement après Split
         results = results.map((part, idx) => {
           const st = splitTransforms.value[idx];
           if (st && st.name) {
@@ -163,6 +159,7 @@ const resultValue = computed(() => {
           return part;
         });
       }
+      // Si on est après Split (autres transforms), ne pas réappliquer splitTransforms
     }
   }
   return results;
@@ -212,17 +209,6 @@ const resultValue = computed(() => {
         </Select>
       </div>
 
-      <div class="mt-4 font-mono">
-        <div><strong>Valeur d'origine :</strong> {{ originalValue || '—' }}</div>
-        <div v-if="Array.isArray(resultValue)">
-          <strong>Résultats :</strong>
-          <ul>
-            <li v-for="(val, i) in resultValue" :key="i">{{ val }}</li>
-          </ul>
-        </div>
-        <div v-else><strong>Résultat :</strong> {{ resultValue }}</div>
-      </div>
-
       <!-- UI pour les transformations sur chaque partie issue du Split -->
       <div
         v-if="Array.isArray(resultValue) && (splitTransforms ?? []).length === resultValue.length"
@@ -258,8 +244,9 @@ const resultValue = computed(() => {
                 >{{ param.label }}</label
               >
               <Input
+                v-if="splitTransforms.value[idx]"
                 :id="`split-param-${idx}-${param.name}`"
-                v-model="(splitTransforms?.value ?? [])[idx].params[param.name]"
+                v-model="splitTransforms.value[idx].params[param.name]"
                 type="text"
                 :placeholder="param.default"
               />
@@ -267,6 +254,16 @@ const resultValue = computed(() => {
           </div>
         </div>
       </div>
+    </div>
+    <div class="mt-4 font-mono">
+      <div><strong>Valeur d'origine :</strong> {{ originalValue || '—' }}</div>
+      <div v-if="Array.isArray(resultValue)">
+        <strong>Résultats :</strong>
+        <ul>
+          <li v-for="(val, i) in resultValue" :key="i">{{ val }}</li>
+        </ul>
+      </div>
+      <div v-else><strong>Résultat :</strong> {{ resultValue }}</div>
     </div>
   </div>
 </template>
