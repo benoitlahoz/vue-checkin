@@ -22,25 +22,25 @@ const isArray = (val: any) => Array.isArray(val);
 const transforms = computed(() => [
   {
     name: 'To Uppercase',
-    if: (node: NodeObject) => typeof node.type === 'string',
+    if: (node: NodeObject) => node.type === 'string',
     fn: (node: NodeObject) => node.value.toUpperCase(),
     params: [],
   },
   {
     name: 'To Lowercase',
-    if: (node: NodeObject) => typeof node.type === 'string',
+    if: (node: NodeObject) => node.type === 'string',
     fn: (node: NodeObject) => node.value.toLowerCase(),
     params: [],
   },
   {
     name: 'Increment',
-    if: (node: NodeObject) => typeof node.type === 'number',
+    if: (node: NodeObject) => node.type === 'number',
     fn: (node: NodeObject) => node.value + 1,
     params: [],
   },
   {
     name: 'Decrement',
-    if: (node: NodeObject) => typeof node.type === 'number',
+    if: (node: NodeObject) => node.type === 'number',
     fn: (node: NodeObject) => node.value - 1,
     params: [],
   },
