@@ -60,9 +60,15 @@ const buildNodeTree = (value: any, nodeName: string = ''): NodeObject => {
     };
   } else {
     return {
-      value,
-      type: typeof value as NodeType,
-      children: [],
+      value: nodeName,
+      type: 'property',
+      children: [
+        {
+          value,
+          type: typeof value as NodeType,
+          children: [],
+        },
+      ],
     };
   }
 };
