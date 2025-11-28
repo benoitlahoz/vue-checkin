@@ -16,9 +16,6 @@ const props = defineProps<{
   tree: NodeObject;
 }>();
 
-const isObject = (val: any) => val && typeof val === 'object' && !Array.isArray(val);
-const isArray = (val: any) => Array.isArray(val);
-
 const transforms = computed(() => [
   {
     name: 'To Uppercase',
@@ -54,8 +51,28 @@ const transforms = computed(() => [
 
 const nodeId = ref('');
 
+const addSibling = (node: NodeObject, value: any) => {
+  if (!node.siblings) node.siblings = [];
+  node.siblings.push({
+    value,
+    type: typeof value,
+    children: [],
+  });
+};
+
+const selectedTransform = ref('');
+
+function handleTransformChange(transformName: string) {
+  const transform = transforms.value.find((t) => t.name === transformName);
+  if (transform) {
+    const transformedValue = transform.fn(props.tree);
+    addSibling(props.tree, transformedValue);
+  }
+  selectedTransform.value = '';
+}
+
 const { checkIn } = useCheckIn<NodeObject>();
-const { desk } = checkIn(TransformObjectDeskKey, {
+checkIn(TransformObjectDeskKey, {
   autoCheckIn: true,
   watchData: true,
   data: (_desk, id) => {
@@ -76,14 +93,14 @@ const { desk } = checkIn(TransformObjectDeskKey, {
     <div class="flex items-center gap-4 my-2">
       <div class="font-bold">{{ tree?.value }}</div>
       <template v-if="transforms.filter((t) => t.if(tree)).length > 0">
-        <Select>
+        <Select v-model="selectedTransform" @update:modelValue="handleTransformChange">
           <!-- @vue-ignore -->
           <SelectTrigger size="xs" class="px-2 py-1">
-            <SelectValue placeholder="Transform" class="text-xs" />
+            <SelectValue placeholder="Transformation" class="text-xs" />
           </SelectTrigger>
           <SelectContent class="text-xs">
             <SelectGroup>
-              <SelectLabel>Transforms</SelectLabel>
+              <SelectLabel>Transformations disponibles</SelectLabel>
               <SelectItem
                 v-for="transform in transforms.filter((t) => t.if(tree))"
                 :key="transform.name"
