@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useCheckIn } from '#vue-airport';
-import { TransformNode, TransformObjectDeskKey, type NodeObject } from '.';
+import { TransformNode, TransformObjectDeskKey, type NodeObject, type NodeType } from '.';
 /*
 const tree: NodeObject = ref({
   value: 'Root',
@@ -45,32 +45,40 @@ const tree: NodeObject = ref({
 });
 */
 
+const buildNodeTree = (value: any, nodeName: string = ''): NodeObject => {
+  if (Array.isArray(value)) {
+    return {
+      value: nodeName,
+      type: 'array',
+      children: value.map((item, idx) => buildNodeTree(item, String(idx))),
+    };
+  } else if (value && typeof value === 'object') {
+    return {
+      value: nodeName,
+      type: 'object',
+      children: Object.keys(value).map((key) => buildNodeTree(value[key], key)),
+    };
+  } else {
+    return {
+      value,
+      type: typeof value as NodeType,
+      children: [],
+    };
+  }
+};
+
 const data = {
   name: 'john doe',
   age: 30,
   city: 'marseille',
+  address: {
+    street: '123 main st',
+    zip: '13001',
+  },
+  hobbies: ['reading', 'traveling', 'swimming'],
 };
 
-const tree = ref<NodeObject>({
-  value: 'Root',
-  type: 'object',
-  children: Object.keys(data).map((key) => ({
-    value: key,
-    type: 'property',
-    children: [
-      {
-        value: `${data[key as keyof typeof data]}`,
-        type: typeof data[key as keyof typeof data] as
-          | 'string'
-          | 'number'
-          | 'boolean'
-          | 'object'
-          | 'array',
-        children: [],
-      },
-    ],
-  })),
-});
+const tree = ref<NodeObject>(buildNodeTree(data, 'Root'));
 
 const { createDesk } = useCheckIn<NodeObject>();
 createDesk(TransformObjectDeskKey, {

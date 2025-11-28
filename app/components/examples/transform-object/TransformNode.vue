@@ -22,31 +22,31 @@ const isArray = (val: any) => Array.isArray(val);
 const transforms = computed(() => [
   {
     name: 'To Uppercase',
-    if: (node: NodeObject) => typeof node.value === 'string',
+    if: (node: NodeObject) => typeof node.type === 'string',
     fn: (node: NodeObject) => node.value.toUpperCase(),
     params: [],
   },
   {
     name: 'To Lowercase',
-    if: (node: NodeObject) => typeof node.value === 'string',
+    if: (node: NodeObject) => typeof node.type === 'string',
     fn: (node: NodeObject) => node.value.toLowerCase(),
     params: [],
   },
   {
     name: 'Increment',
-    if: (node: NodeObject) => typeof node.value === 'number',
+    if: (node: NodeObject) => typeof node.type === 'number',
     fn: (node: NodeObject) => node.value + 1,
     params: [],
   },
   {
     name: 'Decrement',
-    if: (node: NodeObject) => typeof node.value === 'number',
+    if: (node: NodeObject) => typeof node.type === 'number',
     fn: (node: NodeObject) => node.value - 1,
     params: [],
   },
   {
     name: 'Stringify',
-    if: (node: NodeObject) => isObject(node.value) || isArray(node.value),
+    if: (node: NodeObject) => node.type === 'object' || node.type === 'array',
     fn: (node: NodeObject) => JSON.stringify(node.value),
     params: [],
   },
@@ -78,13 +78,19 @@ const { desk } = checkIn(TransformObjectDeskKey, {
       <Select>
         <!-- @vue-ignore -->
         <SelectTrigger size="xs" class="px-2 py-1">
-          <SelectValue placeholder="Ajouter un enfant" class="text-xs" />
+          <SelectValue placeholder="Transformation" class="text-xs" />
         </SelectTrigger>
         <SelectContent class="text-xs">
           <SelectGroup>
-            <SelectLabel>Ajouter un enfant</SelectLabel>
-            <SelectItem value="Child" class="text-xs">Child</SelectItem>
-            <SelectItem value="Leaf" class="text-xs">Leaf</SelectItem>
+            <SelectLabel>Transformations disponibles</SelectLabel>
+            <SelectItem
+              v-for="transform in transforms.filter((t) => t.if(tree))"
+              :key="transform.name"
+              :value="transform.name"
+              class="text-xs"
+            >
+              {{ transform.name }}
+            </SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>
