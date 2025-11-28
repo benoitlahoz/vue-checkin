@@ -58,22 +58,23 @@ const transforms = computed(() => [
 
 const nodeId = ref('');
 
-const addSibling = (node: NodeObject, value: any) => {
-  if (!node.siblings) node.siblings = [];
-  node.siblings.push({
-    value,
-    type: typeof value,
-    children: [],
-  });
+const setSingleSibling = (node: NodeObject, value: any) => {
+  node.siblings = [
+    {
+      value,
+      type: typeof value,
+      children: [],
+    },
+  ];
 };
 
 const selectedTransform = ref('');
 
-function handleTransformChange(transformName: string) {
+function handleTransformChange(transformName: any) {
   const transform = transforms.value.find((t) => t.name === transformName);
   if (transform) {
     const transformedValue = transform.fn(props.tree);
-    addSibling(props.tree, transformedValue);
+    setSingleSibling(props.tree, transformedValue);
     selectedTransform.value = transformName;
   }
 }
@@ -100,7 +101,7 @@ checkIn(TransformObjectDeskKey, {
     <div class="flex items-center gap-4 my-2">
       <div class="font-bold">{{ tree?.value }}</div>
       <template v-if="transforms.filter((t) => t.if(tree)).length > 0">
-        <Select v-model="selectedTransform" @update:modelValue="handleTransformChange">
+        <Select v-model="selectedTransform" @update:model-value="handleTransformChange">
           <!-- @vue-ignore -->
           <SelectTrigger size="xs" class="px-2 py-1">
             <SelectValue placeholder="Transformation" class="text-xs" />

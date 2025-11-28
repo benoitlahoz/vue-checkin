@@ -1,6 +1,16 @@
 import type { InjectionKey, Ref } from 'vue';
 
-export type NodeType = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'property';
+export type NodeType =
+  | 'string'
+  | 'number'
+  | 'bigint'
+  | 'symbol'
+  | 'boolean'
+  | 'object'
+  | 'array'
+  | 'undefined'
+  | 'function'
+  | 'property';
 
 export interface NodeObject {
   value: any;
