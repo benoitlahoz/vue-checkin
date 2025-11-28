@@ -82,7 +82,7 @@ function handleTransformChange(transformName: any) {
   }
 }
 
-function deployNodeTree(node: NodeObject, acc = {}): any {
+function deployNodeTree(node: NodeObject, acc = {} as Record<string, any>): any {
   const obj = acc;
   if (node.type === 'object') {
     obj[node.value] = {};
