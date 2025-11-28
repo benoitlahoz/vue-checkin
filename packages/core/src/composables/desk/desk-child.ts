@@ -17,7 +17,9 @@ export interface CheckInOptions<T = any, TContext extends Record<string, any> = 
     | (() => T)
     | (() => Promise<T>)
     | ((desk: DeskCore<T> & TContext) => T)
-    | ((desk: DeskCore<T> & TContext) => Promise<T>);
+    | ((desk: DeskCore<T> & TContext) => Promise<T>)
+    | ((desk: DeskCore<T> & TContext, id: string | number) => T)
+    | ((desk: DeskCore<T> & TContext, id: string | number) => Promise<T>);
   generateId?: () => string | number;
   watchData?: boolean;
   shallow?: boolean;
@@ -101,11 +103,13 @@ export const checkInToDesk = <T = any, TContext extends Record<string, any> = {}
       typeof checkInOptions.data === 'function'
         ? (
             checkInOptions.data as
+              | ((desk: DeskCore<T> & TContext, id: string | number) => T)
+              | ((desk: DeskCore<T> & TContext, id: string | number) => Promise<T>)
               | ((desk: DeskCore<T> & TContext) => T)
               | ((desk: DeskCore<T> & TContext) => Promise<T>)
               | (() => T)
               | (() => Promise<T>)
-          )(desk!)
+          )(desk!, itemId)
         : checkInOptions.data;
 
     // If it's a Promise, protect against race conditions
