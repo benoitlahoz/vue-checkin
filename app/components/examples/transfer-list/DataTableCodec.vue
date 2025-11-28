@@ -256,7 +256,7 @@ const resultValue = computed(() => {
               >
               <Input
                 :id="`split-param-${idx}-${param.name}`"
-                v-model="(splitTransforms?.value ?? [])[idx].params[param.name]"
+                v-model="(splitTransforms ?? [])[idx].params[param.name]"
                 type="text"
                 :placeholder="param.default"
               />
