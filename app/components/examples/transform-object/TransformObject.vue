@@ -59,17 +59,33 @@ const buildNodeTree = (value: any, nodeName: string = ''): NodeObject => {
       children: Object.keys(value).map((key) => buildNodeTree(value[key], key)),
     };
   } else {
-    return {
-      value: nodeName,
-      type: 'property',
-      children: [
-        {
-          value,
-          type: typeof value as NodeType,
-          children: [],
-        },
-      ],
-    };
+    // Si nodeName est un index numérique, on met le type 'index', sinon 'property'
+    const isIndex = !isNaN(Number(nodeName)) && nodeName !== '';
+    if (isIndex) {
+      return {
+        value: nodeName, // l'index
+        type: 'index',
+        children: [
+          {
+            value: value, // la vraie valeur de l'élément
+            type: typeof value as NodeType,
+            children: [],
+          },
+        ],
+      };
+    } else {
+      return {
+        value: nodeName,
+        type: 'property',
+        children: [
+          {
+            value,
+            type: typeof value as NodeType,
+            children: [],
+          },
+        ],
+      };
+    }
   }
 };
 

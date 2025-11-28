@@ -99,53 +99,18 @@ function deployNodeTree(node: NodeObject, acc = {} as Record<string, any>): any 
   } else if (node.type === 'property') {
     if (node.children && node.children.length > 0) {
       const lastChild = node.children[node.children.length - 1];
-      obj[node.value] = deployNodeTree(lastChild);
+      if (lastChild) obj[node.value] = deployNodeTree(lastChild);
     } else {
       obj[node.value] = undefined;
     }
     return obj;
-  }
-  return node.value;
-}
-
-// Fonction de décodage qui reconstruit un objet JS à partir d'un NodeObject
-function decodeNodeTree(node: NodeObject, isRoot = true): any {
-  // Si le node a des siblings (transformations), on prend le dernier sibling
-  if (node.siblings && node.siblings.length > 0) {
-    const lastSibling = node.siblings[node.siblings.length - 1];
-    if (lastSibling) {
-      return decodeNodeTree(lastSibling, isRoot);
+  } else if (node.type === 'index') {
+    // On retourne la valeur de l'enfant (la vraie valeur de l'élément d'array)
+    if (node.children && node.children[0]) {
+      return deployNodeTree(node.children[0]);
     }
+    return undefined;
   }
-  if (node.type === 'property') {
-    if (node.children && node.children.length > 0) {
-      const lastChild = node.children[node.children.length - 1];
-      if (lastChild) {
-        const decoded = decodeNodeTree(lastChild, false);
-        return { [node.value]: decoded };
-      }
-    }
-    return { [node.value]: undefined };
-  }
-  if (node.type === 'array') {
-    // On reconstruit un tableau à partir des enfants
-    return node.children?.map((child) => decodeNodeTree(child, false)) ?? [];
-  }
-  if (node.type === 'object') {
-    // On reconstruit un objet à partir des propriétés
-    const obj: Record<string, any> = {};
-    node.children?.forEach((child) => {
-      if (child.type === 'property') {
-        const prop = decodeNodeTree(child, false);
-        // On fusionne chaque propriété dans l'objet final
-        if (prop && typeof prop === 'object' && !Array.isArray(prop)) {
-          Object.assign(obj, prop);
-        }
-      }
-    });
-    return obj;
-  }
-  // Pour les types primitifs
   return node.value;
 }
 
