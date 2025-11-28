@@ -22,32 +22,32 @@ const isArray = (val: any) => Array.isArray(val);
 const transforms = computed(() => [
   {
     name: 'To Uppercase',
-    if: (v: any) => typeof v === 'string',
-    fn: (v: string) => v.toUpperCase(),
+    if: (node: NodeObject) => typeof node.value === 'string',
+    fn: (node: NodeObject) => node.value.toUpperCase(),
     params: [],
   },
   {
     name: 'To Lowercase',
-    if: (v: any) => typeof v === 'string',
-    fn: (v: string) => v.toLowerCase(),
+    if: (node: NodeObject) => typeof node.value === 'string',
+    fn: (node: NodeObject) => node.value.toLowerCase(),
     params: [],
   },
   {
     name: 'Increment',
-    if: (v: any) => typeof v === 'number',
-    fn: (v: number) => v + 1,
+    if: (node: NodeObject) => typeof node.value === 'number',
+    fn: (node: NodeObject) => node.value + 1,
     params: [],
   },
   {
     name: 'Decrement',
-    if: (v: any) => typeof v === 'number',
-    fn: (v: number) => v - 1,
+    if: (node: NodeObject) => typeof node.value === 'number',
+    fn: (node: NodeObject) => node.value - 1,
     params: [],
   },
   {
     name: 'Stringify',
-    if: (v: any) => isObject(v) || isArray(v),
-    fn: (v: any) => JSON.stringify(v),
+    if: (node: NodeObject) => isObject(node.value) || isArray(node.value),
+    fn: (node: NodeObject) => JSON.stringify(node.value),
     params: [],
   },
 ]);
