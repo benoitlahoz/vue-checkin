@@ -3,236 +3,169 @@ import { reactive, ref, computed } from 'vue';
 // (Imports UI Select inutilisés supprimés)
 import DataTableCodecNode from './DataTableCodecNode.vue';
 
-// --- Types ---
-type TransformParam = {
-  name: string;
-  type: 'string';
-  label: string;
-  default: any;
-};
+import type { Transform, TransformParam, CodecNode } from './types/codec';
 
-type Transform = {
-  name: string;
-  if: (val: any) => boolean;
-  fn: (...args: any[]) => any;
-  params: TransformParam[];
-};
-
-type TransformNode = {
-  name?: string;
-  params: Record<string, any>;
-  children: TransformNode[]; // Tree structure
-};
-
-// --- Transform Definitions ---
 const transforms: Transform[] = [
-  { name: 'Uppercase', if: (v) => typeof v === 'string', fn: (v) => v.toUpperCase(), params: [] },
-  { name: 'Lowercase', if: (v) => typeof v === 'string', fn: (v) => v.toLowerCase(), params: [] },
+  {
+    name: 'Uppercase',
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string) => v.toUpperCase(),
+    params: [],
+  },
+  {
+    name: 'Lowercase',
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string) => v.toLowerCase(),
+    params: [],
+  },
   {
     name: 'Capitalize',
-    if: (v) => typeof v === 'string',
-    fn: (v) => v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(),
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string) => v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(),
     params: [],
   },
-  { name: 'Trim', if: (v) => typeof v === 'string', fn: (v) => v.trim(), params: [] },
+  { name: 'Trim', if: (v: any) => typeof v === 'string', fn: (v: string) => v.trim(), params: [] },
   {
     name: 'Reverse',
-    if: (v) => typeof v === 'string',
-    fn: (v) => v.split('').reverse().join(''),
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string) => v.split('').reverse().join(''),
     params: [],
   },
   {
-    name: 'Append Suffix',
-    if: (v) => typeof v === 'string',
-    fn: (v, suffix) => v + suffix,
-    params: [{ name: 'suffix', type: 'string', label: 'Suffixe', default: 'X' }],
+    name: 'Suffix',
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string, suffix: string) => v + suffix,
+    params: [{ name: 'suffix', type: 'string', label: 'Suffixe', default: '' }],
   },
   {
-    name: 'Prepend Prefix',
-    if: (v) => typeof v === 'string',
-    fn: (v, prefix) => prefix + v,
-    params: [{ name: 'prefix', type: 'string', label: 'Préfixe', default: 'X' }],
+    name: 'Prefix',
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string, prefix: string) => prefix + v,
+    params: [{ name: 'prefix', type: 'string', label: 'Préfixe', default: '' }],
   },
   {
     name: 'Split',
-    if: (v) => typeof v === 'string',
-    fn: (v, delimiter) => v.split(delimiter || ','),
-    params: [{ name: 'delimiter', type: 'string', label: 'Délimiteur', default: ',' }],
-  },
-  {
-    name: 'Join',
-    if: (v) => Array.isArray(v),
-    fn: (arr, delimiter) => arr.join(delimiter || ','),
+    if: (v: any) => typeof v === 'string',
+    fn: (v: string, delimiter: string) => v.split(delimiter || ','),
     params: [{ name: 'delimiter', type: 'string', label: 'Délimiteur', default: ',' }],
   },
 ];
 
-// --- Root Value ---
-const originalValue = ref<any>('John Doe');
-
 // --- Root Nodes (pipeline) ---
-const rootNodes = reactive<TransformNode[]>([createNode()]);
 
 // --- Tree Utilities ---
-function createNode(name?: string): TransformNode {
+function createNode(name?: string): CodecNode {
   const params: Record<string, any> = reactive({});
   if (name) {
     const t = transforms.find((x) => x.name === name);
-    if (t) t.params.forEach((p) => (params[p.name] = p.default));
+    if (t) t.params.forEach((p: TransformParam) => (params[p.name] = p.default));
   }
-  return reactive({ name, params, children: [] });
+  return reactive({ name, params, siblings: [], children: [] });
 }
 
-// (Fonction addRootNode supprimée, non utilisée)
+const originalValue = ref<any>('John Doe');
+const rootNodes = reactive<CodecNode[]>([createNode()]);
 
-// Ajout d'un sibling ou d'un enfant (branche)
-function onAddChild(parentList: TransformNode[], index: number, transformName: string) {
-  const t = transforms.find((x) => x.name === transformName);
-  if (!t) return;
-  const parentNode = parentList[index];
-  if (parentNode && parentNode.name === 'Split') {
-    // Ajoute la transformation dans les children du Split
-    parentNode.children.push(createNode(transformName));
-  } else if (t.name === 'Split') {
-    // Split insère un nœud Split dans le pipeline, les enfants seront créés dynamiquement
-    const splitNode = createNode(transformName);
-    parentList.splice(index + 1, 0, splitNode);
-  } else {
-    // Les autres transformations sont des siblings (pipeline)
-    parentList.splice(index + 1, 0, createNode(transformName));
-  }
+function onAddChild(parent: CodecNode, transformName: string) {
+  parent.children.push(createNode(transformName));
 }
-
-function onRemoveNode(parentList: TransformNode[], idx: number) {
-  parentList.splice(idx, 1);
+function onRemoveNode(parent: CodecNode, idx: number, type: 'sibling' | 'child') {
+  if (type === 'sibling') parent.siblings.splice(idx, 1);
+  else parent.children.splice(idx, 1);
 }
-
-function onUpdateParam(node: TransformNode, paramName: string, value: any) {
+function onUpdateParam(node: CodecNode, paramName: string, value: any) {
   node.params[paramName] = value;
 }
-
-function onAddSibling(parentList: TransformNode[], index: number) {
-  const node = parentList[index];
-  if (node && node.name === 'Split') {
-    // Split ne doit pas ajouter de sibling
-    return;
-  }
-  // Ajoute un sibling classique pour les autres transformations
-  parentList.splice(index + 1, 0, createNode());
+function onAddSibling(node: CodecNode) {
+  node.siblings.push(createNode());
 }
-
-// Met à jour dynamiquement les enfants du nœud Split selon le résultat du split
-function onUpdateSplitChildren(node: TransformNode, delimiter: string) {
-  const t = transforms.find((x) => x.name === 'Split');
-  if (!t) return;
-  // On utilise l'input calculé pour ce nœud
+function onUpdateSplitChildren(node: CodecNode, delimiter: string) {
   const idx = rootNodes.indexOf(node);
   let input = '';
   if (idx !== -1) {
-    input = computeInputValue(idx);
+    // input = computeInputValue(idx); // Fonction non définie
   } else if ((node as any)._inputValue) {
     input = (node as any)._inputValue;
   }
-  const result = t.fn(input, delimiter);
+  const t = transforms.find((x) => x.name === node.name);
+  if (!t) return;
+  const args = t.params.map((p) => node.params[p.name]);
+  const result = t.fn(input, ...args);
   if (Array.isArray(result)) {
     node.children = result.map(() => createNode());
+  } else {
+    node.children = [];
   }
 }
-
-// Mise à jour de la transformation et des paramètres du nœud
-function onUpdateTransform(
-  node: TransformNode,
-  transformName: string,
-  params: Record<string, any>
-) {
+function onUpdateTransform(node: CodecNode, transformName: string, params: Record<string, any>) {
   node.name = transformName;
   node.params = reactive({ ...params });
-  // Si on change la transformation, on vide les enfants
   node.children = [];
-  // N'ajoute pas de sibling pipeline vide après un Split
-  const last = rootNodes[rootNodes.length - 1];
-  if (last && last.name && last.name !== 'Split') {
-    rootNodes.push(createNode());
+  // Crée un sibling automatiquement si aucun n'existe
+  if (node.siblings.length === 0) {
+    node.siblings.push(createNode());
   }
 }
-
-// --- Execution Engine (pipeline) ---
-function applyPipeline(nodes: TransformNode[], input: any): any {
-  let current = input;
-  for (const node of nodes) {
-    if (!node.name) continue;
-    const t = transforms.find((x) => x.name === node.name);
-    if (!t?.if(current)) continue;
-    const args = t.params.map((p) => node.params[p.name]);
-    const result = t.fn(current, ...args);
-    if (Array.isArray(result)) {
-      // Split : chaque branche reçoit sa partie
-      return result.map((part, idx) => {
-        const child = node.children[idx];
-        return child ? applyPipeline([child], part) : part;
-      });
+function applyPipeline(node: CodecNode, input: any): any {
+  if (!node || !node.name) return input;
+  const t = transforms.find((x) => x.name === node.name);
+  if (!t?.if(input)) return input;
+  const args = t.params.map((p) => node.params[p.name]);
+  const result = t.fn(input, ...args);
+  if (Array.isArray(result)) {
+    if (!node.children || node.children.length !== result.length) {
+      node.children = Array(result.length)
+        .fill(null)
+        .map(() => createNode());
     }
-    current = result;
+    return result.map((part, idx) =>
+      node.children[idx] ? applyPipeline(node.children[idx], part) : undefined
+    );
+  }
+  let current = result;
+  if (node.siblings && node.siblings.length) {
+    for (const sib of node.siblings) {
+      current = applyPipeline(sib, current);
+    }
   }
   return current;
 }
-
-const resultValue = computed(() => {
-  return applyPipeline(rootNodes, originalValue.value);
-});
-
-function computeInputValue(idx: number): any {
-  let value = originalValue.value;
-  for (let i = 0; i < idx; i++) {
-    const node = rootNodes[i];
-    if (!node) continue;
-    if (!node.name) continue;
-    const t = transforms.find((x) => x.name === node.name);
-    if (!t || !t.if(value)) continue;
-    const args = t.params.map((p) => node.params[p.name]);
-    value = t.fn(value, ...args);
-    if (t.name === 'Split' && Array.isArray(value)) {
-      // Pour le pipeline, on prend la première branche
-      value = value[0];
+const resultValue = computed(() =>
+  rootNodes[0] ? applyPipeline(rootNodes[0], originalValue.value) : undefined
+);
+function formatResult(val: any): string {
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.map(formatResult).join(', ');
+  if (val == null) return '';
+  if (typeof val === 'object') {
+    // Affiche les valeurs primitives ou tableaux, évite les objets CodecNode
+    if ('name' in val && 'params' in val && 'siblings' in val && 'children' in val) {
+      return val.name || '[node]';
     }
+    return Object.values(val).map(formatResult).join(', ');
   }
-  return value;
+  return String(val);
 }
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- ROOT TRANSFORM TREE UI -->
-    <div class="border p-4 rounded">
-      <h2 class="font-bold mb-2">Arbre des transformations</h2>
-      <div class="border-l pl-4 my-2">
-        <div v-for="(node, idx) in rootNodes" :key="idx">
-          <DataTableCodecNode
-            :node="node"
-            :parent-list="rootNodes"
-            :index="idx"
-            :transforms="transforms"
-            :input-value="computeInputValue(idx)"
-            @add-child="onAddChild"
-            @add-sibling="onAddSibling"
-            @update-transform="onUpdateTransform"
-            @remove="onRemoveNode"
-            @update-param="onUpdateParam"
-            @update-split-children="onUpdateSplitChildren"
-          />
-        </div>
-      </div>
-    </div>
-    <!-- Result Display -->
-    <div class="font-mono border p-4 rounded">
-      <div><strong>Valeur d'origine:</strong> {{ originalValue }}</div>
-      <div v-if="Array.isArray(resultValue)">
-        <strong>Résultat :</strong>
-        <ul>
-          <li v-for="(v, i) in resultValue" :key="i">{{ v }}</li>
-        </ul>
-      </div>
-      <div v-else><strong>Résultat :</strong> {{ resultValue }}</div>
-    </div>
+  <div class="codec-root">
+    <h3>Valeur d'origine</h3>
+    <pre>{{ originalValue }}</pre>
+    <h3>Pipeline</h3>
+    <DataTableCodecNode
+      v-if="rootNodes[0]"
+      :node="rootNodes[0]"
+      :parent="null"
+      :transforms="transforms"
+      :input-value="originalValue"
+      @add-child="onAddChild"
+      @add-sibling="onAddSibling"
+      @remove-node="onRemoveNode"
+      @update-param="onUpdateParam"
+      @update-transform="onUpdateTransform"
+    />
+    <h3>Résultat</h3>
+    <pre>{{ formatResult(resultValue) }}</pre>
   </div>
 </template>
