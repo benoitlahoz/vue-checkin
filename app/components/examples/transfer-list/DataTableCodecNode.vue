@@ -34,7 +34,7 @@ type TransformNode = {
 
 const props = defineProps<{
   node: TransformNode;
-  parent?: TransformNode[] | TransformNode;
+  parentList?: TransformNode[];
   index: number;
   transforms: Transform[];
   inputValue?: any; // valeur d'entrée à ce niveau
@@ -52,23 +52,50 @@ const currentValue = computed(() => {
 });
 
 const emit = defineEmits<{
-  (e: 'add-child', parent: TransformNode, index: number, transformName: string): void;
-  (e: 'remove', parent: TransformNode[] | TransformNode, index: number): void;
+  (e: 'add-child', parentList: TransformNode[], index: number, transformName: string): void;
+  (e: 'add-sibling', parentList: TransformNode[], index: number): void;
+  (e: 'remove', parentList: TransformNode[], index: number): void;
   (e: 'update-param', node: TransformNode, paramName: string, value: any): void;
+  (
+    e: 'update-transform',
+    node: TransformNode,
+    transformName: string,
+    params: Record<string, any>
+  ): void;
 }>();
 
 function handleAddChildTransform(value: any) {
-  if (value != null) emit('add-child', props.node, -1, String(value));
+  if (value == null) return;
+  if (props.parentList) {
+    emit('add-child', props.parentList, props.index, String(value));
+  }
 }
 
 function handleRemove() {
-  if (props.parent) {
-    emit('remove', props.parent, props.index);
+  if (props.parentList) {
+    emit('remove', props.parentList, props.index);
   }
 }
 
 function handleParamInput(paramName: string, value: any) {
   emit('update-param', props.node, paramName, value);
+}
+
+function handleSelectTransform(value: string | null) {
+  if (!value) return;
+  const t = props.transforms.find((x) => x.name === value);
+  if (!t) return;
+  // Prépare les paramètres par défaut
+  const params: Record<string, any> = {};
+  t.params.forEach((p) => (params[p.name] = p.default));
+  emit('update-transform', props.node, value, params);
+  // Si Split, demander au parent d'ajouter des enfants vides
+  if (t.name === 'Split') {
+    emit('add-child', props.parentList!, props.index, value);
+  } else if (!props.node.name) {
+    // Pipeline : ajouter un sibling vide seulement si le nœud était vide
+    emit('add-sibling', props.parentList!, props.index);
+  }
 }
 </script>
 
@@ -80,27 +107,24 @@ function handleParamInput(paramName: string, value: any) {
         <span v-else>▶</span>
       </button>
       <span class="font-semibold">{{ props.node.name }}</span>
-      <button v-if="props.parent" class="text-red-500 text-xs" @click="handleRemove">
+      <button v-if="props.parentList" class="text-red-500 text-xs" @click="handleRemove">
         Retirer
       </button>
     </div>
 
     <div v-if="isOpen" class="flex flex-row items-start gap-4">
-      <!-- Colonne gauche : valeur courante -->
+      <!-- Colonne gauche : valeur d'entrée (avant transformation) -->
       <div class="min-w-[120px] font-mono text-sm py-1 px-2 border rounded">
-        {{ currentValue }}
+        {{ props.inputValue }}
       </div>
 
       <!-- Colonne droite : transformation + params -->
       <div class="flex-1">
-        <div v-if="props.parent" class="flex items-center gap-2 mb-2">
-          <Select
-            class="w-[140px]"
-            @update:model-value="(value) => emit('update-param', props.node, 'name', value)"
-          >
-            <SelectTrigger
-              ><SelectValue :placeholder="props.node.name || 'Transformation...'"
-            /></SelectTrigger>
+        <div v-if="props.parentList" class="flex items-center gap-2 mb-2">
+          <Select class="w-[140px]" @update:model-value="handleSelectTransform">
+            <SelectTrigger>
+              <SelectValue :placeholder="props.node.name || 'Transformation...'" />
+            </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem v-for="t in props.transforms" :key="t.name" :value="t.name">
@@ -125,38 +149,40 @@ function handleParamInput(paramName: string, value: any) {
             @update:model-value="(val) => handleParamInput(p.name, val)"
           />
         </div>
-        <Select
-          class="mt-2 w-[180px]"
-          @update:model-value="(value) => handleAddChildTransform(value)"
-        >
-          <SelectTrigger
-            ><SelectValue placeholder="Ajouter une sous-transformation"
-          /></SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem v-for="t in props.transforms" :key="t.name" :value="t.name">
-                <SelectLabel>{{ t.name }}</SelectLabel>
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <!-- (Select d'ajout de sous-transformation supprimé, un seul select par nœud) -->
       </div>
     </div>
 
-    <!-- Children : stack verticale -->
-    <div v-if="isOpen && props.node.children.length" class="ml-6 mt-2 border-l-2 border-gray-200">
-      <DataTableCodecNode
-        v-for="(child, cidx) in props.node.children"
-        :key="cidx"
-        :node="child"
-        :parent="props.node"
-        :index="cidx"
-        :transforms="props.transforms"
-        :input-value="Array.isArray(currentValue) ? currentValue[cidx] : currentValue"
-        @add-child="(...args) => emit('add-child', ...args)"
-        @remove="(...args) => emit('remove', ...args)"
-        @update-param="(...args) => emit('update-param', ...args)"
-      />
+    <!-- Children : stack verticale ou branches (split) -->
+    <div v-if="isOpen && props.node.children.length">
+      <div v-if="Array.isArray(currentValue)" class="ml-6 mt-2 border-l-2 border-gray-200">
+        <DataTableCodecNode
+          v-for="(child, cidx) in props.node.children"
+          :key="cidx"
+          :node="child"
+          :parent-list="props.node.children"
+          :index="cidx"
+          :transforms="props.transforms"
+          :input-value="currentValue[cidx]"
+          @add-child="(...args) => emit('add-child', ...args)"
+          @remove="(...args) => emit('remove', ...args)"
+          @update-param="(...args) => emit('update-param', ...args)"
+        />
+      </div>
+      <div v-else>
+        <DataTableCodecNode
+          v-for="(child, cidx) in props.node.children"
+          :key="cidx"
+          :node="child"
+          :parent-list="props.node.children"
+          :index="cidx"
+          :transforms="props.transforms"
+          :input-value="currentValue"
+          @add-child="(...args) => emit('add-child', ...args)"
+          @remove="(...args) => emit('remove', ...args)"
+          @update-param="(...args) => emit('update-param', ...args)"
+        />
+      </div>
     </div>
   </div>
 </template>
