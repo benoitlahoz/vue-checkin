@@ -13,51 +13,31 @@ import {
 
 const props = defineProps<{ tree: NodeObject }>();
 
-// Liste des transformations disponibles
 const transforms: NodeTransform[] = [
-  {
-    name: 'To Uppercase',
-    if: (node: NodeObject) => node.type === 'string',
-    fn: (value: any) => value.toUpperCase(),
-  },
-  {
-    name: 'To Lowercase',
-    if: (node: NodeObject) => node.type === 'string',
-    fn: (value: any) => value.toLowerCase(),
-  },
+  { name: 'To Uppercase', if: (node) => node.type === 'string', fn: (v: any) => v.toUpperCase() },
+  { name: 'To Lowercase', if: (node) => node.type === 'string', fn: (v: any) => v.toLowerCase() },
   {
     name: 'To Capitalized',
-    if: (node: NodeObject) => node.type === 'string',
-    fn: (value: any) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(),
+    if: (node) => node.type === 'string',
+    fn: (v: any) => v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(),
   },
-  {
-    name: 'Increment',
-    if: (node: NodeObject) => node.type === 'number',
-    fn: (value: any) => value + 1,
-  },
-  {
-    name: 'Decrement',
-    if: (node: NodeObject) => node.type === 'number',
-    fn: (value: any) => value - 1,
-  },
+  { name: 'Increment', if: (node) => node.type === 'number', fn: (v: any) => v + 1 },
+  { name: 'Decrement', if: (node) => node.type === 'number', fn: (v: any) => v - 1 },
   {
     name: 'Stringify',
-    if: (node: NodeObject) => node.type === 'object' || node.type === 'array',
-    fn: (value: any) => JSON.stringify(value),
+    if: (node) => node.type === 'object' || node.type === 'array',
+    fn: (v: any) => JSON.stringify(v),
   },
 ];
 
-const selectedTransform = ref<string | null>(null);
+const selectedTransform = ref<Record<number, string>>({}); // un select par étape
 
-// Vérifier si c'est une primitive
 const isPrimitive = computed(() => !['object', 'array'].includes(props.tree.type));
 
-// Valeur calculée après application cumulative des transformations
 const currentValue = computed(() =>
   props.tree.transforms.reduce((val, t) => t.fn(val, ...(t.params || [])), props.tree.initialValue)
 );
 
-// Propagation ascendante pour mettre à jour les parents
 function propagate(node: NodeObject) {
   if (!node) return;
 
@@ -86,14 +66,19 @@ function propagate(node: NodeObject) {
 // Transformations disponibles pour ce nœud
 const availableTransforms = computed(() => transforms.filter((t) => t.if(props.tree)));
 
-// Ajouter une transformation et recalculer
-function handleTransformChange(name: string) {
+// Ajouter une transformation à l'étape suivante dans la stack
+function handleStepTransform(index: number, name: string) {
   const transform = transforms.find((t) => t.name === name);
   if (!transform) return;
 
-  props.tree.transforms.push(transform);
+  // Ajouter juste après l'étape actuelle
+  props.tree.transforms.splice(index + 1, 0, transform);
 
+  // Recalculer les parents
   if (props.tree.parent) propagate(props.tree.parent);
+
+  // Réinitialiser le select de cette étape
+  selectedTransform.value[index] = '';
 }
 </script>
 
@@ -107,35 +92,63 @@ function handleTransformChange(name: string) {
       </template>
     </div>
 
-    <!-- Affichage des transformations appliquées en stack -->
+    <!-- Transformations cumulatives avec Select à droite de chaque étape -->
     <div class="ml-5 pl-2 border-l-2">
       <div v-for="(t, index) in tree.transforms" :key="index" class="flex items-center gap-2 my-1">
-        <span class="text-blue-600 text-xs"
-          >→ {{ t.name }}:
+        <span class="text-blue-600 text-xs">
+          → {{ t.name }}:
           {{
             tree.transforms
               .slice(0, index + 1)
               .reduce((val, tr) => tr.fn(val, ...(tr.params || [])), tree.initialValue)
           }}
         </span>
-      </div>
 
-      <!-- Select pour ajouter une nouvelle transformation -->
-      <template v-if="availableTransforms.length > 0">
-        <Select v-model="selectedTransform" @update:model-value="handleTransformChange">
-          <SelectTrigger size="xs" class="px-2 py-1">
-            <SelectValue placeholder="Add Transformation" class="text-xs" />
+        <!-- Select pour enchaîner une nouvelle transformation après cette étape -->
+        <Select
+          size="xs"
+          v-model="selectedTransform[index]"
+          @update:model-value="(val) => handleStepTransform(index, val)"
+        >
+          <SelectTrigger size="xs" class="px-1 py-0">
+            <SelectValue placeholder="+" class="text-xs" />
           </SelectTrigger>
           <SelectContent class="text-xs">
             <SelectGroup>
-              <SelectLabel>Available Transformations</SelectLabel>
+              <SelectLabel>Next Transformation</SelectLabel>
               <SelectItem
-                v-for="transform in availableTransforms"
-                :key="transform.name"
-                :value="transform.name"
+                v-for="tr in availableTransforms"
+                :key="tr.name"
+                :value="tr.name"
                 class="text-xs"
               >
-                {{ transform.name }}
+                {{ tr.name }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <!-- Ajouter transformation si aucune étape existante -->
+      <template v-if="tree.transforms.length === 0 && availableTransforms.length > 0">
+        <Select
+          size="xs"
+          v-model="selectedTransform[-1]"
+          @update:model-value="(val) => handleStepTransform(-1, val)"
+        >
+          <SelectTrigger size="xs" class="px-1 py-0">
+            <SelectValue placeholder="+" class="text-xs" />
+          </SelectTrigger>
+          <SelectContent class="text-xs">
+            <SelectGroup>
+              <SelectLabel>Add Transformation</SelectLabel>
+              <SelectItem
+                v-for="tr in availableTransforms"
+                :key="tr.name"
+                :value="tr.name"
+                class="text-xs"
+              >
+                {{ tr.name }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
