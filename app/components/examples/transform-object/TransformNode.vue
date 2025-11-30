@@ -156,7 +156,7 @@ function propagate(node: NodeObject) {
 }
 
 // Ajouter ou supprimer une transformation sur le nœud
-function handleNodeTransform(name: string | null) {
+function handleNodeTransform(name: any) {
   if (!name) return;
   if (name === 'None') {
     tree.value.transforms = [];
@@ -168,12 +168,12 @@ function handleNodeTransform(name: string | null) {
 
   // On met à jour le Select pour refléter la dernière transformation
   nodeSelect.value = tree.value.transforms.length
-    ? tree.value.transforms[tree.value.transforms.length - 1].name
+    ? tree.value.transforms[tree.value.transforms.length - 1]!.name
     : null;
 }
 
 // Ajouter ou supprimer une transformation après une étape de la pile
-function handleStepTransform(index: number, name: string | null) {
+function handleStepTransform(index: number, name: any) {
   if (!name) return;
 
   if (name === 'None') {
@@ -219,9 +219,9 @@ function getCurrentType(node: NodeObject): string {
 </script>
 
 <template>
-  <div class="text-xs">
+  <div class="text-xs mb-4">
     <!-- Nœud: key + valeur si primitive, Select à droite -->
-    <div class="flex items-center gap-2 my-1">
+    <div class="flex items-center gap-2 my-2">
       <!-- Edition du nom de la propriété -->
       <div class="cursor-pointer ml-5" @click="editingKey = true">
         <template v-if="editingKey">
@@ -270,9 +270,18 @@ function getCurrentType(node: NodeObject): string {
       </template>
     </div>
 
+    <!-- Children récursifs -->
+    <div v-if="tree.children?.length" class="ml-5 border-l-2 pl-2">
+      <TransformNode
+        v-for="child in tree.children"
+        :key="child.key || child.initialValue"
+        :tree="child"
+      />
+    </div>
+
     <!-- Stack des transformations avec Select pour enchaîner -->
     <div v-if="tree.transforms.length" class="ml-5 pl-2 border-l-2">
-      <div v-for="(t, index) in tree.transforms" :key="index" class="flex items-center gap-2 my-1">
+      <div v-for="(t, index) in tree.transforms" :key="index" class="flex items-center gap-2 my-2">
         <span class="text-blue-600 text-xs"> {{ computeStepValue(index) }} </span>
 
         <template v-if="availableTransforms.length > 0">
@@ -282,7 +291,7 @@ function getCurrentType(node: NodeObject): string {
             @update:model-value="(val) => handleStepTransform(index, val)"
           >
             <!-- @vue-ignore -->
-            <SelectTrigger size="xs" class="px-1 py-0">
+            <SelectTrigger size="xs" class="px-2 py-1">
               <SelectValue placeholder="+" class="text-xs" />
             </SelectTrigger>
             <SelectContent class="text-xs">
@@ -302,11 +311,6 @@ function getCurrentType(node: NodeObject): string {
           </Select>
         </template>
       </div>
-    </div>
-
-    <!-- Children récursifs -->
-    <div v-if="tree.children?.length" class="ml-5 border-l-2 pl-2">
-      <TransformNode v-for="child in tree.children" :key="child.key || child.value" :tree="child" />
     </div>
   </div>
 </template>

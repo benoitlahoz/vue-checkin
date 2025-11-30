@@ -145,7 +145,7 @@ const data = {
 
 const tree = ref<NodeObject>(buildNodeTree(data, 'Root'));
 
-console.log('Tree:', tree.value);
+// console.log('Tree:', tree.value);
 
 const { createDesk } = useCheckIn<NodeObject>();
 createDesk(TransformObjectDeskKey, {
