@@ -296,32 +296,7 @@ function getCurrentType(node: NodeObject): string {
       <div v-for="(t, index) in tree.transforms" :key="index" class="flex items-center gap-2 my-2">
         <span class="text-blue-600 text-xs"> {{ computeStepValue(index) }} </span>
 
-        <template v-if="availableTransforms.length > 0">
-          <Select
-            v-model="stepSelect[index]"
-            size="xs"
-            @update:model-value="(val) => handleStepTransform(index, val)"
-          >
-            <!-- @vue-ignore -->
-            <SelectTrigger size="xs" class="px-2 py-1">
-              <SelectValue placeholder="+" class="text-xs" />
-            </SelectTrigger>
-            <SelectContent class="text-xs">
-              <SelectGroup>
-                <SelectLabel>Next Transformation</SelectLabel>
-                <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
-                <SelectItem
-                  v-for="tr in availableTransforms"
-                  :key="tr.name"
-                  :value="tr.name"
-                  class="text-xs"
-                >
-                  {{ tr.name }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
+        <template v-if="availableTransforms.length > 1">
           <!-- PARAM INPUTS FOR STACK -->
           <div v-if="t.params" class="flex gap-2">
             <div v-for="(_p, pi) in t.params" :key="'stack-param-' + index + '-' + pi">
@@ -364,6 +339,31 @@ function getCurrentType(node: NodeObject): string {
               </div>
             </div>
           </div>
+
+          <Select
+            v-model="stepSelect[index + 1]"
+            size="xs"
+            @update:model-value="(val) => handleStepTransform(index, val)"
+          >
+            <!-- @vue-ignore -->
+            <SelectTrigger size="xs" class="px-2 py-1">
+              <SelectValue placeholder="+" class="text-xs" />
+            </SelectTrigger>
+            <SelectContent class="text-xs">
+              <SelectGroup>
+                <SelectLabel>Next Transformation</SelectLabel>
+                <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
+                <SelectItem
+                  v-for="tr in availableTransforms"
+                  :key="tr.name"
+                  :value="tr.name"
+                  class="text-xs"
+                >
+                  {{ tr.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </template>
       </div>
     </div>
