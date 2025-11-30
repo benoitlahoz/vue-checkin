@@ -1,77 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useCheckIn } from '#vue-airport';
-import { ObjectTransformerNode, ObjectTransformerDeskKey, type ObjectNode, type NodeType } from '.';
-/*
-const buildNodeTree = (value: any, nodeName: string = '', parent?: NodeObject): NodeObject => {
-  if (Array.isArray(value)) {
-    const node: NodeObject = {
-      value: nodeName,
-      type: 'array',
-      parent,
-    };
-    return {
-      ...node,
-      children: value.map((item, index) => buildNodeTree(item, index.toString(), node)),
-    };
-  } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const node: NodeObject = {
-      value: nodeName,
-      type: 'object',
-      parent,
-    };
-    return {
-      ...node,
-      children: Object.keys(value).map((key) => buildNodeTree(value[key], key, node)),
-    };
-  } else {
-    const isInArray = parent?.type === 'array';
-    const isIndex = !isNaN(Number(nodeName)) && nodeName !== '';
-    if (isInArray && isIndex) {
-      const node = {
-        value: nodeName,
-        type: 'index',
-        parent,
-      };
-      return {
-        ...node,
-        children: [
-          {
-            value,
-            type: typeof value as NodeType,
-            children: [],
-            parent: node,
-          },
-        ],
-      };
-    } else {
-      const node = {
-        value: nodeName,
-        type: 'property',
-        parent,
-      };
-      return {
-        ...node,
-        children: [
-          {
-            value,
-            type: typeof value as NodeType,
-            children: [],
-            parent,
-          },
-        ],
-      };
-    }
-  }
-};
-*/
+import { useCheckIn } from 'vue-airport';
+import {
+  ObjectTransformerNode,
+  ObjectTransformerDeskKey,
+  type ObjectNode,
+  type ObjectNodeType,
+  type Transform,
+  type ObjectTransformerContext,
+  type ObjectTransformerDesk,
+} from '.';
 
 function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNode {
   if (Array.isArray(value)) {
     const node: ObjectNode = {
       type: 'array',
       key,
-      initialValue: [],
+      value: [],
       transforms: [],
       children: [],
       parent,
@@ -80,14 +25,14 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
     node.children = value.map((item, index) => buildNodeTree(item, String(index), node));
 
     // Construire la valeur initiale à partir des enfants
-    node.initialValue = node.children.map((c) => c.initialValue);
+    node.value = node.children.map((c) => c.value);
 
     return node;
   } else if (value !== null && typeof value === 'object') {
     const node: ObjectNode = {
       type: 'object',
       key,
-      initialValue: {},
+      value: {},
       transforms: [],
       children: [],
       parent,
@@ -96,9 +41,9 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
     node.children = Object.entries(value).map(([k, v]) => buildNodeTree(v, k, node));
 
     // Construire la valeur initiale à partir des enfants
-    node.initialValue = node.children.reduce(
+    node.value = node.children.reduce(
       (acc, c) => {
-        acc[c.key!] = c.initialValue;
+        acc[c.key!] = c.value;
         return acc;
       },
       {} as Record<string, any>
@@ -107,7 +52,7 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
     return node;
   } else {
     // primitive
-    const type: NodeType =
+    const type: ObjectNodeType =
       typeof value === 'string'
         ? 'string'
         : typeof value === 'number'
@@ -121,7 +66,7 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
     return {
       type,
       key,
-      initialValue: value,
+      value: value,
       transforms: [],
       parent,
     };
@@ -152,12 +97,63 @@ watch(
   (newTree) => {
     console.log('Updated Tree:', newTree);
   },
-  { deep: true }
+  { immediate: true, deep: true }
 );
 
-const { createDesk } = useCheckIn<ObjectNode>();
-createDesk(ObjectTransformerDeskKey, {
+const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
+  context: {
+    transforms: ref<Transform[]>([]),
+    addTransforms(...newTransforms: Transform[]) {
+      this.transforms.value.push(...newTransforms);
+    },
+    propagateTransform(node: ObjectNode) {
+      if (!node) return;
+
+      if (node.type === 'object') {
+        node.value =
+          node.children?.reduce(
+            (acc: any, child) => {
+              acc[child.key!] = child.transforms.reduce(
+                (v, t) => t.fn(v, ...(t.params || [])),
+                child.value
+              );
+              return acc;
+            },
+            {} as Record<string, any>
+          ) || {};
+      } else if (node.type === 'array') {
+        node.value =
+          node.children?.map((child) =>
+            child.transforms.reduce((v, t) => t.fn(v, ...(t.params || [])), child.value)
+          ) || [];
+      }
+
+      if (node.parent) (desk as ObjectTransformerDesk).propagateTransform(node.parent);
+    },
+    getNodeType(node: ObjectNode) {
+      let value = node.value;
+
+      for (const t of node.transforms) {
+        value = t.fn(value, ...(t.params || []));
+      }
+
+      const t = typeof value;
+      if (t === 'string') return 'string';
+      if (t === 'symbol') return 'symbol';
+      if (t === 'number') return 'number';
+      if (t === 'bigint') return 'bigint';
+      if (t === 'boolean') return 'boolean';
+      if (t === 'undefined') return 'undefined';
+      if (t === 'function') return 'function';
+      if (t === null) return 'null';
+      if (Array.isArray(value)) return 'array';
+      if (value instanceof Date) return 'date';
+      if (value && typeof value === 'object') return 'object';
+      return 'unknown';
+    },
+  },
 });
 </script>
 

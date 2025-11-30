@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { ObjectTransformerNode, type ObjectNode, type Transform, type NodeType } from '.';
+import { computed, ref, type ComputedRef } from 'vue';
+import { useCheckIn } from 'vue-airport';
+import {
+  ObjectTransformerNode,
+  type ObjectNode,
+  type Transform,
+  type ObjectNodeType,
+  ObjectTransformerDeskKey,
+  type ObjectTransformerContext,
+} from '.';
 import {
   Select,
   SelectTrigger,
@@ -14,48 +22,16 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronDown, ChevronRight } from 'lucide-vue-next';
 
+type DeskWithContext = typeof desk & ObjectTransformerContext;
+
 const props = defineProps<{ tree: ObjectNode }>();
 
-const transforms: Transform[] = [
-  // Strings
-  { name: 'To Uppercase', if: (node) => node.type === 'string', fn: (v: any) => v.toUpperCase() },
-  { name: 'To Lowercase', if: (node) => node.type === 'string', fn: (v: any) => v.toLowerCase() },
-  {
-    name: 'To Capitalized',
-    if: (node) => node.type === 'string',
-    fn: (v: any) => v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(),
-  },
-  {
-    name: 'Replace',
-    if: (n) => n.type === 'string',
-    params: [
-      { key: 'search', label: 'Search', type: 'text', default: '' },
-      { key: 'replace', label: 'Replace', type: 'text', default: '' },
-    ],
-    fn: (v: string, s: string, r: string) => v.replaceAll(s, r),
-  },
+const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { desk } = checkIn(ObjectTransformerDeskKey);
 
-  // Numbers
-  {
-    name: 'Increment',
-    if: (node) => node.type === 'number',
-    params: [{ key: 'amount', label: 'Amount', type: 'number', default: 1 }],
-    fn: (v: any, amount: number) => v + amount,
-  },
-  {
-    name: 'Decrement',
-    if: (node) => node.type === 'number',
-    params: [{ key: 'amount', label: 'Amount', type: 'number', default: 1 }],
-    fn: (v: any, amount: number) => v - amount,
-  },
-
-  // Numbers, Objects and Arrays
-  {
-    name: 'Stringify',
-    if: (node) => node.type === 'number' || node.type === 'object' || node.type === 'array',
-    fn: (v: any) => (typeof v === 'number' ? String(v) : JSON.stringify(v)),
-  },
-];
+const transforms: ComputedRef<Transform[]> = computed(() => {
+  return (desk as DeskWithContext).transforms.value;
+});
 
 const isOpen = ref(true);
 const toggleOpen = () => {
@@ -66,8 +42,8 @@ const tree = ref(props.tree);
 const nodeSelect = ref<string | null>(null);
 const stepSelect = ref<Record<number, string | null>>({});
 const availableTransforms = computed(() => {
-  const type = getCurrentType(tree.value);
-  return transforms.filter((t) => t.if({ ...tree.value, type: type as NodeType }));
+  const type = (desk as DeskWithContext).getNodeType(tree.value);
+  return transforms.value.filter((t) => t.if({ ...tree.value, type: type as ObjectNodeType }));
 });
 const isPrimitive = computed(() =>
   ['string', 'number', 'boolean', 'bigint', 'symbol', 'undefined', 'null'].includes(tree.value.type)
@@ -161,21 +137,21 @@ function propagate(node: ObjectNode) {
   if (!node) return;
 
   if (node.type === 'object') {
-    node.initialValue =
+    node.value =
       node.children?.reduce(
         (acc: any, child) => {
           acc[child.key!] = child.transforms.reduce(
             (v, t) => t.fn(v, ...(t.params || [])),
-            child.initialValue
+            child.value
           );
           return acc;
         },
         {} as Record<string, any>
       ) || {};
   } else if (node.type === 'array') {
-    node.initialValue =
+    node.value =
       node.children?.map((child) =>
-        child.transforms.reduce((v, t) => t.fn(v, ...(t.params || [])), child.initialValue)
+        child.transforms.reduce((v, t) => t.fn(v, ...(t.params || [])), child.value)
       ) || [];
   }
 
@@ -188,7 +164,7 @@ function handleNodeTransform(name: any) {
   if (name === 'None') {
     tree.value.transforms = [];
   } else {
-    const transform = transforms.find((t) => t.name === name);
+    const transform = transforms.value.find((t) => t.name === name);
     if (transform)
       tree.value.transforms.push({
         ...transform,
@@ -208,7 +184,7 @@ function handleStepTransform(index: number, name: any) {
   if (name === 'None') {
     tree.value.transforms.splice(index);
   } else {
-    const t = transforms.find((x) => x.name === name);
+    const t = transforms.value.find((x) => x.name === name);
     if (t) tree.value.transforms.splice(index + 1, 0, { ...t, params: initParams(t) });
   }
 
@@ -226,28 +202,7 @@ function initParams(t: Transform) {
 function computeStepValue(index: number) {
   return tree.value.transforms
     .slice(0, index + 1)
-    .reduce((val, t) => t.fn(val, ...(t.params || [])), tree.value.initialValue);
-}
-
-function getCurrentType(node: ObjectNode): string {
-  let value = node.initialValue;
-
-  for (const t of node.transforms) {
-    value = t.fn(value, ...(t.params || []));
-  }
-
-  const t = typeof value;
-  if (t === 'string') return 'string';
-  if (t === 'symbol') return 'symbol';
-  if (t === 'number') return 'number';
-  if (t === 'bigint') return 'bigint';
-  if (t === 'boolean') return 'boolean';
-  if (t === 'undefined') return 'undefined';
-  if (t === 'function') return 'function';
-  if (t === null) return 'null';
-  if (Array.isArray(value)) return 'array';
-  if (value && typeof value === 'object') return 'object';
-  return 'unknown';
+    .reduce((val, t) => t.fn(val, ...(t.params || [])), tree.value.value);
 }
 </script>
 
@@ -288,7 +243,7 @@ function getCurrentType(node: ObjectNode): string {
 
       <!-- Valeur s'affiche juste pour primitives -->
       <template v-if="isPrimitive">
-        <span class="ml-2">{{ tree.initialValue }}</span>
+        <span class="ml-2">{{ tree.value }}</span>
       </template>
 
       <!-- Select principal -->
@@ -321,7 +276,7 @@ function getCurrentType(node: ObjectNode): string {
       <div v-if="tree.children?.length" class="ml-1 border-l-2 pl-2">
         <ObjectTransformerNode
           v-for="child in tree.children"
-          :key="child.key || child.initialValue"
+          :key="child.key || child.value"
           :tree="child"
           class="ml-4"
         />

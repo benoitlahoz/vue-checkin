@@ -1,6 +1,7 @@
+import type { DeskCore } from '#vue-airport';
 import type { InjectionKey, Ref } from 'vue';
 
-export type NodeType =
+export type ObjectNodeType =
   | 'string'
   | 'number'
   | 'bigint'
@@ -10,7 +11,9 @@ export type NodeType =
   | 'array'
   | 'undefined'
   | 'function'
-  | 'null';
+  | 'null'
+  | 'unknown'
+  | 'date';
 
 export interface Transform {
   name: string;
@@ -20,15 +23,24 @@ export interface Transform {
 }
 
 export interface ObjectNode {
-  type: NodeType;
-  key?: string; // pour les propriétés / index
-  initialValue: any; // valeur brute ou conteneur
-  transforms: Transform[]; // transformations successives
-  children?: ObjectNode[]; // pour object / array
+  type: ObjectNodeType;
+  key?: string;
+  value: any;
+  transforms: Transform[];
+  children?: ObjectNode[];
   parent?: ObjectNode;
 }
 
-export const ObjectTransformerDeskKey: InjectionKey<Ref<ObjectNode>> =
+export interface ObjectTransformerContext {
+  transforms: Ref<Transform[]>;
+  addTransforms: (...newTransforms: Transform[]) => void;
+  propagateTransform: (node: ObjectNode) => void;
+  getNodeType: (node: ObjectNode) => ObjectNodeType;
+}
+
+export type ObjectTransformerDesk = DeskCore<ObjectNode> & ObjectTransformerContext;
+
+export const ObjectTransformerDeskKey: InjectionKey<ObjectTransformerDesk> =
   Symbol('ObjectTransformerDesk');
 
 export { default as ObjectTransformer } from './ObjectTransformer.vue';
@@ -36,3 +48,5 @@ export { default as ObjectTransformerNode } from './ObjectTransformerNode.vue';
 
 // Transforms
 export { default as TransformString } from './TransformString.vue';
+export { default as TransformNumber } from './TransformNumber.vue';
+export { default as TransformMisc } from './TransformMisc.vue';
