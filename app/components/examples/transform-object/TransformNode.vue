@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ChevronDown, ChevronRight } from 'lucide-vue-next';
 
 const props = defineProps<{ tree: NodeObject }>();
 
@@ -55,6 +56,11 @@ const transforms: NodeTransform[] = [
     fn: (v: any) => (typeof v === 'number' ? String(v) : JSON.stringify(v)),
   },
 ];
+
+const isOpen = ref(true);
+const toggleOpen = () => {
+  isOpen.value = !isOpen.value;
+};
 
 const tree = ref(props.tree);
 const nodeSelect = ref<string | null>(null);
@@ -249,8 +255,21 @@ function getCurrentType(node: NodeObject): string {
   <div class="text-xs mb-4">
     <!-- Nœud: key + valeur si primitive, Select à droite -->
     <div class="flex items-center gap-2 my-2">
+      <template v-if="tree.children?.length">
+        <ChevronRight
+          v-if="!isOpen"
+          class="w-3 h-3 text-muted-foreground cursor-pointer"
+          @click="toggleOpen"
+        />
+        <ChevronDown
+          v-else-if="isOpen"
+          class="w-3 h-3 text-muted-foreground cursor-pointer"
+          @click="toggleOpen"
+        />
+      </template>
+
       <!-- Edition du nom de la propriété -->
-      <div class="cursor-pointer ml-5" @click="editingKey = true">
+      <div class="cursor-pointer" @click="editingKey = true">
         <template v-if="editingKey">
           <Input
             v-model="tempKey"
@@ -297,90 +316,97 @@ function getCurrentType(node: NodeObject): string {
       </template>
     </div>
 
-    <!-- Children récursifs -->
-    <div v-if="tree.children?.length" class="ml-5 border-l-2 pl-2">
-      <TransformNode
-        v-for="child in tree.children"
-        :key="child.key || child.initialValue"
-        :tree="child"
-      />
-    </div>
+    <template v-if="isOpen">
+      <!-- Children récursifs -->
+      <div v-if="tree.children?.length" class="ml-1 border-l-2 pl-2">
+        <TransformNode
+          v-for="child in tree.children"
+          :key="child.key || child.initialValue"
+          :tree="child"
+          class="ml-4"
+        />
+      </div>
 
-    <!-- Stack des transformations avec Select pour enchaîner -->
-    <div v-if="tree.transforms.length" class="ml-5 pl-2 border-l-2">
-      <div v-for="(t, index) in tree.transforms" :key="index" class="flex items-center gap-2 my-2">
-        <span class="text-blue-600 text-xs"> {{ computeStepValue(index) }} </span>
+      <!-- Stack des transformations avec Select pour enchaîner -->
+      <div v-if="tree.transforms.length" class="ml-5 pl-2 border-l-2">
+        <div
+          v-for="(t, index) in tree.transforms"
+          :key="index"
+          class="flex items-center gap-2 my-2"
+        >
+          <span class="text-blue-600 text-xs pl-5"> {{ computeStepValue(index) }} </span>
 
-        <template v-if="availableTransforms.length > 1">
-          <!-- PARAM INPUTS FOR STACK -->
-          <div v-if="t.params" class="flex gap-2">
-            <div v-for="(_p, pi) in t.params" :key="'stack-param-' + index + '-' + pi">
-              <Input
-                v-if="transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'text'"
-                v-model="t.params[pi]"
-                :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
-                class="h-6.5 px-2 py-0"
-                style="font-size: var(--text-xs)"
-                @input="propagate(tree)"
-              />
-
-              <Input
-                v-else-if="
-                  transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'number'
-                "
-                v-model.number="t.params[pi]"
-                type="number"
-                :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
-                class="h-6.5 px-2 py-0 text-xs"
-                @input="propagate(tree)"
-              />
-
-              <div
-                v-else-if="
-                  transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'boolean'
-                "
-                class="flex items-center gap-1"
-              >
-                <Checkbox
-                  :checked="t.params[pi]"
-                  @update:checked="
-                    (v: any) => {
-                      t.params![pi] = v;
-                      propagate(tree);
-                    }
-                  "
+          <template v-if="availableTransforms.length > 1">
+            <!-- PARAM INPUTS FOR STACK -->
+            <div v-if="t.params" class="flex gap-2">
+              <div v-for="(_p, pi) in t.params" :key="'stack-param-' + index + '-' + pi">
+                <Input
+                  v-if="transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'text'"
+                  v-model="t.params[pi]"
+                  :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
+                  class="h-6.5 px-2 py-0"
+                  style="font-size: var(--text-xs)"
+                  @input="propagate(tree)"
                 />
-                <span class="text-xs">{{ t.params![pi] ? 'true' : 'false' }}</span>
+
+                <Input
+                  v-else-if="
+                    transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'number'
+                  "
+                  v-model.number="t.params[pi]"
+                  type="number"
+                  :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
+                  class="h-6.5 px-2 py-0 text-xs"
+                  @input="propagate(tree)"
+                />
+
+                <div
+                  v-else-if="
+                    transforms.find((x) => x.name === t.name)?.params?.[pi].type === 'boolean'
+                  "
+                  class="flex items-center gap-1"
+                >
+                  <Checkbox
+                    :checked="t.params[pi]"
+                    @update:checked="
+                      (v: any) => {
+                        t.params![pi] = v;
+                        propagate(tree);
+                      }
+                    "
+                  />
+                  <span class="text-xs">{{ t.params![pi] ? 'true' : 'false' }}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <Select
-            v-model="stepSelect[index + 1]"
-            size="xs"
-            @update:model-value="(val) => handleStepTransform(index, val)"
-          >
-            <!-- @vue-ignore -->
-            <SelectTrigger size="xs" class="px-2 py-1">
-              <SelectValue placeholder="+" class="text-xs" />
-            </SelectTrigger>
-            <SelectContent class="text-xs">
-              <SelectGroup>
-                <SelectLabel>Next Transformation</SelectLabel>
-                <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
-                <SelectItem
-                  v-for="tr in availableTransforms"
-                  :key="tr.name"
-                  :value="tr.name"
-                  class="text-xs"
-                >
-                  {{ tr.name }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </template>
+            <Select
+              v-model="stepSelect[index + 1]"
+              size="xs"
+              @update:model-value="(val) => handleStepTransform(index, val)"
+            >
+              <!-- @vue-ignore -->
+              <SelectTrigger size="xs" class="px-2 py-1">
+                <SelectValue placeholder="+" class="text-xs" />
+              </SelectTrigger>
+              <SelectContent class="text-xs">
+                <SelectGroup>
+                  <SelectLabel>Next Transformation</SelectLabel>
+                  <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
+                  <SelectItem
+                    v-for="tr in availableTransforms"
+                    :key="tr.name"
+                    :value="tr.name"
+                    class="text-xs"
+                  >
+                    {{ tr.name }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </template>
+        </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>

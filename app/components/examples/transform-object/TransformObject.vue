@@ -143,7 +143,7 @@ const data = {
   hobbies: ['reading', 'traveling', 'swimming'],
 };
 
-const tree = ref<NodeObject>(buildNodeTree(data, 'Root'));
+const tree = ref<NodeObject>(buildNodeTree(data, 'Object'));
 
 // console.log('Tree:', tree.value);
 
@@ -154,9 +154,7 @@ createDesk(TransformObjectDeskKey, {
 </script>
 
 <template>
-  <div>
-    <TransformNode :tree="tree" />
-  </div>
+  <TransformNode :tree="tree" />
 </template>
 
 <style scoped></style>
