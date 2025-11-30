@@ -104,6 +104,7 @@ const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
   context: {
+    // Transforms
     transforms: ref<Transform[]>([]),
     addTransforms(...newTransforms: Transform[]) {
       this.transforms.value.push(...newTransforms);
@@ -132,6 +133,18 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
       if (node.parent) (desk as ObjectTransformerDesk).propagateTransform(node.parent);
     },
+
+    // Nodes
+    forbiddenKeys: ref<string[]>([
+      '__proto__',
+      'prototype',
+      'constructor',
+      'toString',
+      '__defineGetter__',
+      '__defineSetter__',
+      '__lookupGetter__',
+      '__lookupSetter__',
+    ]),
     getNodeType(node: ObjectNode) {
       let value = node.value;
 

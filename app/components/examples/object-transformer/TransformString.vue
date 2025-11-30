@@ -22,6 +22,48 @@ const transforms: Transform[] = [
     ],
     fn: (v: string, s: string, r: string) => v.replaceAll(s, r),
   },
+  {
+    name: 'Trim',
+    if: (node) => node.type === 'string',
+    fn: (v: any) => v.trim(),
+  },
+  {
+    name: 'Append',
+    if: (node) => node.type === 'string',
+    params: [{ key: 'suffix', label: 'Suffix', type: 'text', default: '' }],
+    fn: (v: string, s: string) => v + s,
+  },
+  {
+    name: 'Prepend',
+    if: (node) => node.type === 'string',
+    params: [{ key: 'prefix', label: 'Prefix', type: 'text', default: '' }],
+    fn: (v: string, p: string) => p + v,
+  },
+  {
+    name: 'Substring',
+    if: (node) => node.type === 'string',
+    params: [
+      { key: 'start', label: 'Start Index', type: 'number', default: 0 },
+      { key: 'end', label: 'End Index', type: 'number', default: undefined },
+    ],
+    fn: (v: string, start: number, end?: number) => v.substring(start, end),
+  },
+  {
+    name: 'Repeat',
+    if: (node) => node.type === 'string',
+    params: [{ key: 'count', label: 'Count', type: 'number', default: 1 }],
+    fn: (v: string, count: number) => v.repeat(count),
+  },
+  {
+    name: 'Remove Spaces',
+    if: (node) => node.type === 'string',
+    fn: (v: string) => v.replace(/\s+/g, ''),
+  },
+  {
+    name: 'Remove Multiple Spaces',
+    if: (node) => node.type === 'string',
+    fn: (v: string) => v.replace(/\s+/g, ' '),
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();

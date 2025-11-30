@@ -30,6 +30,21 @@ const transforms: Transform[] = [
     params: [{ key: 'divisor', label: 'Divisor', type: 'number', default: 2 }],
     fn: (v: any, divisor: number) => v / divisor,
   },
+  {
+    name: 'Round',
+    if: (node) => node.type === 'number',
+    fn: (v: any) => Math.round(v),
+  },
+  {
+    name: 'Ceil',
+    if: (node) => node.type === 'number',
+    fn: (v: any) => Math.ceil(v),
+  },
+  {
+    name: 'Floor',
+    if: (node) => node.type === 'number',
+    fn: (v: any) => Math.floor(v),
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();

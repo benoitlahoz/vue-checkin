@@ -32,9 +32,12 @@ export interface ObjectNode {
 }
 
 export interface ObjectTransformerContext {
+  // Transforms
   transforms: Ref<Transform[]>;
   addTransforms: (...newTransforms: Transform[]) => void;
   propagateTransform: (node: ObjectNode) => void;
+  // Nodes
+  forbiddenKeys: Ref<string[]>;
   getNodeType: (node: ObjectNode) => ObjectNodeType;
 }
 

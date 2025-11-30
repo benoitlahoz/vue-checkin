@@ -51,21 +51,9 @@ const isPrimitive = computed(() =>
 const editingKey = ref(false);
 const tempKey = ref(props.tree.key);
 
-// Avoid prototype pollution and other unsafe keys
-const FORBIDDEN_KEYS = new Set([
-  '__proto__',
-  'prototype',
-  'constructor',
-  'toString',
-  '__defineGetter__',
-  '__defineSetter__',
-  '__lookupGetter__',
-  '__lookupSetter__',
-]);
-
 function sanitizeKey(key: string): string | null {
   if (!key) return null;
-  if (FORBIDDEN_KEYS.has(key)) return null;
+  if ((desk as DeskWithContext).forbiddenKeys.value.includes(key)) return null;
   if (key.startsWith('__') && key.endsWith('__')) return null;
   if (key.includes('.')) return null;
 
@@ -132,32 +120,6 @@ function cancelKeyChange() {
   editingKey.value = false;
 }
 
-// Propagation des valeurs vers le parent
-function propagate(node: ObjectNode) {
-  if (!node) return;
-
-  if (node.type === 'object') {
-    node.value =
-      node.children?.reduce(
-        (acc: any, child) => {
-          acc[child.key!] = child.transforms.reduce(
-            (v, t) => t.fn(v, ...(t.params || [])),
-            child.value
-          );
-          return acc;
-        },
-        {} as Record<string, any>
-      ) || {};
-  } else if (node.type === 'array') {
-    node.value =
-      node.children?.map((child) =>
-        child.transforms.reduce((v, t) => t.fn(v, ...(t.params || [])), child.value)
-      ) || [];
-  }
-
-  if (node.parent) propagate(node.parent);
-}
-
 // Add or remove a transformation on the node
 function handleNodeTransform(name: any) {
   if (!name) return;
@@ -171,9 +133,9 @@ function handleNodeTransform(name: any) {
         params: initParams(transform),
       });
   }
-  if (tree.value.parent) propagate(tree.value.parent);
+  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
 
-  if (tree.value.parent) propagate(tree.value.parent);
+  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
   nodeSelect.value = tree.value.transforms.at(-1)?.name || null;
 }
 
@@ -188,7 +150,7 @@ function handleStepTransform(index: number, name: any) {
     if (t) tree.value.transforms.splice(index + 1, 0, { ...t, params: initParams(t) });
   }
 
-  if (tree.value.parent) propagate(tree.value.parent);
+  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
 
   // Update the Select for this step to reflect the choice
   stepSelect.value[index] = tree.value.transforms[index]?.name || null;
@@ -301,7 +263,7 @@ function computeStepValue(index: number) {
                   :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
                   class="h-6.5 px-2 py-0"
                   style="font-size: var(--text-xs)"
-                  @input="propagate(tree)"
+                  @input="(desk as DeskWithContext).propagateTransform(tree)"
                 />
 
                 <Input
@@ -312,7 +274,7 @@ function computeStepValue(index: number) {
                   type="number"
                   :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
                   class="h-6.5 px-2 py-0 text-xs"
-                  @input="propagate(tree)"
+                  @input="(desk as DeskWithContext).propagateTransform(tree)"
                 />
 
                 <div
@@ -326,7 +288,7 @@ function computeStepValue(index: number) {
                     @update:checked="
                       (v: any) => {
                         t.params![pi] = v;
-                        propagate(tree);
+                        (desk as DeskWithContext).propagateTransform(tree);
                       }
                     "
                   />
