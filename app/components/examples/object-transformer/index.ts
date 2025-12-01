@@ -15,10 +15,17 @@ export type ObjectNodeType =
   | 'unknown'
   | 'date';
 
+export interface StructuralTransformResult {
+  __structuralChange: true;
+  action: 'split' | 'merge' | 'arrayToProperties';
+  parts?: any[];
+  removeSource?: boolean;
+}
+
 export interface Transform {
   name: string;
   if: (node: ObjectNode) => boolean;
-  fn: (value: any, ...params: any[]) => any;
+  fn: (value: any, ...params: any[]) => any | StructuralTransformResult;
   params?: any[];
 }
 

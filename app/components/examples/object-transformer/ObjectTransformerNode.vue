@@ -48,10 +48,22 @@ const availableTransforms = computed(() => {
 
 // Transformations available for step selects (based on transformed type)
 const availableStepTransforms = computed(() => {
-  const transformedValue = tree.value.transforms.reduce(
-    (val, t) => t.fn(val, ...(t.params || [])),
-    tree.value.value
-  );
+  let transformedValue = tree.value.value;
+
+  // Appliquer les transformations jusqu'à rencontrer une transformation structurelle
+  for (const t of tree.value.transforms) {
+    const result = t.fn(transformedValue, ...(t.params || []));
+
+    // Si c'est une transformation structurelle, arrêter
+    const isStructural = result && typeof result === 'object' && result.__structuralChange === true;
+    if (isStructural) {
+      break;
+    }
+
+    // Transformation normale
+    transformedValue = result;
+  }
+
   const transformedType = deskWithContext.getNodeType({ ...tree.value, value: transformedValue });
   return transforms.value.filter((t) =>
     t.if({ ...tree.value, type: transformedType as ObjectNodeType, value: transformedValue })
@@ -136,6 +148,11 @@ function handleNodeTransform(name: unknown) {
   }
 
   nodeSelect.value = transformName;
+
+  // Propager d'abord au nœud lui-même pour traiter les transformations structurelles
+  deskWithContext.propagateTransform(tree.value);
+
+  // Puis propager au parent pour mettre à jour sa valeur
   if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
 }
 
@@ -162,6 +179,10 @@ function handleStepTransform(index: number, name: unknown) {
     }
   }
 
+  // Propager d'abord au nœud lui-même pour traiter les transformations structurelles
+  deskWithContext.propagateTransform(tree.value);
+
+  // Puis propager au parent pour mettre à jour sa valeur
   if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
 }
 
@@ -173,6 +194,17 @@ function getFormattedStepValue(index: number): string {
   const value = deskWithContext.computeStepValue(tree.value, index);
   const type = deskWithContext.getComputedValueType(tree.value, value);
   return deskWithContext.formatValue(value, type);
+}
+
+function isStructuralTransform(transformIndex: number): boolean {
+  const t = tree.value.transforms[transformIndex];
+  if (!t) return false;
+
+  // Calculer la valeur jusqu'à cette transformation
+  const value = deskWithContext.computeStepValue(tree.value, transformIndex);
+  const result = t.fn(value, ...(t.params || []));
+
+  return result && typeof result === 'object' && result.__structuralChange === true;
 }
 </script>
 
@@ -247,8 +279,8 @@ function getFormattedStepValue(index: number): string {
       <!-- Children récursifs -->
       <div v-if="tree.children?.length" class="ml-1 border-l-2 pl-2">
         <ObjectTransformerNode
-          v-for="child in tree.children"
-          :key="child.key || child.value"
+          v-for="(child, index) in tree.children"
+          :key="`${child.key}-${index}-${JSON.stringify(child.value)}`"
           :tree="child"
           class="ml-4"
         />
@@ -265,41 +297,65 @@ function getFormattedStepValue(index: number): string {
             {{ getFormattedStepValue(index) }}
           </span>
 
-          <template v-if="availableStepTransforms.length > 1">
+          <template v-if="!isStructuralTransform(index)">
+            <template v-if="availableStepTransforms.length > 1">
+              <div v-if="t.params" class="flex gap-2">
+                <ObjectTransformerParamInput
+                  v-for="(_p, pi) in t.params"
+                  :key="`param-${index}-${pi}`"
+                  v-model="t.params[pi]"
+                  :config="getParamConfig(t.name, pi)"
+                  @change="
+                    () => {
+                      deskWithContext.propagateTransform(tree);
+                      if (tree.parent) deskWithContext.propagateTransform(tree.parent);
+                    }
+                  "
+                />
+              </div>
+
+              <Select
+                :model-value="stepSelect[index + 1]"
+                size="xs"
+                @update:model-value="(val) => handleStepTransform(index, val)"
+              >
+                <!-- @vue-ignore -->
+                <SelectTrigger size="xs" class="px-2 py-1">
+                  <SelectValue placeholder="+" class="text-xs" />
+                </SelectTrigger>
+                <SelectContent class="text-xs">
+                  <SelectGroup>
+                    <SelectLabel>Next Transformation</SelectLabel>
+                    <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
+                    <SelectItem
+                      v-for="tr in availableStepTransforms"
+                      :key="tr.name"
+                      :value="tr.name"
+                      class="text-xs"
+                    >
+                      {{ tr.name }}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </template>
+          </template>
+
+          <template v-else>
             <div v-if="t.params" class="flex gap-2">
               <ObjectTransformerParamInput
                 v-for="(_p, pi) in t.params"
                 :key="`param-${index}-${pi}`"
                 v-model="t.params[pi]"
                 :config="getParamConfig(t.name, pi)"
-                @change="deskWithContext.propagateTransform(tree)"
+                @change="
+                  () => {
+                    deskWithContext.propagateTransform(tree);
+                    if (tree.parent) deskWithContext.propagateTransform(tree.parent);
+                  }
+                "
               />
             </div>
-
-            <Select
-              :model-value="stepSelect[index + 1]"
-              size="xs"
-              @update:model-value="(val) => handleStepTransform(index, val)"
-            >
-              <!-- @vue-ignore -->
-              <SelectTrigger size="xs" class="px-2 py-1">
-                <SelectValue placeholder="+" class="text-xs" />
-              </SelectTrigger>
-              <SelectContent class="text-xs">
-                <SelectGroup>
-                  <SelectLabel>Next Transformation</SelectLabel>
-                  <SelectItem value="None" class="text-xs">Remove this & following</SelectItem>
-                  <SelectItem
-                    v-for="tr in availableStepTransforms"
-                    :key="tr.name"
-                    :value="tr.name"
-                    class="text-xs"
-                  >
-                    {{ tr.name }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
           </template>
         </div>
       </div>

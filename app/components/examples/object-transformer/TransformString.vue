@@ -6,6 +6,17 @@ import { ObjectTransformerDeskKey } from '.';
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
 const transforms: Transform[] = [
+  {
+    name: 'Split',
+    if: (node) => node.type === 'string',
+    params: [{ key: 'delimiter', label: 'Delimiter', type: 'text', default: ' ' }],
+    fn: (v: string, delimiter: string) => ({
+      __structuralChange: true,
+      action: 'split' as const,
+      parts: v.split(delimiter),
+      removeSource: false,
+    }),
+  },
   { name: 'To Uppercase', if: (node) => node.type === 'string', fn: (v: any) => v.toUpperCase() },
   { name: 'To Lowercase', if: (node) => node.type === 'string', fn: (v: any) => v.toLowerCase() },
   {

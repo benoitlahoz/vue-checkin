@@ -136,6 +136,10 @@ const data = {
 
 const tree = ref<ObjectNode>(buildNodeTree(data, 'Object'));
 
+function isStructuralResult(result: any): boolean {
+  return result && typeof result === 'object' && result.__structuralChange === true;
+}
+
 const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
@@ -171,6 +175,94 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     propagateTransform(node: ObjectNode) {
       if (!node) return;
 
+      // Gérer les transformations structurelles
+      if (node.transforms.length > 0) {
+        // Chercher la dernière transformation structurelle
+        const lastTransform = node.transforms[node.transforms.length - 1];
+        if (!lastTransform) return;
+
+        // Calculer la valeur après toutes les transformations AVANT la dernière
+        let intermediateValue = node.value;
+        for (let i = 0; i < node.transforms.length - 1; i++) {
+          const t = node.transforms[i];
+          if (!t) continue;
+          const result = t.fn(intermediateValue, ...(t.params || []));
+          // Si on rencontre une transformation structurelle avant, arrêter
+          if (result && typeof result === 'object' && result.__structuralChange) {
+            break;
+          }
+          intermediateValue = result;
+        }
+
+        // Appliquer la dernière transformation sur la valeur intermédiaire
+        const lastResult = lastTransform.fn(intermediateValue, ...(lastTransform.params || []));
+
+        if (lastResult && typeof lastResult === 'object' && lastResult.__structuralChange) {
+          // Action 'split' : créer des propriétés à partir des parties
+          if (
+            (lastResult.action === 'split' || lastResult.action === 'arrayToProperties') &&
+            lastResult.parts &&
+            node.parent
+          ) {
+            // Trouver l'index du nœud actuel dans le parent
+            const currentIndex = node.parent.children?.indexOf(node) ?? -1;
+            if (currentIndex === -1) return;
+
+            // Vérifier s'il y a déjà des nœuds splittés après celui-ci
+            const baseKeyPrefix = (node.key || 'part') + '_';
+            const hasSplitNodes = node.parent.children!.some(
+              (child) => child !== node && child.key?.startsWith(baseKeyPrefix)
+            );
+
+            if (hasSplitNodes) {
+              // Supprimer TOUS les anciens nœuds splittés (peu importe leur position)
+              const filteredChildren = node.parent.children!.filter(
+                (child) => child === node || !child.key?.startsWith(baseKeyPrefix)
+              );
+
+              // Recréer tous les nœuds avec les nouvelles valeurs
+              const baseKey = node.key || 'part';
+              const newNodes = lastResult.parts.map((part: any, i: number) => {
+                const newKey = `${baseKey}_${i}`;
+                return buildNodeTree(part, newKey, node.parent);
+              });
+
+              // Trouver la nouvelle position du nœud source après le filtrage
+              const newIndex = filteredChildren.indexOf(node);
+              // Créer un nouveau tableau avec les nouveaux nœuds insérés
+              const updatedChildren = [
+                ...filteredChildren.slice(0, newIndex + 1),
+                ...newNodes,
+                ...filteredChildren.slice(newIndex + 1),
+              ];
+
+              // Réassigner complètement le tableau pour forcer la réactivité
+              node.parent.children = updatedChildren;
+            } else {
+              // Première fois : créer les nouveaux nœuds
+              const baseKey = node.key || 'part';
+              const newNodes = lastResult.parts.map((part: any, i: number) => {
+                const newKey = `${baseKey}_${i}`;
+                return buildNodeTree(part, newKey, node.parent);
+              });
+
+              // Remplacer ou ajouter les nœuds
+              if (lastResult.removeSource) {
+                // Remplacer le nœud source par les nouvelles parties
+                node.parent.children!.splice(currentIndex, 1, ...newNodes);
+              } else {
+                // Insérer les nouvelles parties après le nœud source
+                node.parent.children!.splice(currentIndex + 1, 0, ...newNodes);
+              }
+            }
+
+            // Propager au parent
+            (desk as ObjectTransformerDesk).propagateTransform(node.parent);
+            return;
+          }
+        }
+      }
+
       if (node.type === 'object') {
         node.value =
           node.children?.reduce(
@@ -193,9 +285,23 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       if (node.parent) (desk as ObjectTransformerDesk).propagateTransform(node.parent);
     },
     computeStepValue(node: ObjectNode, index: number) {
-      return node.transforms
-        .slice(0, index + 1)
-        .reduce((val, t) => t.fn(val, ...(t.params || [])), node.value);
+      let value = node.value;
+
+      for (let i = 0; i <= index; i++) {
+        const t = node.transforms[i];
+        if (!t) continue;
+
+        const result = t.fn(value, ...(t.params || []));
+
+        // Si c'est une transformation structurelle, arrêter ici
+        if (isStructuralResult(result)) {
+          break;
+        }
+
+        // Transformation normale
+        value = result;
+      }
+      return value;
     },
 
     // Nodes
@@ -237,8 +343,21 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     getNodeType(node: ObjectNode) {
       let value = node.value;
 
+      // Ne traiter que les transformations jusqu'à la première transformation structurelle
       for (const t of node.transforms) {
-        value = t.fn(value, ...(t.params || []));
+        // Vérifier d'abord si c'est une transformation structurelle
+        // Pour cela, on regarde si la transformation a une propriété 'structural' ou si son résultat l'indique
+        // On doit exécuter pour vérifier, mais on s'arrête immédiatement après
+        const result = t.fn(value, ...(t.params || []));
+
+        if (isStructuralResult(result)) {
+          // Transformation structurelle trouvée : arrêter ici
+          // Le type reste celui de la valeur AVANT la transformation structurelle
+          break;
+        }
+
+        // Transformation normale : appliquer
+        value = result;
       }
 
       const t = typeof value;
