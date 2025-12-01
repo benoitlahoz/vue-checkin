@@ -47,9 +47,9 @@ export interface ObjectTransformerContext {
   // Transforms
   transforms: Ref<Transform[]>;
   addTransforms: (...newTransforms: Transform[]) => void;
-  findTransform: (name: string) => Transform | undefined;
+  findTransform: (name: string, node?: ObjectNode) => Transform | undefined;
   initParams: (transform: Transform) => any[];
-  createTransformEntry: (name: string) => (Transform & { params: any[] }) | null;
+  createTransformEntry: (name: string, node?: ObjectNode) => (Transform & { params: any[] }) | null;
   propagateTransform: (node: ObjectNode) => void;
   computeStepValue: (node: ObjectNode, index: number) => any;
   // Nodes

@@ -6,18 +6,10 @@ import { ObjectTransformerDeskKey } from '.';
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
 const transforms: Transform[] = [
-  // Numbers, Objects and Arrays
   {
     name: 'To String',
     if: (node) => node.type === 'number' || node.type === 'object' || node.type === 'array',
-    fn: (v: any) => {
-      if (typeof v === 'number') return String(v);
-      try {
-        return JSON.stringify(v, null, 0);
-      } catch {
-        return String(v);
-      }
-    },
+    fn: (v: any) => (typeof v === 'number' ? String(v) : JSON.stringify(v)),
   },
 ];
 

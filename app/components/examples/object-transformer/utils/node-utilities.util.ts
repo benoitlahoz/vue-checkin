@@ -58,20 +58,23 @@ const formatters: Partial<Record<ObjectNodeType, (v: any) => string>> = {
     try {
       return JSON.stringify(v);
     } catch {
-      return String(v);
+      return '[Circular Object]';
     }
   },
   array: (v) => {
     try {
       return JSON.stringify(v);
     } catch {
-      return String(v);
+      return '[Circular Array]';
     }
   },
 };
 
-export const formatValue = (value: any, type: ObjectNodeType): string =>
-  formatters[type]?.(value) ?? String(value);
+export const formatValue = (value: any, type: ObjectNodeType): string => {
+  // If value is actually a string (e.g., after JSON.stringify transform), return it directly
+  if (typeof value === 'string') return value;
+  return formatters[type]?.(value) ?? String(value);
+};
 
 /**
  * Node Properties - Pure utilities for node inspection

@@ -16,7 +16,7 @@ import {
   computeStepValue,
   createPropagateTransform,
 } from './utils/transform-propagation.util';
-import { getNodeType } from './utils/type-guards.util';
+import { getTypeFromValue } from './utils/type-guards.util';
 import {
   sanitizeKey,
   autoRenameKey,
@@ -69,14 +69,18 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     addTransforms(...newTransforms: Transform[]) {
       this.transforms.value.push(...newTransforms);
     },
-    findTransform(name: string): Transform | undefined {
+    findTransform(name: string, node?: ObjectNode): Transform | undefined {
+      // If node is provided, filter by type compatibility
+      if (node) {
+        return this.transforms.value.find((t) => t.name === name && t.if(node));
+      }
       return this.transforms.value.find((t) => t.name === name);
     },
     initParams(transform: Transform) {
       return transform.params?.map((p) => p.default ?? null) || [];
     },
-    createTransformEntry(name: string) {
-      const transform = this.findTransform(name);
+    createTransformEntry(name: string, node?: ObjectNode) {
+      const transform = this.findTransform(name, node);
       return transform ? { ...transform, params: this.initParams(transform) } : null;
     },
     propagateTransform(node: ObjectNode) {
@@ -87,8 +91,8 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
     // Nodes
     forbiddenKeys: ref<string[]>(forbiddenKeys),
-    getComputedValueType(node: ObjectNode, value: any): ObjectNodeType {
-      return getNodeType({ ...node, value });
+    getComputedValueType(_node: ObjectNode, value: any): ObjectNodeType {
+      return getTypeFromValue(value);
     },
 
     // Key editing

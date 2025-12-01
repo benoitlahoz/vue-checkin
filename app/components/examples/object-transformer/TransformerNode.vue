@@ -35,8 +35,8 @@ const deskWithContext = desk as DeskWithContext;
 
 const tree = ref(props.tree);
 
-// Capture the original type once and keep it stable
-const originalType = getNodeType(props.tree);
+// The node's type is the ORIGINAL type (set in buildNodeTree, never changed)
+const originalType = tree.value.type;
 
 const transforms: ComputedRef<Transform[]> = computed(() => {
   return deskWithContext.transforms.value;
@@ -44,9 +44,7 @@ const transforms: ComputedRef<Transform[]> = computed(() => {
 
 // Transformations available for the main select (based on original type)
 const availableTransforms = computed(() => {
-  return transforms.value.filter((t) =>
-    t.if({ ...tree.value, type: originalType as ObjectNodeType })
-  );
+  return transforms.value.filter((t) => t.if({ ...tree.value, type: originalType }));
 });
 
 // Transformations available for step selects (based on transformed type)
@@ -182,9 +180,8 @@ function handleNodeTransform(name: unknown) {
     }
   }
 
-  const entry = deskWithContext.createTransformEntry(transformName);
+  const entry = deskWithContext.createTransformEntry(transformName, tree.value);
   if (!entry) return;
-
   if (shouldAdd) {
     tree.value.transforms.push(entry);
   } else {
