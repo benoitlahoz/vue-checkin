@@ -20,7 +20,8 @@ import {
   SelectLabel,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronRight, Undo, Trash } from 'lucide-vue-next';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
@@ -83,6 +84,7 @@ const stepSelect = ref<Record<number, string | null>>({});
 const isPrimitive = computed(() => deskWithContext.primitiveTypes.includes(tree.value.type));
 const editingKey = ref(false);
 const tempKey = ref(props.tree.key);
+const isHovered = ref(false);
 
 // Déterminer si la propriété a été ajoutée (issue d'un Split)
 const isAddedProperty = computed(() => {
@@ -137,6 +139,15 @@ function confirmKeyChange() {
 function cancelKeyChange() {
   tempKey.value = props.tree.key;
   editingKey.value = false;
+}
+
+function toggleDelete() {
+  tree.value.deleted = !tree.value.deleted;
+
+  // Propager au parent pour recalculer l'objet sans cette propriété
+  if (tree.value.parent) {
+    deskWithContext.propagateTransform(tree.value.parent);
+  }
 }
 
 function handleNodeTransform(name: unknown) {
@@ -243,22 +254,42 @@ function isStructuralTransform(transformIndex: number): boolean {
 </script>
 
 <template>
-  <div class="text-xs mb-4">
-    <div class="flex items-center gap-2 my-2">
+  <div class="text-xs mb-4" :class="{ 'opacity-50': tree.deleted }">
+    <div
+      class="flex items-center gap-2 my-2"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
+    >
       <template v-if="tree.children?.length">
         <ChevronRight
           v-if="!isOpen"
-          class="w-3 h-3 text-muted-foreground cursor-pointer"
+          class="w-3 h-3 text-muted-foreground cursor-pointer shrink-0"
           @click="toggleOpen"
         />
         <ChevronDown
           v-else-if="isOpen"
-          class="w-3 h-3 text-muted-foreground cursor-pointer"
+          class="w-3 h-3 text-muted-foreground cursor-pointer shrink-0"
           @click="toggleOpen"
         />
       </template>
+      <div v-else class="w-3 shrink-0" />
 
-      <div class="cursor-pointer" @click="editingKey = true">
+      <!-- Bouton Delete/Restore à gauche avec slide -->
+      <div class="overflow-hidden transition-all duration-200" :class="isHovered ? 'w-4' : 'w-0'">
+        <Button
+          v-if="tree.parent?.type === 'object' || tree.parent?.type === 'array'"
+          variant="ghost"
+          size="icon"
+          class="h-4 w-4 p-0 shrink-0"
+          :title="tree.deleted ? 'Restore property' : 'Delete property'"
+          @click.stop="toggleDelete"
+        >
+          <Undo v-if="tree.deleted" class="w-3.5 h-3.5 text-muted-foreground" />
+          <Trash v-else class="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+        </Button>
+      </div>
+
+      <div class="cursor-pointer flex items-center gap-2" @click="editingKey = true">
         <template v-if="editingKey">
           <Input
             v-model="tempKey"
@@ -286,7 +317,7 @@ function isStructuralTransform(transformIndex: number): boolean {
       <template v-if="availableTransforms.length > 0">
         <Select :model-value="nodeSelect" @update:model-value="handleNodeTransform">
           <!-- @vue-ignore -->
-          <SelectTrigger size="xs" class="px-2 py-1">
+          <SelectTrigger size="xs" class="ml-2 px-2 py-1">
             <SelectValue placeholder="+" class="text-xs">
               {{ nodeSelect || '+' }}
             </SelectValue>
@@ -354,7 +385,7 @@ function isStructuralTransform(transformIndex: number): boolean {
                 @update:model-value="(val) => handleStepTransform(index, val)"
               >
                 <!-- @vue-ignore -->
-                <SelectTrigger size="xs" class="px-2 py-1">
+                <SelectTrigger size="xs" class="px-2 py-1 ml-2">
                   <SelectValue placeholder="+" class="text-xs" />
                 </SelectTrigger>
                 <SelectContent class="text-xs">

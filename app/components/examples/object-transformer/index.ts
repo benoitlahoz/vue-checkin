@@ -37,6 +37,7 @@ export interface ObjectNode {
   children?: ObjectNode[];
   parent?: ObjectNode;
   keyModified?: boolean; // True si la clé a été modifiée par l'utilisateur
+  deleted?: boolean; // True si la propriété est marquée comme supprimée
 }
 
 export interface ObjectTransformerContext {
