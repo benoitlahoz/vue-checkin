@@ -28,9 +28,14 @@ const props = defineProps<{ tree: ObjectNode }>();
 
 const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
+const deskWithContext = desk as DeskWithContext;
 
 const transforms: ComputedRef<Transform[]> = computed(() => {
-  return (desk as DeskWithContext).transforms.value;
+  return deskWithContext.transforms.value;
+});
+const availableTransforms = computed(() => {
+  const type = deskWithContext.getNodeType(tree.value);
+  return transforms.value.filter((t) => t.if({ ...tree.value, type: type as ObjectNodeType }));
 });
 
 const isOpen = ref(true);
@@ -41,19 +46,26 @@ const toggleOpen = () => {
 const tree = ref(props.tree);
 const nodeSelect = ref<string | null>(null);
 const stepSelect = ref<Record<number, string | null>>({});
-const availableTransforms = computed(() => {
-  const type = (desk as DeskWithContext).getNodeType(tree.value);
-  return transforms.value.filter((t) => t.if({ ...tree.value, type: type as ObjectNodeType }));
-});
+
 const isPrimitive = computed(() =>
-  ['string', 'number', 'boolean', 'bigint', 'symbol', 'undefined', 'null'].includes(tree.value.type)
+  [
+    'string',
+    'number',
+    'boolean',
+    'bigint',
+    'symbol',
+    'undefined',
+    'null',
+    'date',
+    'function',
+  ].includes(tree.value.type)
 );
 const editingKey = ref(false);
 const tempKey = ref(props.tree.key);
 
 function sanitizeKey(key: string): string | null {
   if (!key) return null;
-  if ((desk as DeskWithContext).forbiddenKeys.value.includes(key)) return null;
+  if (deskWithContext.forbiddenKeys.value.includes(key)) return null;
   if (key.startsWith('__') && key.endsWith('__')) return null;
   if (key.includes('.')) return null;
 
@@ -133,9 +145,9 @@ function handleNodeTransform(name: any) {
         params: initParams(transform),
       });
   }
-  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
+  if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
 
-  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
+  if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
   nodeSelect.value = tree.value.transforms.at(-1)?.name || null;
 }
 
@@ -150,7 +162,7 @@ function handleStepTransform(index: number, name: any) {
     if (t) tree.value.transforms.splice(index + 1, 0, { ...t, params: initParams(t) });
   }
 
-  if (tree.value.parent) (desk as DeskWithContext).propagateTransform(tree.value.parent);
+  if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
 
   // Update the Select for this step to reflect the choice
   stepSelect.value[index] = tree.value.transforms[index]?.name || null;
@@ -165,6 +177,34 @@ function computeStepValue(index: number) {
   return tree.value.transforms
     .slice(0, index + 1)
     .reduce((val, t) => t.fn(val, ...(t.params || [])), tree.value.value);
+}
+
+// Get the type of a computed value
+function getComputedValueType(value: any): ObjectNodeType {
+  return deskWithContext.getNodeType({ ...tree.value, value });
+}
+
+// Format value for display
+function formatValue(value: any, type: ObjectNodeType): string {
+  if (type === 'date' && value instanceof Date) {
+    return value.toISOString();
+  }
+  if (type === 'function') {
+    return `[Function: ${value.name || 'anonymous'}]`;
+  }
+  if (type === 'bigint') {
+    return `${value}n`;
+  }
+  if (type === 'symbol') {
+    return value.toString();
+  }
+  if (type === 'undefined') {
+    return 'undefined';
+  }
+  if (type === 'null') {
+    return 'null';
+  }
+  return String(value);
 }
 </script>
 
@@ -205,7 +245,9 @@ function computeStepValue(index: number) {
 
       <!-- Valeur s'affiche juste pour primitives -->
       <template v-if="isPrimitive">
-        <span class="ml-2">{{ tree.value }}</span>
+        <span class="ml-2 text-muted-foreground italic">
+          {{ formatValue(tree.value, tree.type) }}
+        </span>
       </template>
 
       <!-- Select principal -->
@@ -251,7 +293,11 @@ function computeStepValue(index: number) {
           :key="index"
           class="flex items-center gap-2 my-2"
         >
-          <span class="text-blue-600 text-xs pl-5"> {{ computeStepValue(index) }} </span>
+          <span class="text-blue-600 text-xs pl-5">
+            {{
+              formatValue(computeStepValue(index), getComputedValueType(computeStepValue(index)))
+            }}
+          </span>
 
           <template v-if="availableTransforms.length > 1">
             <!-- PARAM INPUTS FOR STACK -->
@@ -263,7 +309,7 @@ function computeStepValue(index: number) {
                   :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
                   class="h-6.5 px-2 py-0"
                   style="font-size: var(--text-xs)"
-                  @input="(desk as DeskWithContext).propagateTransform(tree)"
+                  @input="deskWithContext.propagateTransform(tree)"
                 />
 
                 <Input
@@ -274,7 +320,7 @@ function computeStepValue(index: number) {
                   type="number"
                   :placeholder="transforms.find((x) => x.name === t.name)?.params?.[pi].label"
                   class="h-6.5 px-2 py-0 text-xs"
-                  @input="(desk as DeskWithContext).propagateTransform(tree)"
+                  @input="deskWithContext.propagateTransform(tree)"
                 />
 
                 <div
@@ -288,7 +334,7 @@ function computeStepValue(index: number) {
                     @update:checked="
                       (v: any) => {
                         t.params![pi] = v;
-                        (desk as DeskWithContext).propagateTransform(tree);
+                        deskWithContext.propagateTransform(tree);
                       }
                     "
                   />

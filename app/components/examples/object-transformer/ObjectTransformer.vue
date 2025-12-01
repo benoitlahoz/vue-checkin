@@ -12,6 +12,18 @@ import {
 } from '.';
 
 function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNode {
+  // Handle null first (before typeof checks)
+  if (value === null) {
+    return {
+      type: 'null',
+      key,
+      value: null,
+      transforms: [],
+      parent,
+    };
+  }
+
+  // Handle arrays
   if (Array.isArray(value)) {
     const node: ObjectNode = {
       type: 'array',
@@ -24,11 +36,25 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
 
     node.children = value.map((item, index) => buildNodeTree(item, String(index), node));
 
-    // Construire la valeur initiale à partir des enfants
+    // Build the initial value from children
     node.value = node.children.map((c) => c.value);
 
     return node;
-  } else if (value !== null && typeof value === 'object') {
+  }
+
+  // Handle Date objects
+  if (value instanceof Date) {
+    return {
+      type: 'date',
+      key,
+      value,
+      transforms: [],
+      parent,
+    };
+  }
+
+  // Handle objects (after Date check since Date is also an object)
+  if (typeof value === 'object') {
     const node: ObjectNode = {
       type: 'object',
       key,
@@ -40,7 +66,7 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
 
     node.children = Object.entries(value).map(([k, v]) => buildNodeTree(v, k, node));
 
-    // Construire la valeur initiale à partir des enfants
+    // Build the initial value from children
     node.value = node.children.reduce(
       (acc, c) => {
         acc[c.key!] = c.value;
@@ -50,32 +76,52 @@ function buildNodeTree(value: any, key?: string, parent?: ObjectNode): ObjectNod
     );
 
     return node;
-  } else {
-    // primitive
-    const type: ObjectNodeType =
-      typeof value === 'string'
-        ? 'string'
-        : typeof value === 'number'
-          ? 'number'
-          : typeof value === 'boolean'
-            ? 'boolean'
-            : value === null
-              ? 'null'
-              : 'undefined';
-
-    return {
-      type,
-      key,
-      value: value,
-      transforms: [],
-      parent,
-    };
   }
+
+  // Handle primitives and other types
+  const typeOf = typeof value;
+  let type: ObjectNodeType;
+
+  switch (typeOf) {
+    case 'string':
+      type = 'string';
+      break;
+    case 'number':
+      type = 'number';
+      break;
+    case 'bigint':
+      type = 'bigint';
+      break;
+    case 'boolean':
+      type = 'boolean';
+      break;
+    case 'symbol':
+      type = 'symbol';
+      break;
+    case 'undefined':
+      type = 'undefined';
+      break;
+    case 'function':
+      type = 'function';
+      break;
+    default:
+      type = 'unknown';
+  }
+
+  return {
+    type,
+    key,
+    value: value,
+    transforms: [],
+    parent,
+  };
 }
 
 const data = {
   name: 'john doe',
   age: 30,
+  dob: new Date('1993-05-15T00:00:00Z'),
+  active: true,
   city: 'marseille',
   address: {
     street: '123 main st',
@@ -89,16 +135,6 @@ const data = {
 };
 
 const tree = ref<ObjectNode>(buildNodeTree(data, 'Object'));
-
-// console.log('Tree:', tree.value);
-
-watch(
-  tree.value,
-  (newTree) => {
-    console.log('Updated Tree:', newTree);
-  },
-  { immediate: true, deep: true }
-);
 
 const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {

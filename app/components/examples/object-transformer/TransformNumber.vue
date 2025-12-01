@@ -45,6 +45,22 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'number',
     fn: (v: any) => Math.floor(v),
   },
+  {
+    name: 'Absolute',
+    if: (node) => node.type === 'number',
+    fn: (v: any) => Math.abs(v),
+  },
+  {
+    name: 'Negate',
+    if: (node) => node.type === 'number',
+    fn: (v: any) => -v,
+  },
+  {
+    name: 'Power',
+    if: (node) => node.type === 'number',
+    params: [{ key: 'exponent', label: 'Exponent', type: 'number', default: 2 }],
+    fn: (v: any, exponent: number) => Math.pow(v, exponent),
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();

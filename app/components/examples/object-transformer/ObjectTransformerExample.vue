@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { ObjectTransformer, TransformString, TransformNumber, TransformMisc } from '.';
+import {
+  ObjectTransformer,
+  TransformString,
+  TransformNumber,
+  TransformDate,
+  TransformMisc,
+} from '.';
 </script>
 
 <template>
   <ObjectTransformer>
     <TransformString />
     <TransformNumber />
+    <TransformDate />
     <TransformMisc />
   </ObjectTransformer>
 </template>

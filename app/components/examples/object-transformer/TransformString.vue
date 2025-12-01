@@ -64,6 +64,11 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'string',
     fn: (v: string) => v.replace(/\s+/g, ' '),
   },
+  {
+    name: 'Reverse',
+    if: (node) => node.type === 'string',
+    fn: (v: string) => v.split('').reverse().join(''),
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();
