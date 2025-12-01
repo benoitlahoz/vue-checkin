@@ -267,19 +267,27 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         node.value =
           node.children?.reduce(
             (acc: any, child) => {
-              acc[child.key!] = child.transforms.reduce(
-                (v, t) => t.fn(v, ...(t.params || [])),
-                child.value
-              );
+              // Calculer la valeur transformée en ignorant les transformations structurelles
+              const transformedValue = child.transforms.reduce((v, t) => {
+                const result = t.fn(v, ...(t.params || []));
+                // Si c'est un résultat structurel, garder la valeur précédente
+                return isStructuralResult(result) ? v : result;
+              }, child.value);
+              acc[child.key!] = transformedValue;
               return acc;
             },
             {} as Record<string, any>
           ) || {};
       } else if (node.type === 'array') {
         node.value =
-          node.children?.map((child) =>
-            child.transforms.reduce((v, t) => t.fn(v, ...(t.params || [])), child.value)
-          ) || [];
+          node.children?.map((child) => {
+            // Calculer la valeur transformée en ignorant les transformations structurelles
+            return child.transforms.reduce((v, t) => {
+              const result = t.fn(v, ...(t.params || []));
+              // Si c'est un résultat structurel, garder la valeur précédente
+              return isStructuralResult(result) ? v : result;
+            }, child.value);
+          }) || [];
       }
 
       if (node.parent) (desk as ObjectTransformerDesk).propagateTransform(node.parent);

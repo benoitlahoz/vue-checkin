@@ -137,6 +137,21 @@ function handleNodeTransform(name: unknown) {
 
   if (!shouldAdd && !shouldChange) return;
 
+  // Si on change de transformation et qu'on a un parent, nettoyer les éventuels nœuds splittés
+  if (shouldChange && tree.value.parent) {
+    const baseKeyPrefix = (tree.value.key || 'part') + '_';
+    const hasSplitNodes = tree.value.parent.children!.some(
+      (child) => child !== tree.value && child.key?.startsWith(baseKeyPrefix)
+    );
+    
+    if (hasSplitNodes) {
+      // Supprimer tous les nœuds splittés
+      tree.value.parent.children = tree.value.parent.children!.filter(
+        (child) => child === tree.value || !child.key?.startsWith(baseKeyPrefix)
+      );
+    }
+  }
+
   const entry = deskWithContext.createTransformEntry(transformName);
   if (!entry) return;
 
