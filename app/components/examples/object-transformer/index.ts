@@ -59,6 +59,28 @@ export interface ObjectTransformerContext {
   getNodeType: (node: ObjectNode) => ObjectNodeType;
   getComputedValueType: (node: ObjectNode, value: any) => ObjectNodeType;
   formatValue: (value: any, type: ObjectNodeType) => string;
+  // Key editing
+  editingNode: Ref<ObjectNode | null>;
+  tempKey: Ref<string | null>;
+  startEditKey: (node: ObjectNode) => void;
+  confirmEditKey: (node: ObjectNode) => void;
+  cancelEditKey: (node: ObjectNode) => void;
+  // Node utilities
+  isAddedProperty: (node: ObjectNode) => boolean;
+  getKeyClasses: (node: ObjectNode) => string;
+  generateChildKey: (child: ObjectNode, index: number) => string;
+  toggleNodeDeletion: (node: ObjectNode) => void;
+  // Transform selections
+  nodeSelections: Map<ObjectNode, string | null>;
+  stepSelections: Map<ObjectNode, Record<number, string | null>>;
+  getNodeSelection: (node: ObjectNode) => string | null;
+  setNodeSelection: (node: ObjectNode, value: string | null) => void;
+  getStepSelection: (node: ObjectNode) => Record<number, string | null>;
+  setStepSelection: (node: ObjectNode, value: Record<number, string | null>) => void;
+  // Helpers
+  getParamConfig: (transformName: string, paramIndex: number) => any;
+  formatStepValue: (node: ObjectNode, index: number) => string;
+  isStructuralTransform: (node: ObjectNode, transformIndex: number) => boolean;
 }
 
 export type ObjectTransformerDesk = DeskCore<ObjectNode> & ObjectTransformerContext;

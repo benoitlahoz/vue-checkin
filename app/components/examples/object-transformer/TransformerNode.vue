@@ -78,14 +78,18 @@ const toggleOpen = () => {
   tree.value.isOpen = isOpen.value;
 };
 
-const nodeSelect = ref<string | null>(
-  props.tree.transforms.length > 0 ? props.tree.transforms.at(-1)?.name || null : null
-);
-const stepSelect = ref<Record<number, string | null>>({});
+const nodeSelect = computed({
+  get: () => deskWithContext.getNodeSelection(tree.value),
+  set: (value) => deskWithContext.setNodeSelection(tree.value, value),
+});
+const stepSelect = computed({
+  get: () => deskWithContext.getStepSelection(tree.value),
+  set: (value) => deskWithContext.setStepSelection(tree.value, value),
+});
 
 const isPrimitive = computed(() => deskWithContext.primitiveTypes.includes(tree.value.type));
-const editingKey = ref(false);
-const tempKey = ref(props.tree.key);
+const editingKey = computed(() => deskWithContext.editingNode.value === tree.value);
+const tempKey = computed(() => deskWithContext.tempKey.value);
 const isHovered = ref(false);
 const valueElement = ref<HTMLElement | null>(null);
 const inputElement = ref<HTMLElement | null>(null);
@@ -130,70 +134,16 @@ const transformsPaddingLeft = computed(() => {
   return `${rect.left - parentRect.left}px`;
 });
 
-// Déterminer si la propriété a été ajoutée (issue d'un Split)
-const isAddedProperty = computed(() => {
-  const key = tree.value.key;
-  if (!key) return false;
-  // Une propriété ajoutée a une clé du format "parentKey_index"
-  return /_\d+$/.test(key);
-});
-
 // Classes CSS pour la clé
-const keyClasses = computed(() => {
-  if (isAddedProperty.value) return 'font-semibold text-blue-600';
-  if (tree.value.keyModified) return 'font-semibold text-yellow-600';
-  return 'font-semibold';
-});
+const keyClasses = computed(() => deskWithContext.getKeyClasses(tree.value));
 
 // Générer une clé unique safe pour v-for
 function getChildKey(child: ObjectNode, index: number): string {
-  try {
-    // Utiliser btoa pour encoder en base64 (safe pour HTML attributes)
-    const valueStr = JSON.stringify(child.value);
-    const encoded = btoa(encodeURIComponent(valueStr).slice(0, 100)); // Limiter la taille
-    return `${child.key}-${index}-${encoded}`;
-  } catch {
-    // Fallback si stringify échoue (circular refs, etc.)
-    return `${child.key}-${index}-${typeof child.value}-${Date.now()}`;
-  }
+  return deskWithContext.generateChildKey(child, index);
 }
 
 function confirmKeyChange() {
-  const newKey = tempKey.value?.trim();
-
-  if (!newKey) {
-    tempKey.value = props.tree.key;
-    editingKey.value = false;
-    isHovered.value = false;
-    return;
-  }
-
-  if (!deskWithContext.sanitizeKey(newKey)) {
-    tempKey.value = props.tree.key;
-    editingKey.value = false;
-    isHovered.value = false;
-    return;
-  }
-
-  if (newKey === props.tree.key) {
-    editingKey.value = false;
-    isHovered.value = false;
-    return;
-  }
-
-  const parent = props.tree.parent;
-
-  if (parent?.type === 'object' && parent.children) {
-    const finalKey = deskWithContext.autoRenameKey(parent, newKey);
-    tree.value.key = finalKey;
-    tree.value.keyModified = true; // Marquer la clé comme modifiée
-    tempKey.value = finalKey;
-
-    // Propager au parent pour recalculer l'objet avec la nouvelle clé
-    deskWithContext.propagateTransform(parent);
-  }
-
-  editingKey.value = false;
+  deskWithContext.confirmEditKey(tree.value);
   isHovered.value = false;
   // Forcer le blur de l'input
   if (inputFieldElement.value?.$el) {
@@ -202,8 +152,7 @@ function confirmKeyChange() {
 }
 
 function cancelKeyChange() {
-  tempKey.value = props.tree.key;
-  editingKey.value = false;
+  deskWithContext.cancelEditKey(tree.value);
   isHovered.value = false;
   // Forcer le blur de l'input
   if (inputFieldElement.value?.$el) {
@@ -212,12 +161,7 @@ function cancelKeyChange() {
 }
 
 function toggleDelete() {
-  tree.value.deleted = !tree.value.deleted;
-
-  // Propager au parent pour recalculer l'objet sans cette propriété
-  if (tree.value.parent) {
-    deskWithContext.propagateTransform(tree.value.parent);
-  }
+  deskWithContext.toggleNodeDeletion(tree.value);
 }
 
 function handleNodeTransform(name: unknown) {
@@ -302,24 +246,15 @@ function handleStepTransform(index: number, name: unknown) {
 }
 
 function getParamConfig(transformName: string, paramIndex: number) {
-  return transforms.value.find((x) => x.name === transformName)?.params?.[paramIndex];
+  return deskWithContext.getParamConfig(transformName, paramIndex);
 }
 
 function getFormattedStepValue(index: number): string {
-  const value = deskWithContext.computeStepValue(tree.value, index);
-  const type = deskWithContext.getComputedValueType(tree.value, value);
-  return deskWithContext.formatValue(value, type);
+  return deskWithContext.formatStepValue(tree.value, index);
 }
 
 function isStructuralTransform(transformIndex: number): boolean {
-  const t = tree.value.transforms[transformIndex];
-  if (!t) return false;
-
-  // Calculer la valeur jusqu'à cette transformation
-  const value = deskWithContext.computeStepValue(tree.value, transformIndex);
-  const result = t.fn(value, ...(t.params || []));
-
-  return result && typeof result === 'object' && result.__structuralChange === true;
+  return deskWithContext.isStructuralTransform(tree.value, transformIndex);
 }
 </script>
 
@@ -371,14 +306,18 @@ function isStructuralTransform(transformIndex: number): boolean {
               </Button>
             </div>
 
-            <div class="cursor-pointer flex items-center gap-2" @click="editingKey = true">
+            <div
+              class="cursor-pointer flex items-center gap-2"
+              @click="deskWithContext.startEditKey(tree)"
+            >
               <template v-if="editingKey">
                 <div ref="inputElement">
                   <Input
                     ref="inputFieldElement"
-                    v-model="tempKey"
+                    :model-value="tempKey || ''"
                     class="h-6 px-2 py-0 text-xs"
                     autofocus
+                    @update:model-value="(val) => (deskWithContext.tempKey.value = String(val))"
                     @keyup.enter="confirmKeyChange"
                     @keyup.esc="cancelKeyChange"
                     @click.stop
@@ -499,8 +438,8 @@ function isStructuralTransform(transformIndex: number): boolean {
 
               <template v-if="!isStructuralTransform(index)">
                 <template v-if="availableStepTransforms.length > 1">
-                  <div class="flex flex-col md:flex-row md:items-center gap-2">
-                    <div v-if="t.params" class="flex flex-col md:flex-row gap-2">
+                  <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                    <div v-if="t.params" class="flex flex-col md:flex-row gap-2 md:gap-3">
                       <TransformerParamInput
                         v-for="(_p, pi) in t.params"
                         :key="`param-${index}-${pi}`"
@@ -551,7 +490,7 @@ function isStructuralTransform(transformIndex: number): boolean {
               </template>
 
               <template v-else>
-                <div v-if="t.params" class="flex flex-col md:flex-row gap-2">
+                <div v-if="t.params" class="flex flex-col md:flex-row gap-2 md:gap-3">
                   <TransformerParamInput
                     v-for="(_p, pi) in t.params"
                     :key="`param-${index}-${pi}`"

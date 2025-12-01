@@ -417,6 +417,112 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       };
       return formatters[type]?.(value) ?? String(value);
     },
+
+    // Key editing
+    editingNode: ref<ObjectNode | null>(null),
+    tempKey: ref<string | null>(null),
+    startEditKey(node: ObjectNode) {
+      this.editingNode.value = node;
+      this.tempKey.value = node.key || null;
+    },
+    confirmEditKey(node: ObjectNode) {
+      const newKey = this.tempKey.value?.trim();
+
+      if (!newKey || !this.sanitizeKey(newKey)) {
+        this.tempKey.value = node.key || null;
+        this.editingNode.value = null;
+        return;
+      }
+
+      if (newKey === node.key) {
+        this.editingNode.value = null;
+        return;
+      }
+
+      const parent = node.parent;
+      if (parent?.type === 'object' && parent.children) {
+        const finalKey = this.autoRenameKey(parent, newKey);
+        node.key = finalKey;
+        node.keyModified = true;
+        this.tempKey.value = finalKey;
+        this.propagateTransform(parent);
+      }
+
+      this.editingNode.value = null;
+    },
+    cancelEditKey(node: ObjectNode) {
+      this.tempKey.value = node.key || null;
+      this.editingNode.value = null;
+    },
+
+    // Node utilities
+    isAddedProperty(node: ObjectNode): boolean {
+      const key = node.key;
+      if (!key) return false;
+      return /_\d+$/.test(key);
+    },
+    getKeyClasses(node: ObjectNode): string {
+      if (this.isAddedProperty(node)) return 'font-semibold text-blue-600';
+      if (node.keyModified) return 'font-semibold text-yellow-600';
+      return 'font-semibold';
+    },
+    generateChildKey(child: ObjectNode, index: number): string {
+      try {
+        const valueStr = JSON.stringify(child.value);
+        const encoded = btoa(encodeURIComponent(valueStr).slice(0, 100));
+        return `${child.key}-${index}-${encoded}`;
+      } catch {
+        return `${child.key}-${index}-${typeof child.value}-${Date.now()}`;
+      }
+    },
+    toggleNodeDeletion(node: ObjectNode) {
+      node.deleted = !node.deleted;
+      if (node.parent) {
+        this.propagateTransform(node.parent);
+      }
+    },
+
+    // Transform selections
+    nodeSelections: new Map<ObjectNode, string | null>(),
+    stepSelections: new Map<ObjectNode, Record<number, string | null>>(),
+    getNodeSelection(node: ObjectNode): string | null {
+      if (!this.nodeSelections.has(node)) {
+        const initial = node.transforms.length > 0 ? node.transforms.at(-1)?.name || null : null;
+        this.nodeSelections.set(node, initial);
+      }
+      return this.nodeSelections.get(node) || null;
+    },
+    setNodeSelection(node: ObjectNode, value: string | null) {
+      this.nodeSelections.set(node, value);
+    },
+    getStepSelection(node: ObjectNode): Record<number, string | null> {
+      if (!this.stepSelections.has(node)) {
+        this.stepSelections.set(node, {});
+      }
+      return this.stepSelections.get(node) || {};
+    },
+    setStepSelection(node: ObjectNode, value: Record<number, string | null>) {
+      this.stepSelections.set(node, value);
+    },
+
+    // Helpers
+    getParamConfig(transformName: string, paramIndex: number) {
+      return this.transforms.value.find((x) => x.name === transformName)?.params?.[paramIndex];
+    },
+    formatStepValue(node: ObjectNode, index: number): string {
+      const value = this.computeStepValue(node, index);
+      const type = this.getComputedValueType(node, value);
+      return this.formatValue(value, type);
+    },
+    isStructuralTransform(node: ObjectNode, transformIndex: number): boolean {
+      const t = node.transforms[transformIndex];
+      if (!t) return false;
+
+      const value = this.computeStepValue(node, transformIndex);
+      const result = t.fn(value, ...(t.params || []));
+
+      return result && typeof result === 'object' && result.__structuralChange === true;
+    },
   },
 });
 </script>

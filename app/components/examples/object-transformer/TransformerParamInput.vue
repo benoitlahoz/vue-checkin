@@ -30,7 +30,7 @@ function handleInput(value: any) {
       v-if="config?.type === 'text'"
       :model-value="modelValue"
       :placeholder="config?.label"
-      class="h-6.5 px-2 py-0 md:ml-2"
+      class="h-6.5 px-2 py-0"
       style="font-size: var(--text-xs)"
       @input="handleInput(($event.target as HTMLInputElement).value)"
     />
@@ -40,11 +40,11 @@ function handleInput(value: any) {
       :model-value="modelValue"
       type="number"
       :placeholder="config?.label"
-      class="h-6.5 px-2 py-0 text-xs md:ml-2"
+      class="h-6.5 px-2 py-0 text-xs"
       @input="handleInput(parseFloat(($event.target as HTMLInputElement).value))"
     />
 
-    <div v-else-if="config?.type === 'boolean'" class="flex items-center gap-1 md:ml-2">
+    <div v-else-if="config?.type === 'boolean'" class="flex items-center gap-1">
       <Checkbox :checked="modelValue" @update:checked="handleInput" />
       <span class="text-xs">{{ modelValue ? 'true' : 'false' }}</span>
     </div>
