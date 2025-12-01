@@ -255,11 +255,7 @@ function isStructuralTransform(transformIndex: number): boolean {
 
 <template>
   <div class="text-xs mb-4" :class="{ 'opacity-50': tree.deleted }">
-    <div
-      class="flex items-center gap-2 my-2"
-      @mouseenter="isHovered = true"
-      @mouseleave="isHovered = false"
-    >
+    <div class="flex items-center gap-2 my-2">
       <template v-if="tree.children?.length">
         <ChevronRight
           v-if="!isOpen"
@@ -274,36 +270,47 @@ function isStructuralTransform(transformIndex: number): boolean {
       </template>
       <div v-else class="w-3 shrink-0" />
 
-      <!-- Bouton Delete/Restore à gauche avec slide -->
-      <div class="overflow-hidden transition-all duration-200" :class="isHovered ? 'w-4' : 'w-0'">
-        <Button
+      <!-- Conteneur pour bouton + nom avec hover commun -->
+      <div
+        class="flex items-center gap-2"
+        @mouseenter="isHovered = true"
+        @mouseleave="isHovered = false"
+      >
+        <!-- Bouton Delete/Restore à gauche avec slide -->
+        <div
           v-if="tree.parent?.type === 'object' || tree.parent?.type === 'array'"
-          variant="ghost"
-          size="icon"
-          class="h-4 w-4 p-0 shrink-0"
-          :title="tree.deleted ? 'Restore property' : 'Delete property'"
-          @click.stop="toggleDelete"
+          class="overflow-hidden transition-all duration-200"
+          :class="isHovered ? 'w-4' : 'w-0'"
         >
-          <Undo v-if="tree.deleted" class="w-3.5 h-3.5 text-muted-foreground" />
-          <Trash v-else class="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-        </Button>
-      </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-4 w-4 p-0 shrink-0"
+            :title="tree.deleted ? 'Restore property' : 'Delete property'"
+            @click.stop="toggleDelete"
+            @mousedown.stop
+          >
+            <Undo v-if="tree.deleted" class="w-3.5 h-3.5 text-muted-foreground" />
+            <Trash v-else class="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+          </Button>
+        </div>
 
-      <div class="cursor-pointer flex items-center gap-2" @click="editingKey = true">
-        <template v-if="editingKey">
-          <Input
-            v-model="tempKey"
-            class="h-6 px-2 py-0 text-xs"
-            autofocus
-            @keyup.enter="confirmKeyChange"
-            @blur="confirmKeyChange"
-            @keyup.esc="cancelKeyChange"
-          />
-        </template>
+        <div class="cursor-pointer flex items-center gap-2" @click="editingKey = true">
+          <template v-if="editingKey">
+            <Input
+              v-model="tempKey"
+              class="h-6 px-2 py-0 text-xs"
+              autofocus
+              @keyup.enter="confirmKeyChange"
+              @blur="confirmKeyChange"
+              @keyup.esc="cancelKeyChange"
+            />
+          </template>
 
-        <template v-else>
-          <span :class="keyClasses">{{ tree.key }}</span>
-        </template>
+          <template v-else>
+            <span :class="keyClasses">{{ tree.key }}</span>
+          </template>
+        </div>
       </div>
 
       <!-- Valeur s'affiche juste pour primitives -->
