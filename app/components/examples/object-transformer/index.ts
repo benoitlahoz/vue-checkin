@@ -30,6 +30,7 @@ export interface Transform {
 }
 
 export interface ObjectNode {
+  id: string; // Unique identifier for the node
   type: ObjectNodeType;
   key?: string;
   value: any;
@@ -42,6 +43,9 @@ export interface ObjectNode {
 }
 
 export interface ObjectTransformerContext {
+  // Tree
+  tree: Ref<ObjectNode>;
+  getNode: (id: string) => ObjectNode | null;
   // Constants
   primitiveTypes: ObjectNodeType[];
   // Transforms

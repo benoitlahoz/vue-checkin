@@ -28,13 +28,30 @@ import { formatValue } from './utils/node-utilities.util';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
-const props = defineProps<{ tree: ObjectNode }>();
+interface Props {
+  id?: string | null; // null = root
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  id: null,
+});
 
 const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 const deskWithContext = desk as DeskWithContext;
 
-const tree = ref(props.tree);
+// Get the node from the desk
+const tree = computed(() => {
+  if (props.id === null) {
+    return deskWithContext.tree.value;
+  }
+  const node = deskWithContext.getNode(props.id);
+  if (!node) {
+    console.warn('Node not found:', props.id);
+    return deskWithContext.tree.value;
+  }
+  return node;
+});
 
 // The node's type is the ORIGINAL type (set in buildNodeTree, never changed)
 const originalType = tree.value.type;
@@ -56,7 +73,7 @@ const availableStepTransforms = computed(() => {
   );
 });
 
-const isOpen = ref(props.tree.isOpen ?? true);
+const isOpen = ref(tree.value.isOpen ?? true);
 const toggleOpen = () => {
   isOpen.value = !isOpen.value;
   // Persister l'état dans le node
@@ -398,8 +415,8 @@ function isStructuralTransform(transformIndex: number): boolean {
       <div v-if="tree.children?.length" class="ml-1 md:ml-1 border-l-2 pl-2 md:pl-2">
         <TransformerNode
           v-for="(child, index) in tree.children"
+          :id="child.id"
           :key="getChildKey(child, index)"
-          :tree="child"
           class="ml-2 md:ml-4"
         />
       </div>

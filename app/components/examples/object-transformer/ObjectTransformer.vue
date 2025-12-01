@@ -35,22 +35,29 @@ const props = withDefaults(defineProps<ObjectTransformerProps>(), {
   data: () => ({}),
 });
 
-const tree = ref<ObjectNode>(
-  buildNodeTree(props.data, Array.isArray(props.data) ? 'Array' : 'Object')
-);
-
-watch(
-  () => props.data,
-  (newData) => {
-    tree.value = buildNodeTree(newData, Array.isArray(newData) ? 'Array' : 'Object');
-  },
-  { deep: true }
-);
-
 const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
   context: {
+    // Tree
+    tree: ref<ObjectNode>(
+      buildNodeTree(props.data, Array.isArray(props.data) ? 'Array' : 'Object')
+    ),
+    getNode(id: string): ObjectNode | null {
+      // Recursive search in the tree
+      const findNode = (node: ObjectNode): ObjectNode | null => {
+        if (node.id === id) return node;
+        if (node.children) {
+          for (const child of node.children) {
+            const found = findNode(child);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      return findNode(this.tree.value);
+    },
+
     // Constants
     primitiveTypes: [
       'string',
@@ -186,10 +193,21 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     },
   },
 });
+
+watch(
+  () => props.data,
+  (newData) => {
+    (desk as ObjectTransformerDesk).tree.value = buildNodeTree(
+      newData,
+      Array.isArray(newData) ? 'Array' : 'Object'
+    );
+  },
+  { deep: true }
+);
 </script>
 
 <template>
-  <TransformerNode :tree="tree" />
+  <TransformerNode :id="null" />
   <slot />
 </template>
 

@@ -5,7 +5,12 @@ import { isNull, isArray, isDate, isObject, typeOfToNodeType } from './type-guar
  * Node Factory Functions - Pure builders for different node types
  */
 
+const generateId = (): string => {
+  return crypto.randomUUID();
+};
+
 export const createNullNode = (key?: string, parent?: ObjectNode): ObjectNode => ({
+  id: generateId(),
   type: 'null',
   key,
   value: null,
@@ -14,6 +19,7 @@ export const createNullNode = (key?: string, parent?: ObjectNode): ObjectNode =>
 });
 
 export const createDateNode = (value: Date, key?: string, parent?: ObjectNode): ObjectNode => ({
+  id: generateId(),
   type: 'date',
   key,
   value,
@@ -22,6 +28,7 @@ export const createDateNode = (value: Date, key?: string, parent?: ObjectNode): 
 });
 
 export const createPrimitiveNode = (value: any, key?: string, parent?: ObjectNode): ObjectNode => ({
+  id: generateId(),
   type: typeOfToNodeType(typeof value),
   key,
   value,
@@ -36,6 +43,7 @@ export const createArrayNode = (
   parent?: ObjectNode
 ): ObjectNode => {
   const node: ObjectNode = {
+    id: generateId(),
     type: 'array',
     key,
     value: [],
@@ -57,6 +65,7 @@ export const createObjectNode = (
   parent?: ObjectNode
 ): ObjectNode => {
   const node: ObjectNode = {
+    id: generateId(),
     type: 'object',
     key,
     value: {},
