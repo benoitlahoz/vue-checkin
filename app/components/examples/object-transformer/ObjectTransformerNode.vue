@@ -147,7 +147,6 @@ function handleNodeTransform(name: any) {
   }
   if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
 
-  if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
   nodeSelect.value = tree.value.transforms.at(-1)?.name || null;
 }
 
@@ -255,7 +254,9 @@ function formatValue(value: any, type: ObjectNodeType): string {
         <Select v-model="nodeSelect" @update:model-value="handleNodeTransform">
           <!-- @vue-ignore -->
           <SelectTrigger size="xs" class="px-2 py-1">
-            <SelectValue placeholder="+" class="text-xs" />
+            <SelectValue placeholder="+" class="text-xs">
+              {{ nodeSelect || '+' }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent class="text-xs">
             <SelectGroup>
@@ -300,6 +301,7 @@ function formatValue(value: any, type: ObjectNodeType): string {
           </span>
 
           <template v-if="availableTransforms.length > 1">
+            <!-- PARAM INPUTS FOR STACK -->
             <!-- PARAM INPUTS FOR STACK -->
             <div v-if="t.params" class="flex gap-2">
               <div v-for="(_p, pi) in t.params" :key="'stack-param-' + index + '-' + pi">
