@@ -75,3 +75,4 @@ export { default as TransformString } from './TransformString.vue';
 export { default as TransformNumber } from './TransformNumber.vue';
 export { default as TransformDate } from './TransformDate.vue';
 export { default as TransformMisc } from './TransformMisc.vue';
+export { default as TransformBoolean } from './TransformBoolean.vue';

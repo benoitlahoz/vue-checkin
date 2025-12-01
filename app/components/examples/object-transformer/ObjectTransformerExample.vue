@@ -5,6 +5,7 @@ import {
   TransformNumber,
   TransformDate,
   TransformMisc,
+  TransformBoolean,
 } from '.';
 </script>
 
@@ -13,6 +14,7 @@ import {
     <TransformString />
     <TransformNumber />
     <TransformDate />
+    <TransformBoolean />
     <TransformMisc />
   </ObjectTransformer>
 </template>
