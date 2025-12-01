@@ -137,7 +137,6 @@ function cancelKeyChange() {
 
 // Add or remove a transformation on the node
 function handleNodeTransform(name: any) {
-  console.log('handleNodeTransform called with:', name, 'previous:', nodeSelect.value);
   if (!name) return;
 
   if (name === 'None') {
@@ -150,19 +149,16 @@ function handleNodeTransform(name: any) {
     if (!previousValue || previousValue === '+') {
       // ADDING a new transformation
       const transform = transforms.value.find((t) => t.name === name);
-      console.log('ADDING transformation:', transform);
       if (transform) {
         tree.value.transforms.push({
           ...transform,
           params: initParams(transform),
         });
         nodeSelect.value = name;
-        console.log('Added, transforms now:', tree.value.transforms);
       }
     } else if (previousValue !== name) {
       // CHANGING - clear all and add the new one
       const transform = transforms.value.find((t) => t.name === name);
-      console.log('CHANGING - clearing all and adding:', transform);
 
       if (transform) {
         // Clear all transformations and add only the new one
@@ -175,7 +171,6 @@ function handleNodeTransform(name: any) {
         nodeSelect.value = name;
         // Clear all step selects
         stepSelect.value = {};
-        console.log('Changed, transforms now:', tree.value.transforms);
       }
     }
     // If previousValue === name, do nothing (same transform selected again)
@@ -189,16 +184,42 @@ function handleStepTransform(index: number, name: any) {
   if (!name) return;
 
   if (name === 'None') {
-    tree.value.transforms.splice(index);
+    // Remove this transformation and all following ones
+    // index is the transform index, we remove from index + 1 onwards
+    tree.value.transforms.splice(index + 1);
+
+    // Clean up stepSelect for removed transforms
+    // stepSelect[i+1] is displayed for transform at index i
+    // After removing from index+1, we need to reset stepSelect[index+1] to null
+    // and remove all stepSelect entries after that
+    const newStepSelect: Record<number, string | null> = {};
+    Object.keys(stepSelect.value).forEach((key) => {
+      const keyNum = parseInt(key);
+      if (keyNum < index + 1) {
+        // Keep selects before the one we clicked
+        const val = stepSelect.value[keyNum];
+        if (val !== undefined) {
+          newStepSelect[keyNum] = val;
+        }
+      }
+    });
+    // Reset the select we clicked to null (will show "+")
+    newStepSelect[index + 1] = null;
+
+    stepSelect.value = newStepSelect;
+
+    // Don't touch nodeSelect - it should remain showing the first transformation
   } else {
     const t = transforms.value.find((x) => x.name === name);
-    if (t) tree.value.transforms.splice(index + 1, 0, { ...t, params: initParams(t) });
+    if (t) {
+      tree.value.transforms.splice(index + 1, 0, { ...t, params: initParams(t) });
+      // Update the Select for the newly added step
+      // The select after transform at index is stepSelect[index + 1]
+      stepSelect.value[index + 1] = tree.value.transforms[index + 1]?.name || null;
+    }
   }
 
   if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
-
-  // Update the Select for this step to reflect the choice
-  stepSelect.value[index] = tree.value.transforms[index]?.name || null;
 }
 
 function initParams(t: Transform) {
@@ -243,7 +264,6 @@ function formatValue(value: any, type: ObjectNodeType): string {
 
 <template>
   <div class="text-xs mb-4">
-    <!-- Nœud: key + valeur si primitive, Select à droite -->
     <div class="flex items-center gap-2 my-2">
       <template v-if="tree.children?.length">
         <ChevronRight
@@ -258,7 +278,6 @@ function formatValue(value: any, type: ObjectNodeType): string {
         />
       </template>
 
-      <!-- Edition du nom de la propriété -->
       <div class="cursor-pointer" @click="editingKey = true">
         <template v-if="editingKey">
           <Input
@@ -380,7 +399,7 @@ function formatValue(value: any, type: ObjectNodeType): string {
             </div>
 
             <Select
-              v-model="stepSelect[index + 1]"
+              :model-value="stepSelect[index + 1]"
               size="xs"
               @update:model-value="(val) => handleStepTransform(index, val)"
             >
