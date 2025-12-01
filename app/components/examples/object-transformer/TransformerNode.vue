@@ -401,11 +401,7 @@ function isStructuralTransform(transformIndex: number): boolean {
       </div>
 
       <!-- Stack des transformations avec Select pour enchaîner -->
-      <div
-        v-if="tree.transforms.length"
-        class="pl-0 md:pl-(--transforms-padding)"
-        :style="{ '--transforms-padding': transformsPaddingLeft }"
-      >
+      <div v-if="tree.transforms.length" class="">
         <!-- Wrapper avec scroll horizontal pour les transformations -->
         <div class="overflow-x-auto">
           <div v-for="(t, index) in tree.transforms" :key="index" class="my-2">
@@ -413,9 +409,16 @@ function isStructuralTransform(transformIndex: number): boolean {
             <div
               class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-2 md:p-0 border md:border-0 rounded-md md:rounded-none bg-card md:bg-transparent transition-all group hover:bg-accent/30 min-w-fit"
             >
+              <!-- La valeur transformée alignée dynamiquement -->
               <span
-                class="text-muted-foreground text-xs group-hover:border-l-2 group-hover:border-primary md:-ml-0.5 md:pl-1.5"
+                class="text-muted-foreground text-xs"
+                :style="{ paddingLeft: transformsPaddingLeft }"
               >
+                {{ getFormattedStepValue(index) }}
+              </span>
+
+              <!-- Version mobile -->
+              <span class="md:hidden text-muted-foreground text-xs">
                 {{ getFormattedStepValue(index) }}
               </span>
 
