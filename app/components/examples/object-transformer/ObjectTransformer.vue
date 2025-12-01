@@ -141,6 +141,103 @@ function isStructuralResult(result: any): boolean {
   return result && typeof result === 'object' && result.__structuralChange === true;
 }
 
+// Helper: Calculer la valeur intermédiaire avant la dernière transformation
+function computeIntermediateValue(node: ObjectNode): any {
+  let intermediateValue = node.value;
+  for (let i = 0; i < node.transforms.length - 1; i++) {
+    const t = node.transforms[i];
+    if (!t) continue;
+    const result = t.fn(intermediateValue, ...(t.params || []));
+    // Si on rencontre une transformation structurelle avant, arrêter
+    if (isStructuralResult(result)) {
+      break;
+    }
+    intermediateValue = result;
+  }
+  return intermediateValue;
+}
+
+// Helper: Gérer le split/arrayToProperties en créant de nouveaux nœuds
+function handleStructuralSplit(
+  node: ObjectNode,
+  parts: any[],
+  removeSource: boolean,
+  desk: ObjectTransformerDesk
+) {
+  if (!node.parent) return;
+
+  const currentIndex = node.parent.children?.indexOf(node) ?? -1;
+  if (currentIndex === -1) return;
+
+  const baseKeyPrefix = (node.key || 'part') + '_';
+  const hasSplitNodes = node.parent.children!.some(
+    (child) => child !== node && child.key?.startsWith(baseKeyPrefix)
+  );
+
+  const baseKey = node.key || 'part';
+  const newNodes = parts.map((part: any, i: number) => {
+    const newKey = `${baseKey}_${i}`;
+    return buildNodeTree(part, newKey, node.parent);
+  });
+
+  if (hasSplitNodes) {
+    // Supprimer TOUS les anciens nœuds splittés
+    const filteredChildren = node.parent.children!.filter(
+      (child) => child === node || !child.key?.startsWith(baseKeyPrefix)
+    );
+
+    // Trouver la nouvelle position du nœud source
+    const newIndex = filteredChildren.indexOf(node);
+    // Insérer les nouveaux nœuds
+    const updatedChildren = [
+      ...filteredChildren.slice(0, newIndex + 1),
+      ...newNodes,
+      ...filteredChildren.slice(newIndex + 1),
+    ];
+
+    node.parent.children = updatedChildren;
+  } else {
+    // Première fois : créer les nouveaux nœuds
+    if (removeSource) {
+      node.parent.children!.splice(currentIndex, 1, ...newNodes);
+    } else {
+      node.parent.children!.splice(currentIndex + 1, 0, ...newNodes);
+    }
+  }
+
+  desk.propagateTransform(node.parent);
+}
+
+// Helper: Calculer la valeur transformée d'un enfant (ignore les structurelles)
+function computeChildTransformedValue(child: ObjectNode): any {
+  return child.transforms.reduce((v, t) => {
+    const result = t.fn(v, ...(t.params || []));
+    return isStructuralResult(result) ? v : result;
+  }, child.value);
+}
+
+// Helper: Propager pour un objet
+function propagateObjectValue(node: ObjectNode) {
+  node.value =
+    node.children
+      ?.filter((child) => !child.deleted)
+      ?.reduce(
+        (acc: any, child) => {
+          acc[child.key!] = computeChildTransformedValue(child);
+          return acc;
+        },
+        {} as Record<string, any>
+      ) || {};
+}
+
+// Helper: Propager pour un tableau
+function propagateArrayValue(node: ObjectNode) {
+  node.value =
+    node.children
+      ?.filter((child) => !child.deleted)
+      ?.map((child) => computeChildTransformedValue(child)) || [];
+}
+
 const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
@@ -178,123 +275,42 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
       // Gérer les transformations structurelles
       if (node.transforms.length > 0) {
-        // Chercher la dernière transformation structurelle
         const lastTransform = node.transforms[node.transforms.length - 1];
         if (!lastTransform) return;
 
-        // Calculer la valeur après toutes les transformations AVANT la dernière
-        let intermediateValue = node.value;
-        for (let i = 0; i < node.transforms.length - 1; i++) {
-          const t = node.transforms[i];
-          if (!t) continue;
-          const result = t.fn(intermediateValue, ...(t.params || []));
-          // Si on rencontre une transformation structurelle avant, arrêter
-          if (result && typeof result === 'object' && result.__structuralChange) {
-            break;
-          }
-          intermediateValue = result;
-        }
+        // Calculer la valeur intermédiaire avant la dernière transformation
+        const intermediateValue = computeIntermediateValue(node);
 
-        // Appliquer la dernière transformation sur la valeur intermédiaire
+        // Appliquer la dernière transformation
         const lastResult = lastTransform.fn(intermediateValue, ...(lastTransform.params || []));
 
-        if (lastResult && typeof lastResult === 'object' && lastResult.__structuralChange) {
-          // Action 'split' : créer des propriétés à partir des parties
-          if (
-            (lastResult.action === 'split' || lastResult.action === 'arrayToProperties') &&
-            lastResult.parts &&
-            node.parent
-          ) {
-            // Trouver l'index du nœud actuel dans le parent
-            const currentIndex = node.parent.children?.indexOf(node) ?? -1;
-            if (currentIndex === -1) return;
-
-            // Vérifier s'il y a déjà des nœuds splittés après celui-ci
-            const baseKeyPrefix = (node.key || 'part') + '_';
-            const hasSplitNodes = node.parent.children!.some(
-              (child) => child !== node && child.key?.startsWith(baseKeyPrefix)
-            );
-
-            if (hasSplitNodes) {
-              // Supprimer TOUS les anciens nœuds splittés (peu importe leur position)
-              const filteredChildren = node.parent.children!.filter(
-                (child) => child === node || !child.key?.startsWith(baseKeyPrefix)
-              );
-
-              // Recréer tous les nœuds avec les nouvelles valeurs
-              const baseKey = node.key || 'part';
-              const newNodes = lastResult.parts.map((part: any, i: number) => {
-                const newKey = `${baseKey}_${i}`;
-                return buildNodeTree(part, newKey, node.parent);
-              });
-
-              // Trouver la nouvelle position du nœud source après le filtrage
-              const newIndex = filteredChildren.indexOf(node);
-              // Créer un nouveau tableau avec les nouveaux nœuds insérés
-              const updatedChildren = [
-                ...filteredChildren.slice(0, newIndex + 1),
-                ...newNodes,
-                ...filteredChildren.slice(newIndex + 1),
-              ];
-
-              // Réassigner complètement le tableau pour forcer la réactivité
-              node.parent.children = updatedChildren;
-            } else {
-              // Première fois : créer les nouveaux nœuds
-              const baseKey = node.key || 'part';
-              const newNodes = lastResult.parts.map((part: any, i: number) => {
-                const newKey = `${baseKey}_${i}`;
-                return buildNodeTree(part, newKey, node.parent);
-              });
-
-              // Remplacer ou ajouter les nœuds
-              if (lastResult.removeSource) {
-                // Remplacer le nœud source par les nouvelles parties
-                node.parent.children!.splice(currentIndex, 1, ...newNodes);
-              } else {
-                // Insérer les nouvelles parties après le nœud source
-                node.parent.children!.splice(currentIndex + 1, 0, ...newNodes);
-              }
-            }
-
-            // Propager au parent
-            (desk as ObjectTransformerDesk).propagateTransform(node.parent);
-            return;
-          }
+        // Gérer les transformations structurelles (split, arrayToProperties)
+        if (
+          lastResult &&
+          typeof lastResult === 'object' &&
+          lastResult.__structuralChange &&
+          (lastResult.action === 'split' || lastResult.action === 'arrayToProperties') &&
+          lastResult.parts &&
+          node.parent
+        ) {
+          handleStructuralSplit(
+            node,
+            lastResult.parts,
+            lastResult.removeSource,
+            desk as ObjectTransformerDesk
+          );
+          return;
         }
       }
 
+      // Propager les valeurs pour les objets et tableaux
       if (node.type === 'object') {
-        node.value =
-          node.children
-            ?.filter((child) => !child.deleted) // Filtrer les enfants supprimés
-            ?.reduce(
-              (acc: any, child) => {
-                // Calculer la valeur transformée en ignorant les transformations structurelles
-                const transformedValue = child.transforms.reduce((v, t) => {
-                  const result = t.fn(v, ...(t.params || []));
-                  // Si c'est un résultat structurel, garder la valeur précédente
-                  return isStructuralResult(result) ? v : result;
-                }, child.value);
-                acc[child.key!] = transformedValue;
-                return acc;
-              },
-              {} as Record<string, any>
-            ) || {};
+        propagateObjectValue(node);
       } else if (node.type === 'array') {
-        node.value =
-          node.children
-            ?.filter((child) => !child.deleted) // Filtrer les enfants supprimés
-            ?.map((child) => {
-              // Calculer la valeur transformée en ignorant les transformations structurelles
-              return child.transforms.reduce((v, t) => {
-                const result = t.fn(v, ...(t.params || []));
-                // Si c'est un résultat structurel, garder la valeur précédente
-                return isStructuralResult(result) ? v : result;
-              }, child.value);
-            }) || [];
+        propagateArrayValue(node);
       }
 
+      // Propager au parent
       if (node.parent) (desk as ObjectTransformerDesk).propagateTransform(node.parent);
     },
     computeStepValue(node: ObjectNode, index: number) {
