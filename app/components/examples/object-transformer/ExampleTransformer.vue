@@ -2,6 +2,7 @@
 import {
   ObjectTransformer,
   ObjectTransformerPreview,
+  ObjectNode,
   TransformString,
   TransformNumber,
   TransformDate,
@@ -38,7 +39,8 @@ const data = {
       <TransformObject />
       <TransformArray />
 
-      <TransformerNode />
+      <ObjectNode />
+
       <ObjectTransformerPreview />
     </ObjectTransformer>
   </div>

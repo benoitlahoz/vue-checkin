@@ -1,4 +1,4 @@
-import type { ObjectNode, Transform, ObjectTransformerDesk } from '..';
+import type { ObjectNodeData, Transform, ObjectTransformerDesk } from '..';
 
 /**
  * Transform filtering - Pure functions
@@ -6,7 +6,7 @@ import type { ObjectNode, Transform, ObjectTransformerDesk } from '..';
   transforms: Transform[],
   nodeType: string
 ): Transform[] => {
-  return transforms.filter((t) => t.if({ type: nodeType } as ObjectNode));
+  return transforms.filter((t) => t.if({ type: nodeType } as ObjectNodeData));
 };
 
 /**
@@ -14,7 +14,7 @@ import type { ObjectNode, Transform, ObjectTransformerDesk } from '..';
  */
 
 export const applyNodeTransform = (
-  node: ObjectNode,
+  node: ObjectNodeData,
   transformName: string | null,
   desk: ObjectTransformerDesk,
   currentSelection: string | null
@@ -54,7 +54,7 @@ export const applyNodeTransform = (
 };
 
 export const applyStepTransform = (
-  node: ObjectNode,
+  node: ObjectNodeData,
   stepIndex: number,
   transformName: string | null,
   desk: ObjectTransformerDesk
@@ -104,7 +104,7 @@ export const applyStepTransform = (
  * Helper for split nodes cleanup
  */
 
-const cleanupSplitNodes = (node: ObjectNode, parent: ObjectNode): void => {
+const cleanupSplitNodes = (node: ObjectNodeData, parent: ObjectNodeData): void => {
   const baseKeyPrefix = (node.key || 'part') + '_';
   const hasSplitNodes = parent.children!.some(
     (child) => child !== node && child.key?.startsWith(baseKeyPrefix)

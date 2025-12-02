@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import { Button } from '@/components/ui/button';
 import { Undo, Trash } from 'lucide-vue-next';
-import type { ObjectNode, ObjectTransformerContext } from '.';
+import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey } from '.';
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 
 const node = computed(() => desk!.getNode(props.nodeId));

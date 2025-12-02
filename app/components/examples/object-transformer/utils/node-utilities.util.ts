@@ -1,4 +1,4 @@
-import type { ObjectNode, ObjectNodeType } from '..';
+import type { ObjectNodeData, ObjectNodeType } from '..';
 import { all, maybe } from './functional.util';
 
 /**
@@ -34,7 +34,7 @@ const findUniqueKey = (existingKeys: Set<string>, baseKey: string, counter: numb
     : candidate;
 };
 
-export const autoRenameKey = (parent: ObjectNode, base: string): string => {
+export const autoRenameKey = (parent: ObjectNodeData, base: string): string => {
   const safeBase = sanitizeKey(base) || 'key';
   const existingKeys = new Set(
     parent.children?.map((c) => c.key).filter((k): k is string => Boolean(k)) || []
@@ -81,20 +81,20 @@ export const formatValue = (value: any, type: ObjectNodeType): string => {
  */
 
 // Check if property was added (from split)
-export const isAddedProperty = (node: ObjectNode): boolean => {
+export const isAddedProperty = (node: ObjectNodeData): boolean => {
   const key = node.key;
   return key ? /_\d+$/.test(key) : false;
 };
 
 // Get CSS classes based on node state
-export const getKeyClasses = (node: ObjectNode): string => {
+export const getKeyClasses = (node: ObjectNodeData): string => {
   if (isAddedProperty(node)) return 'font-semibold text-blue-600';
   if (node.keyModified) return 'font-semibold text-yellow-600';
   return 'font-semibold';
 };
 
 // Generate unique key for v-for (with error handling)
-export const generateChildKey = (child: ObjectNode, index: number): string => {
+export const generateChildKey = (child: ObjectNodeData, index: number): string => {
   const fallback = `${child.key}-${index}-${typeof child.value}-${Date.now()}`;
   return maybe(() => {
     const valueStr = JSON.stringify(child.value);

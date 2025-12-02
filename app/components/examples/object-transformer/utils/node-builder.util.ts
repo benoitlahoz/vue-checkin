@@ -1,4 +1,4 @@
-import type { ObjectNode } from '..';
+import type { ObjectNodeData } from '..';
 import { isNull, isArray, isDate, isObject, typeOfToNodeType } from './type-guards.util';
 
 /**
@@ -9,7 +9,7 @@ const generateId = (): string => {
   return crypto.randomUUID();
 };
 
-export const createNullNode = (key?: string, parent?: ObjectNode): ObjectNode => ({
+export const createNullNode = (key?: string, parent?: ObjectNodeData): ObjectNodeData => ({
   id: generateId(),
   type: 'null',
   key,
@@ -18,7 +18,11 @@ export const createNullNode = (key?: string, parent?: ObjectNode): ObjectNode =>
   parent,
 });
 
-export const createDateNode = (value: Date, key?: string, parent?: ObjectNode): ObjectNode => ({
+export const createDateNode = (
+  value: Date,
+  key?: string,
+  parent?: ObjectNodeData
+): ObjectNodeData => ({
   id: generateId(),
   type: 'date',
   key,
@@ -27,7 +31,11 @@ export const createDateNode = (value: Date, key?: string, parent?: ObjectNode): 
   parent,
 });
 
-export const createPrimitiveNode = (value: any, key?: string, parent?: ObjectNode): ObjectNode => ({
+export const createPrimitiveNode = (
+  value: any,
+  key?: string,
+  parent?: ObjectNodeData
+): ObjectNodeData => ({
   id: generateId(),
   type: typeOfToNodeType(typeof value),
   key,
@@ -38,11 +46,11 @@ export const createPrimitiveNode = (value: any, key?: string, parent?: ObjectNod
 
 export const createArrayNode = (
   items: any[],
-  buildTree: (value: any, key?: string, parent?: ObjectNode) => ObjectNode,
+  buildTree: (value: any, key?: string, parent?: ObjectNodeData) => ObjectNodeData,
   key?: string,
-  parent?: ObjectNode
-): ObjectNode => {
-  const node: ObjectNode = {
+  parent?: ObjectNodeData
+): ObjectNodeData => {
+  const node: ObjectNodeData = {
     id: generateId(),
     type: 'array',
     key,
@@ -60,11 +68,11 @@ export const createArrayNode = (
 
 export const createObjectNode = (
   obj: Record<string, any>,
-  buildTree: (value: any, key?: string, parent?: ObjectNode) => ObjectNode,
+  buildTree: (value: any, key?: string, parent?: ObjectNodeData) => ObjectNodeData,
   key?: string,
-  parent?: ObjectNode
-): ObjectNode => {
-  const node: ObjectNode = {
+  parent?: ObjectNodeData
+): ObjectNodeData => {
+  const node: ObjectNodeData = {
     id: generateId(),
     type: 'object',
     key,
@@ -87,7 +95,11 @@ export const createObjectNode = (
  * Build Node Tree - Main recursive builder using pattern matching
  */
 
-export const buildNodeTree = (value: any, key?: string, parent?: ObjectNode): ObjectNode => {
+export const buildNodeTree = (
+  value: any,
+  key?: string,
+  parent?: ObjectNodeData
+): ObjectNodeData => {
   // Pattern matching with early returns
   if (isNull(value)) return createNullNode(key, parent);
   if (isDate(value)) return createDateNode(value, key, parent);

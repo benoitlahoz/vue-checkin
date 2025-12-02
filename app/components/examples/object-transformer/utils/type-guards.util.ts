@@ -1,4 +1,4 @@
-import type { ObjectNode, ObjectNodeType } from '..';
+import type { ObjectNodeData, ObjectNodeType } from '..';
 import { both } from './functional.util';
 
 /**
@@ -63,16 +63,16 @@ export const getTypeFromValue = (value: any): ObjectNodeType => {
  * Node Type Detection - Apply transforms until structural change
  */
 
-export const applyTransformsUntilStructural = (node: ObjectNode): any =>
+export const applyTransformsUntilStructural = (node: ObjectNodeData): any =>
   node.transforms.reduce((value, transform) => {
     const result = transform.fn(value, ...(transform.params || []));
     return isStructuralResult(result) ? value : result;
   }, node.value);
 
-export const getNodeType = (node: ObjectNode): ObjectNodeType => {
+export const getNodeType = (node: ObjectNodeData): ObjectNodeType => {
   const transformedValue = applyTransformsUntilStructural(node);
   return getTypeFromValue(transformedValue);
 };
 
-export const getComputedValueType = (_node: ObjectNode, value: any): ObjectNodeType =>
+export const getComputedValueType = (_node: ObjectNodeData, value: any): ObjectNodeType =>
   getTypeFromValue(value);

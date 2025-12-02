@@ -11,7 +11,7 @@ import {
   SelectLabel,
 } from '@/components/ui/select';
 import {
-  type ObjectNode,
+  type ObjectNodeData,
   type ObjectTransformerContext,
   ObjectTransformerDeskKey,
   filterTransformsByType,
@@ -34,7 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
   removeLabel: 'All',
 });
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 const deskWithContext = desk as DeskWithContext;
 
@@ -137,30 +137,32 @@ const handleTransformChange = (name: unknown) => {
 </script>
 
 <template>
-  <Select v-if="node" :model-value="currentSelection" @update:model-value="handleTransformChange">
-    <SelectTrigger
-      class="h-auto max-h-6 px-2 py-0.5 text-xs group-hover:border-primary min-w-[120px]"
-    >
-      <SelectValue :placeholder="placeholder" class="text-xs">
-        {{ currentSelection || placeholder }}
-      </SelectValue>
-    </SelectTrigger>
-    <SelectContent class="text-xs">
-      <SelectGroup v-if="currentSelection">
-        <SelectLabel>Remove</SelectLabel>
-        <SelectItem value="None" class="text-xs">{{ removeLabel }}</SelectItem>
-      </SelectGroup>
-      <SelectGroup>
-        <SelectLabel>Transformations</SelectLabel>
-        <SelectItem
-          v-for="tr in availableTransforms"
-          :key="tr.name"
-          :value="tr.name"
-          class="text-xs"
-        >
-          {{ tr.name }}
-        </SelectItem>
-      </SelectGroup>
-    </SelectContent>
-  </Select>
+  <div data-slot="transform-select">
+    <Select v-if="node" :model-value="currentSelection" @update:model-value="handleTransformChange">
+      <SelectTrigger
+        class="h-auto max-h-6 px-2 py-0.5 text-xs group-hover:border-primary min-w-[120px]"
+      >
+        <SelectValue :placeholder="placeholder" class="text-xs">
+          {{ currentSelection || placeholder }}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent class="text-xs">
+        <SelectGroup v-if="currentSelection">
+          <SelectLabel>Remove</SelectLabel>
+          <SelectItem value="None" class="text-xs">{{ removeLabel }}</SelectItem>
+        </SelectGroup>
+        <SelectGroup>
+          <SelectLabel>Transformations</SelectLabel>
+          <SelectItem
+            v-for="tr in availableTransforms"
+            :key="tr.name"
+            :value="tr.name"
+            class="text-xs"
+          >
+            {{ tr.name }}
+          </SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  </div>
 </template>

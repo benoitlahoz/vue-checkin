@@ -2,18 +2,18 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import {
-  TransformerNode,
+  ObjectNode,
   NodeKeyEditor,
   NodeActions,
-  TransformerSelect,
+  NodeOpen,
+  TransformSelect,
   NodeTransformsList,
-  type ObjectNode,
+  type ObjectNodeData,
   type ObjectTransformerContext,
   ObjectTransformerDeskKey,
   createClickOutsideChecker,
 } from '.';
 import { Separator } from '@/components/ui/separator';
-import { ChevronDown, ChevronRight } from 'lucide-vue-next';
 import { isPrimitive as isPrimitiveType } from './utils/type-guards.util';
 import { formatValue } from './utils/node-utilities.util';
 
@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
   id: null,
 });
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 const deskWithContext = desk as DeskWithContext;
 
@@ -48,17 +48,11 @@ const tree = computed(() => {
 const nodeId = computed(() => tree.value.id);
 
 // State
-const isOpen = ref(tree.value.isOpen ?? true);
+const isOpen = computed(() => tree.value.isOpen ?? true);
 const isPrimitive = computed(() => isPrimitiveType(tree.value.type));
 const editingKey = computed(() => deskWithContext.editingNode.value === tree.value);
 const isHovered = ref(false);
 const inputFieldElement = ref<any>(null);
-
-// Toggle open/close
-const toggleOpen = () => {
-  isOpen.value = !isOpen.value;
-  tree.value.isOpen = isOpen.value;
-};
 
 // Click outside handling
 const inputElement = ref<HTMLElement | null>(null);
@@ -102,7 +96,7 @@ const transformsPaddingLeft = computed(() => {
   // Pour les objects/arrays, utiliser le premier enfant
   if (!isPrimitive.value && firstChildElement.value) {
     const rect = firstChildElement.value.getBoundingClientRect();
-    const containerEl = firstChildElement.value.closest('.transformer-node-root');
+    const containerEl = firstChildElement.value.closest('.object-node-root');
     if (!containerEl) return '0px';
     const containerRect = containerEl.getBoundingClientRect();
     const offset = rect.left - containerRect.left;
@@ -113,14 +107,14 @@ const transformsPaddingLeft = computed(() => {
 });
 
 // Utilities from desk
-const getChildKey = (child: ObjectNode, index: number) =>
+const getChildKey = (child: ObjectNodeData, index: number) =>
   deskWithContext.generateChildKey(child, index);
 </script>
 
 <template>
   <div
-    data-slot="transformer-node"
-    class="text-xs transformer-node-root flex-1"
+    data-slot="object-node"
+    class="text-xs object-node-root flex-1"
     :class="{ 'opacity-50': tree.deleted }"
   >
     <!-- Wrapper avec scroll horizontal -->
@@ -130,19 +124,7 @@ const getChildKey = (child: ObjectNode, index: number) =>
       >
         <!-- Partie gauche : chevron + delete + key + value -->
         <div class="flex items-center gap-2">
-          <template v-if="tree.children?.length">
-            <ChevronRight
-              v-if="!isOpen"
-              class="w-3 h-3 text-muted-foreground cursor-pointer shrink-0"
-              @click="toggleOpen"
-            />
-            <ChevronDown
-              v-else-if="isOpen"
-              class="w-3 h-3 text-muted-foreground cursor-pointer shrink-0"
-              @click="toggleOpen"
-            />
-          </template>
-          <div v-else class="w-3 shrink-0" />
+          <NodeOpen :node-id="nodeId" />
 
           <!-- Conteneur pour bouton + nom avec hover commun -->
           <div
@@ -178,24 +160,23 @@ const getChildKey = (child: ObjectNode, index: number) =>
 
         <!-- Partie droite : select de transformation -->
         <div class="shrink-0 md:ml-auto">
-          <TransformerSelect :node-id="nodeId" />
+          <TransformSelect :node-id="nodeId" />
         </div>
       </div>
     </div>
 
-    <!-- Enfants récursifs AVANT les transformations pour object/array -->
+    <!-- Recursive children -->
     <div v-if="tree.children?.length && isOpen" class="ml-3.5 border-l border-border pl-0">
-      <TransformerNode
+      <ObjectNode
         v-for="(child, index) in tree.children"
         :id="child.id"
         :key="getChildKey(child, index)"
       />
     </div>
 
-    <!-- Séparateur si enfants et transformations -->
     <Separator v-if="tree.children?.length && tree.transforms.length" class="my-2 md:hidden" />
 
-    <!-- Transformations + paramètres (APRÈS les enfants) -->
+    <!-- Transformations + parameters -->
     <NodeTransformsList
       v-if="tree.transforms.length"
       :node-id="nodeId"

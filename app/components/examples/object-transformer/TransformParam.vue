@@ -55,7 +55,7 @@ function handleInput(value: any, immediate = false) {
 </script>
 
 <template>
-  <div data-slot="transformer-param">
+  <div data-slot="transform-param">
     <Input
       v-if="config?.type === 'text'"
       :model-value="localValue"

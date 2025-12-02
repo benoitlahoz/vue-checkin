@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useCheckIn } from 'vue-airport';
-import type { ObjectNode, ObjectTransformerContext } from '.';
+import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey } from '.';
 import { computeChildTransformedValue } from './utils/transform-propagation.util';
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 
 // Fonction récursive pour construire l'objet final
-const buildFinalObject = (node: ObjectNode): any => {
+const buildFinalObject = (node: ObjectNodeData): any => {
   // Si le node est deleted, l'ignorer
   if (node.deleted) return undefined;
 
@@ -70,7 +70,10 @@ const copyToClipboard = async () => {
 </script>
 
 <template>
-  <div data-slot="transformer-preview" class="border rounded-lg p-4 bg-card flex-1 flex flex-col">
+  <div
+    data-slot="object-transformer-preview"
+    class="border rounded-lg p-4 bg-card flex-1 flex flex-col"
+  >
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold">Final Object Preview</h3>
       <button
@@ -81,7 +84,7 @@ const copyToClipboard = async () => {
       </button>
     </div>
     <pre
-      class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto flex-1 min-h-0"
+      class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto flex-1 min-h-0 whitespace-pre-wrap wrap-break-word"
     ><code>{{ formattedJson }}</code></pre>
   </div>
 </template>

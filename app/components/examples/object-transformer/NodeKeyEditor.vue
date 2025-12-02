@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import { Input } from '@/components/ui/input';
-import type { ObjectNode, ObjectTransformerContext } from '.';
+import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey } from '.';
 import { shouldStartEdit, canConfirmEdit } from './utils/node-editing.util';
 
@@ -12,7 +12,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 
 // Get node from desk

@@ -1,4 +1,4 @@
-import type { ObjectNode, ObjectTransformerDesk } from '..';
+import type { ObjectNodeData, ObjectTransformerDesk } from '..';
 import { isStructuralResult } from './type-guards.util';
 import { buildNodeTree } from './node-builder.util';
 import { until, pipe, not } from './functional.util';
@@ -8,19 +8,19 @@ import { until, pipe, not } from './functional.util';
  */
 
 // Compute intermediate value before last transform
-export const computeIntermediateValue = (node: ObjectNode): any => {
+export const computeIntermediateValue = (node: ObjectNodeData): any => {
   const transformsExceptLast = node.transforms.slice(0, -1);
   return until(isStructuralResult)(transformsExceptLast, node.value);
 };
 
 // Compute value at specific step (value AFTER applying transforms up to and including index)
-export const computeStepValue = (node: ObjectNode, index: number): any => {
+export const computeStepValue = (node: ObjectNodeData, index: number): any => {
   const transformsUpToIndex = node.transforms.slice(0, index + 1);
   return until(isStructuralResult)(transformsUpToIndex, node.value);
 };
 
 // Compute child transformed value (ignores structural transforms)
-export const computeChildTransformedValue = (child: ObjectNode): any => {
+export const computeChildTransformedValue = (child: ObjectNodeData): any => {
   if (child.transforms.length === 0) return child.value;
 
   const transformFns = child.transforms.map((t) => (v: any) => {
@@ -36,12 +36,12 @@ export const computeChildTransformedValue = (child: ObjectNode): any => {
  */
 
 // Get active (non-deleted) children
-const isDeleted = (child: ObjectNode): boolean => Boolean(child.deleted);
-const activeChildren = (node: ObjectNode): ObjectNode[] =>
+const isDeleted = (child: ObjectNodeData): boolean => Boolean(child.deleted);
+const activeChildren = (node: ObjectNodeData): ObjectNodeData[] =>
   node.children?.filter(not(isDeleted)) || [];
 
 // Propagate object value
-export const propagateObjectValue = (node: ObjectNode): void => {
+export const propagateObjectValue = (node: ObjectNodeData): void => {
   node.value = activeChildren(node).reduce(
     (acc, child) => ({
       ...acc,
@@ -52,7 +52,7 @@ export const propagateObjectValue = (node: ObjectNode): void => {
 };
 
 // Propagate array value
-export const propagateArrayValue = (node: ObjectNode): void => {
+export const propagateArrayValue = (node: ObjectNodeData): void => {
   node.value = activeChildren(node).map(computeChildTransformedValue);
 };
 
@@ -61,25 +61,28 @@ export const propagateArrayValue = (node: ObjectNode): void => {
  */
 
 // Check if split nodes exist
-const hasSplitNodes = (parent: ObjectNode, baseKeyPrefix: string): boolean =>
+const hasSplitNodes = (parent: ObjectNodeData, baseKeyPrefix: string): boolean =>
   parent.children?.some((child) => child.key?.startsWith(baseKeyPrefix)) || false;
 
 // Filter non-split nodes
 const filterNonSplitNodes =
-  (baseKeyPrefix: string) => (child: ObjectNode, sourceNode: ObjectNode) =>
+  (baseKeyPrefix: string) => (child: ObjectNodeData, sourceNode: ObjectNodeData) =>
     child === sourceNode || !child.key?.startsWith(baseKeyPrefix);
 
 // Create split nodes
-const createSplitNodes = (parts: any[], baseKey: string, parent?: ObjectNode): ObjectNode[] =>
-  parts.map((part, i) => buildNodeTree(part, `${baseKey}_${i}`, parent));
+const createSplitNodes = (
+  parts: any[],
+  baseKey: string,
+  parent?: ObjectNodeData
+): ObjectNodeData[] => parts.map((part, i) => buildNodeTree(part, `${baseKey}_${i}`, parent));
 
 // Insert nodes immutably
 const insertNodes = (
-  children: ObjectNode[],
-  newNodes: ObjectNode[],
-  sourceNode: ObjectNode,
+  children: ObjectNodeData[],
+  newNodes: ObjectNodeData[],
+  sourceNode: ObjectNodeData,
   removeSource: boolean
-): ObjectNode[] => {
+): ObjectNodeData[] => {
   const index = children.indexOf(sourceNode);
   if (index === -1) return children;
 
@@ -93,11 +96,11 @@ const insertNodes = (
 
 // Replace existing split nodes
 const replaceSplitNodes = (
-  children: ObjectNode[],
-  newNodes: ObjectNode[],
-  sourceNode: ObjectNode,
+  children: ObjectNodeData[],
+  newNodes: ObjectNodeData[],
+  sourceNode: ObjectNodeData,
   baseKeyPrefix: string
-): ObjectNode[] => {
+): ObjectNodeData[] => {
   const filteredChildren = children.filter((child) =>
     filterNonSplitNodes(baseKeyPrefix)(child, sourceNode)
   );
@@ -112,7 +115,7 @@ const replaceSplitNodes = (
 
 // Handle structural split
 export const handleStructuralSplit = (
-  node: ObjectNode,
+  node: ObjectNodeData,
   parts: any[],
   removeSource: boolean,
   desk: ObjectTransformerDesk
@@ -135,7 +138,7 @@ export const handleStructuralSplit = (
  */
 
 // Type-based propagators
-const propagators: Record<string, (node: ObjectNode) => void> = {
+const propagators: Record<string, (node: ObjectNodeData) => void> = {
   object: propagateObjectValue,
   array: propagateArrayValue,
 };
@@ -143,7 +146,7 @@ const propagators: Record<string, (node: ObjectNode) => void> = {
 // Create propagate transform function (curried for desk)
 export const createPropagateTransform =
   (desk: ObjectTransformerDesk) =>
-  (node: ObjectNode): void => {
+  (node: ObjectNodeData): void => {
     if (!node) return;
 
     // Handle structural transforms

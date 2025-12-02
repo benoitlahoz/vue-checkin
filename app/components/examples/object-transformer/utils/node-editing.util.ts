@@ -1,4 +1,4 @@
-import type { ObjectNode } from '..';
+import type { ObjectNodeData } from '..';
 
 /**
  * Click outside handling - Pure functions
@@ -20,7 +20,10 @@ export const createClickOutsideChecker = (
  * Key editing state helpers
  */
 
-export const shouldStartEdit = (node: ObjectNode, editingNode: ObjectNode | null): boolean => {
+export const shouldStartEdit = (
+  node: ObjectNodeData,
+  editingNode: ObjectNodeData | null
+): boolean => {
   return editingNode === null;
 };
 

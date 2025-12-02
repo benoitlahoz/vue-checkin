@@ -4,7 +4,7 @@ import { useCheckIn } from 'vue-airport';
 import { cn } from '@/lib/utils';
 import {
   ObjectTransformerDeskKey,
-  type ObjectNode,
+  type ObjectNodeData,
   type ObjectNodeType,
   type Transform,
   type ObjectTransformerContext,
@@ -39,17 +39,17 @@ const props = withDefaults(defineProps<ObjectTransformerProps>(), {
   class: '',
 });
 
-const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { createDesk } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
   context: {
     // Tree
-    tree: ref<ObjectNode>(
+    tree: ref<ObjectNodeData>(
       buildNodeTree(props.data, Array.isArray(props.data) ? 'Array' : 'Object')
     ),
-    getNode(id: string): ObjectNode | null {
+    getNode(id: string): ObjectNodeData | null {
       // Recursive search in the tree
-      const findNode = (node: ObjectNode): ObjectNode | null => {
+      const findNode = (node: ObjectNodeData): ObjectNodeData | null => {
         if (node.id === id) return node;
         if (node.children) {
           for (const child of node.children) {
@@ -80,7 +80,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     addTransforms(...newTransforms: Transform[]) {
       this.transforms.value.push(...newTransforms);
     },
-    findTransform(name: string, node?: ObjectNode): Transform | undefined {
+    findTransform(name: string, node?: ObjectNodeData): Transform | undefined {
       // If node is provided, filter by type compatibility
       if (node) {
         return this.transforms.value.find((t) => t.name === name && t.if(node));
@@ -91,7 +91,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       // Extract default VALUES from param configs
       return transform.params?.map((p) => p.default ?? null) || [];
     },
-    createTransformEntry(name: string, node?: ObjectNode) {
+    createTransformEntry(name: string, node?: ObjectNodeData) {
       const transform = this.findTransform(name, node);
       if (!transform) return null;
 
@@ -101,7 +101,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         params: this.initParams(transform),
       };
     },
-    propagateTransform(node: ObjectNode) {
+    propagateTransform(node: ObjectNodeData) {
       const propagate = createPropagateTransform(desk as ObjectTransformerDesk);
       propagate(node);
     },
@@ -109,18 +109,18 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
     // Nodes
     forbiddenKeys: ref<string[]>(props.forbiddenKeys || keyGuards),
-    getComputedValueType(_node: ObjectNode, value: any): ObjectNodeType {
+    getComputedValueType(_node: ObjectNodeData, value: any): ObjectNodeType {
       return getTypeFromValue(value);
     },
 
     // Key editing
-    editingNode: ref<ObjectNode | null>(null),
+    editingNode: ref<ObjectNodeData | null>(null),
     tempKey: ref<string | null>(null),
-    startEditKey(node: ObjectNode) {
+    startEditKey(node: ObjectNodeData) {
       this.editingNode.value = node;
       this.tempKey.value = node.key || null;
     },
-    confirmEditKey(node: ObjectNode) {
+    confirmEditKey(node: ObjectNodeData) {
       const newKey = this.tempKey.value?.trim();
 
       if (!newKey || !sanitizeKey(newKey)) {
@@ -145,7 +145,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
       this.editingNode.value = null;
     },
-    cancelEditKey(node: ObjectNode) {
+    cancelEditKey(node: ObjectNodeData) {
       this.tempKey.value = node.key || null;
       this.editingNode.value = null;
     },
@@ -154,7 +154,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     isAddedProperty,
     getKeyClasses,
     generateChildKey,
-    toggleNodeDeletion(node: ObjectNode) {
+    toggleNodeDeletion(node: ObjectNodeData) {
       node.deleted = !node.deleted;
       if (node.parent) {
         this.propagateTransform(node.parent);
@@ -162,9 +162,9 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     },
 
     // Transform selections
-    nodeSelections: new WeakMap<ObjectNode, string | null>(),
-    stepSelections: new WeakMap<ObjectNode, Record<number, string | null>>(),
-    getNodeSelection(node: ObjectNode): string | null {
+    nodeSelections: new WeakMap<ObjectNodeData, string | null>(),
+    stepSelections: new WeakMap<ObjectNodeData, Record<number, string | null>>(),
+    getNodeSelection(node: ObjectNodeData): string | null {
       // If node has no transforms, always return null
       if (node.transforms.length === 0) {
         this.nodeSelections.set(node, null);
@@ -176,10 +176,10 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       this.nodeSelections.set(node, firstTransformName);
       return firstTransformName;
     },
-    setNodeSelection(node: ObjectNode, value: string | null) {
+    setNodeSelection(node: ObjectNodeData, value: string | null) {
       this.nodeSelections.set(node, value);
     },
-    getStepSelection(node: ObjectNode): Record<number, string | null> {
+    getStepSelection(node: ObjectNodeData): Record<number, string | null> {
       if (!this.stepSelections.has(node)) {
         this.stepSelections.set(node, {});
       }
@@ -199,7 +199,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       this.stepSelections.set(node, cleanedSelections);
       return cleanedSelections;
     },
-    setStepSelection(node: ObjectNode, value: Record<number, string | null>) {
+    setStepSelection(node: ObjectNodeData, value: Record<number, string | null>) {
       this.stepSelections.set(node, value);
     },
 
@@ -207,12 +207,12 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     getParamConfig(transformName: string, paramIndex: number) {
       return this.transforms.value.find((x) => x.name === transformName)?.params?.[paramIndex];
     },
-    formatStepValue(node: ObjectNode, index: number): string {
+    formatStepValue(node: ObjectNodeData, index: number): string {
       const value = this.computeStepValue(node, index);
       const type = this.getComputedValueType(node, value);
       return formatValue(value, type);
     },
-    isStructuralTransform(node: ObjectNode, transformIndex: number): boolean {
+    isStructuralTransform(node: ObjectNodeData, transformIndex: number): boolean {
       const t = node.transforms[transformIndex];
       if (!t) return false;
 

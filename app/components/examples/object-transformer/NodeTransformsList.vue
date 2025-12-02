@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useCheckIn } from 'vue-airport';
-import TransformerParamInput from './TransformerParam.vue';
-import type { ObjectNode, ObjectTransformerContext } from '.';
-import { ObjectTransformerDeskKey, TransformerSelect } from '.';
+import TransformerParamInput from './TransformParam.vue';
+import type { ObjectNodeData, ObjectTransformerContext } from '.';
+import { ObjectTransformerDeskKey, TransformSelect } from '.';
 import { filterTransformsByType } from './utils/node-transforms.util';
 import { getNodeType } from './utils/type-guards.util';
 
@@ -14,7 +14,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 
 const node = computed(() => desk!.getNode(props.nodeId));
@@ -45,7 +45,7 @@ const handleParamChange = () => {
 </script>
 
 <template>
-  <div v-if="node?.transforms.length" data-slot="transformer-select">
+  <div v-if="node?.transforms.length" data-slot="node-transforms-list">
     <div class="md:overflow-x-auto">
       <div v-for="(t, index) in node.transforms" :key="`${t.name}-${index}`" class="my-2">
         <div
@@ -75,7 +75,7 @@ const handleParamChange = () => {
               </div>
 
               <!-- Select suivant -->
-              <TransformerSelect
+              <TransformSelect
                 v-if="transforms.length > 1"
                 :key="`select-${index + 1}`"
                 :node-id="nodeId"
