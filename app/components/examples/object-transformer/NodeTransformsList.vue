@@ -47,15 +47,15 @@ const handleParamChange = () => {
 // Gestion interne de stepSelect via le desk
 const getStepSelectValue = (index: number): string | null => {
   if (!node.value) return null;
-  
+
   // Le select affiche la transformation à index + 1 (la suivante)
   const nextIndex = index + 1;
-  
+
   // Si une transformation existe à cet index, retourner son nom
   if (nextIndex < node.value.transforms.length) {
     return node.value.transforms[nextIndex]?.name || null;
   }
-  
+
   // Sinon, récupérer la sélection stockée
   const stepSelect = desk!.getStepSelection(node.value);
   return stepSelect[nextIndex] || null;
