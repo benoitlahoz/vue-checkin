@@ -32,9 +32,9 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
   const deletedPaths: string[][] = [];
   const renamedKeys: Array<{ path: string[]; oldKey: string; newKey: string }> = [];
 
-  const traverse = (node: ObjectNodeData, path: string[] = []) => {
-    // Build current path - skip root node key (Object/Array)
-    const currentPath = node.key && path.length > 0 ? [...path, node.key] : path;
+  const traverse = (node: ObjectNodeData, path: string[] = [], isRoot: boolean = true) => {
+    // Build current path - skip root node key (Object/Array), include all others
+    const currentPath = !isRoot && node.key ? [...path, node.key] : path;
 
     // Track transformations - only for nodes with keys (not root)
     // Important: Capture transforms BEFORE checking deleted status
@@ -72,9 +72,8 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     // Recurse through children - always traverse, even for deleted nodes
     if (node.children) {
       node.children.forEach((child) => {
-        // For root node, pass empty path; for others, pass currentPath with key
-        const nextPath = node.key && path.length === 0 ? [] : currentPath;
-        traverse(child, nextPath);
+        // Pass currentPath to all children, they are never root
+        traverse(child, currentPath, false);
       });
     }
   };
@@ -84,11 +83,16 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
   // Extract unique transform names required
   const requiredTransforms = Array.from(new Set(steps.map((s) => s.transformName)));
 
+  // Deduplicate deletedPaths (same path might be recorded multiple times)
+  const uniqueDeletedPaths = Array.from(new Set(deletedPaths.map((p) => JSON.stringify(p)))).map(
+    (p) => JSON.parse(p)
+  );
+
   return {
     version: '1.0.0',
     rootType: tree.type,
     steps,
-    deletedPaths,
+    deletedPaths: uniqueDeletedPaths,
     renamedKeys,
     requiredTransforms,
     createdAt: new Date().toISOString(),
@@ -121,7 +125,12 @@ export const applyRecipe = (
     applyTransformAtPath(result, step.path, transform, step.params);
   });
 
-  // Apply key renames AFTER structural transforms (so split-generated keys can be renamed)
+  // Apply deletions BEFORE renames (to avoid deleting renamed properties)
+  recipe.deletedPaths.forEach((path) => {
+    deleteAtPath(result, path);
+  });
+
+  // Apply key renames AFTER structural transforms and deletions
   recipe.renamedKeys.forEach(({ path, oldKey, newKey }) => {
     renameKeyAtPath(result, path, oldKey, newKey);
   });
@@ -143,11 +152,6 @@ export const applyRecipe = (
     }
 
     applyTransformAtPath(result, step.path, transform, step.params);
-  });
-
-  // Apply deletions last
-  recipe.deletedPaths.forEach((path) => {
-    deleteAtPath(result, path);
   });
 
   return result;

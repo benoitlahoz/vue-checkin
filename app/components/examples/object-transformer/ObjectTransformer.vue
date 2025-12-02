@@ -16,6 +16,7 @@ import {
   getTypeFromValue,
   sanitizeKey,
   autoRenameKey,
+  handleRestoreConflict,
   formatValue,
   isAddedProperty,
   getKeyClasses,
@@ -163,7 +164,14 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     getKeyClasses,
     generateChildKey,
     toggleNodeDeletion(node: ObjectNodeData) {
+      const wasDeleted = node.deleted;
       node.deleted = !node.deleted;
+
+      // If restoring a node, check for conflicts with added properties
+      if (wasDeleted && !node.deleted && node.parent) {
+        handleRestoreConflict(node.parent, node);
+      }
+
       if (node.parent) {
         this.propagateTransform(node.parent);
       }
@@ -290,8 +298,3 @@ watch(
     <slot />
   </div>
 </template>
-
-/** { "firstname": "John", "lastname": "DOE", "age": 30, "dob": "1993-05-15T00:00:00.000Z",
-"active": false, "city": "Marseille", "address": { "street": "123 MAIN ST", "zip": "13001",
-"custom": { "info": "some custom info", "tags": [ "tag1", "tag2" ] } }, "hobbies": "reading,
-traveling, swimming" } */

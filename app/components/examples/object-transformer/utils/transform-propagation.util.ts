@@ -76,7 +76,7 @@ const createSplitNodes = (
   baseKey: string,
   parent?: ObjectNodeData,
   keys?: string[]
-): ObjectNodeData[] => 
+): ObjectNodeData[] =>
   parts.map((part, i) => {
     const key = keys ? `${baseKey}_${keys[i]}` : `${baseKey}_${i}`;
     return buildNodeTree(part, key, parent);

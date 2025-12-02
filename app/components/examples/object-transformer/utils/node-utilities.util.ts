@@ -36,11 +36,41 @@ const findUniqueKey = (existingKeys: Set<string>, baseKey: string, counter: numb
 
 export const autoRenameKey = (parent: ObjectNodeData, base: string): string => {
   const safeBase = sanitizeKey(base) || 'key';
+  // Exclude soft deleted nodes from existing keys check
   const existingKeys = new Set(
-    parent.children?.map((c) => c.key).filter((k): k is string => Boolean(k)) || []
+    parent.children
+      ?.filter((c) => !c.deleted)
+      .map((c) => c.key)
+      .filter((k): k is string => Boolean(k)) || []
   );
 
   return existingKeys.has(safeBase) ? findUniqueKey(existingKeys, safeBase, 1) : safeBase;
+};
+
+// Handle conflicts when restoring a soft deleted node
+export const handleRestoreConflict = (
+  parent: ObjectNodeData,
+  restoredNode: ObjectNodeData
+): void => {
+  if (!restoredNode.key || !parent.children) return;
+
+  // Find any added property with the same key (but not the node being restored)
+  const conflictingNode = parent.children.find(
+    (c) => c !== restoredNode && c.key === restoredNode.key && !c.deleted && isAddedProperty(c)
+  );
+
+  if (conflictingNode) {
+    // Rename the added property by finding a unique key
+    const existingKeys = new Set(
+      parent.children
+        .filter((c) => !c.deleted)
+        .map((c) => c.key)
+        .filter((k): k is string => Boolean(k)) || []
+    );
+    const newKey = findUniqueKey(existingKeys, conflictingNode.key!, 1);
+    conflictingNode.key = newKey;
+    conflictingNode.keyModified = true;
+  }
 };
 
 /**
