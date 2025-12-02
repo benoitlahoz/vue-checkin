@@ -12,10 +12,12 @@ export const isArray = (value: any): value is any[] => Array.isArray(value);
 export const isDate = (value: any): value is Date => value instanceof Date;
 
 const isObjectType = (value: any): boolean => typeof value === 'object';
-const isNotSpecialObject = (value: any): boolean => 
+const isNotSpecialObject = (value: any): boolean =>
   !isNull(value) && !isArray(value) && !isDate(value);
 
-export const isObject = both(isObjectType, isNotSpecialObject) as (value: any) => value is Record<string, any>;
+export const isObject = both(isObjectType, isNotSpecialObject) as (
+  value: any
+) => value is Record<string, any>;
 
 export const isPrimitive = (type: ObjectNodeType): boolean =>
   [

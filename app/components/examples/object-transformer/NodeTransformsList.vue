@@ -1,30 +1,87 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useCheckIn } from 'vue-airport';
 import TransformerParamInput from './TransformerParam.vue';
 import TransformSelect from './transforms/TransformSelect.vue';
-import type { ObjectNode, Transform } from './index';
+import type { ObjectNode, ObjectTransformerContext } from './index';
+import { ObjectTransformerDeskKey } from './index';
+import { filterTransformsByType, applyStepTransform } from './utils/node-transforms.util';
+import { getNodeType } from './utils/type-guards.util';
 
 interface Props {
-  node: ObjectNode;
-  transforms: Transform[];
+  nodeId: string;
   paddingLeft: string;
-  isPrimitive: boolean;
-  formatStepValue: (index: number) => string;
-  isStructuralTransform: (index: number) => boolean;
-  getParamConfig: (transformName: string, paramIndex: number) => any;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-const emit = defineEmits<{
-  stepTransform: [index: number, name: unknown];
-  paramChange: [];
-}>();
+const { checkIn } = useCheckIn<ObjectNode, ObjectTransformerContext>();
+const { desk } = checkIn(ObjectTransformerDeskKey);
 
-const stepSelect = defineModel<Record<number, string | null>>('stepSelect', { required: true });
+const node = computed(() => desk!.getNode(props.nodeId));
+
+const transforms = computed(() =>
+  node.value ? filterTransformsByType(desk!.transforms.value, getNodeType(node.value)) : []
+);
+
+const formatStepValue = (index: number) => {
+  if (!node.value) return '';
+  return desk!.formatStepValue(node.value, index);
+};
+
+const isStructuralTransform = (index: number) => {
+  if (!node.value) return false;
+  return desk!.isStructuralTransform(node.value, index);
+};
+
+const getParamConfig = (transformName: string, paramIndex: number) => {
+  return desk!.getParamConfig(transformName, paramIndex);
+};
+
+const handleParamChange = () => {
+  if (!node.value) return;
+  desk!.propagateTransform(node.value);
+  if (node.value.parent) desk!.propagateTransform(node.value.parent);
+};
+
+// Gestion interne de stepSelect via le desk
+const getStepSelectValue = (index: number): string | null => {
+  if (!node.value) return null;
+  
+  // Le select affiche la transformation à index + 1 (la suivante)
+  const nextIndex = index + 1;
+  
+  // Si une transformation existe à cet index, retourner son nom
+  if (nextIndex < node.value.transforms.length) {
+    return node.value.transforms[nextIndex]?.name || null;
+  }
+  
+  // Sinon, récupérer la sélection stockée
+  const stepSelect = desk!.getStepSelection(node.value);
+  return stepSelect[nextIndex] || null;
+};
+
+const handleStepTransform = (index: number, name: unknown) => {
+  if (!node.value) return;
+
+  applyStepTransform(node.value, index, name as string | null, desk!);
+
+  if (name === 'None') {
+    // Clean up all selections after the removed index
+    const currentStepSelect = desk!.getStepSelection(node.value);
+    const newStepSelect = Object.fromEntries(
+      Object.entries(currentStepSelect).filter(([key]) => parseInt(key) <= index)
+    );
+    desk!.setStepSelection(node.value, newStepSelect);
+  } else if (typeof name === 'string') {
+    const currentStepSelect = desk!.getStepSelection(node.value);
+    desk!.setStepSelection(node.value, { ...currentStepSelect, [index + 1]: name });
+  }
+};
 </script>
 
 <template>
-  <div v-if="node.transforms.length" class="">
+  <div v-if="node?.transforms.length" class="">
     <div class="md:overflow-x-auto">
       <div v-for="(t, index) in node.transforms" :key="`${t.name}-${index}`" class="my-2">
         <div
@@ -49,7 +106,7 @@ const stepSelect = defineModel<Record<number, string | null>>('stepSelect', { re
                   :key="`param-${index}-${pi}`"
                   v-model="t.params[pi]"
                   :config="getParamConfig(t.name, pi)"
-                  @change="emit('paramChange')"
+                  @change="handleParamChange()"
                 />
               </div>
 
@@ -57,11 +114,11 @@ const stepSelect = defineModel<Record<number, string | null>>('stepSelect', { re
               <TransformSelect
                 v-if="transforms.length > 1"
                 :key="`select-${index + 1}`"
-                :model-value="stepSelect[index + 1] ?? null"
+                :model-value="getStepSelectValue(index)"
                 :transforms="transforms"
                 remove-label="Remove this & following"
                 class="w-full md:w-auto"
-                @update:model-value="emit('stepTransform', index, $event)"
+                @update:model-value="handleStepTransform(index, $event)"
               />
             </div>
           </template>
@@ -74,7 +131,7 @@ const stepSelect = defineModel<Record<number, string | null>>('stepSelect', { re
                 :key="`param-${index}-${pi}`"
                 v-model="t.params[pi]"
                 :config="getParamConfig(t.name, pi)"
-                @change="emit('paramChange')"
+                @change="handleParamChange()"
               />
             </div>
           </template>

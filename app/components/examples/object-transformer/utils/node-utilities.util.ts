@@ -96,12 +96,9 @@ export const getKeyClasses = (node: ObjectNode): string => {
 // Generate unique key for v-for (with error handling)
 export const generateChildKey = (child: ObjectNode, index: number): string => {
   const fallback = `${child.key}-${index}-${typeof child.value}-${Date.now()}`;
-  return maybe(
-    () => {
-      const valueStr = JSON.stringify(child.value);
-      const encoded = btoa(encodeURIComponent(valueStr).slice(0, 100));
-      return `${child.key}-${index}-${encoded}`;
-    },
-    fallback
-  )(null);
+  return maybe(() => {
+    const valueStr = JSON.stringify(child.value);
+    const encoded = btoa(encodeURIComponent(valueStr).slice(0, 100));
+    return `${child.key}-${index}-${encoded}`;
+  }, fallback)(null);
 };

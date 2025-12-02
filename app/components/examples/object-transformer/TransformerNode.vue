@@ -12,14 +12,11 @@ import {
   ObjectTransformerDeskKey,
   filterTransformsByType,
   applyNodeTransform,
-  applyStepTransform,
   createClickOutsideChecker,
-  shouldStartEdit,
-  canConfirmEdit,
 } from '.';
 import { Separator } from '@/components/ui/separator';
 import { ChevronDown, ChevronRight } from 'lucide-vue-next';
-import { getNodeType, isPrimitive as isPrimitiveType } from './utils/type-guards.util';
+import { isPrimitive as isPrimitiveType } from './utils/type-guards.util';
 import { formatValue } from './utils/node-utilities.util';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
@@ -49,6 +46,9 @@ const tree = computed(() => {
   return node;
 });
 
+// Computed node ID for sub-components
+const nodeId = computed(() => tree.value.id);
+
 // The node's type is the ORIGINAL type (set in buildNodeTree, never changed)
 const originalType = tree.value.type;
 
@@ -56,15 +56,11 @@ const originalType = tree.value.type;
 const availableTransforms = computed(() =>
   filterTransformsByType(deskWithContext.transforms.value, originalType)
 );
-const availableStepTransforms = computed(() =>
-  filterTransformsByType(deskWithContext.transforms.value, getNodeType(tree.value))
-);
 
 // State
 const isOpen = ref(tree.value.isOpen ?? true);
 const isPrimitive = computed(() => isPrimitiveType(tree.value.type));
 const editingKey = computed(() => deskWithContext.editingNode.value === tree.value);
-const tempKey = computed(() => deskWithContext.tempKey.value);
 const isHovered = ref(false);
 const inputFieldElement = ref<any>(null);
 
@@ -140,31 +136,6 @@ const transformsPaddingLeft = computed(() => {
   return '0px';
 });
 
-// Editing helpers
-const startEditKey = () => {
-  if (shouldStartEdit(tree.value, deskWithContext.editingNode.value)) {
-    deskWithContext.startEditKey(tree.value);
-  }
-};
-
-const confirmKeyChange = () => {
-  if (canConfirmEdit(tempKey.value, tree.value.key)) {
-    deskWithContext.confirmEditKey(tree.value);
-  }
-  isHovered.value = false;
-  inputFieldElement.value?.$el?.blur();
-};
-
-const cancelKeyChange = () => {
-  deskWithContext.cancelEditKey(tree.value);
-  isHovered.value = false;
-  inputFieldElement.value?.$el?.blur();
-};
-
-const updateTempKey = (value: string) => {
-  deskWithContext.tempKey.value = value;
-};
-
 // Transform handlers
 const handleNodeTransform = (name: unknown) => {
   applyNodeTransform(tree.value, name as string | null, deskWithContext, nodeSelect.value);
@@ -177,40 +148,9 @@ const handleNodeTransform = (name: unknown) => {
   }
 };
 
-const handleStepTransform = (index: number, name: unknown) => {
-  applyStepTransform(tree.value, index, name as string | null, deskWithContext);
-
-  if (name === 'None') {
-    // Clean up all selections after the removed index
-    const newStepSelect = Object.fromEntries(
-      Object.entries(stepSelect.value).filter(([key]) => parseInt(key) <= index)
-    );
-    stepSelect.value = newStepSelect;
-
-    // If we removed all transforms, update nodeSelect too
-    if (tree.value.transforms.length === 0) {
-      nodeSelect.value = null;
-    }
-  } else if (typeof name === 'string') {
-    stepSelect.value[index + 1] = name;
-  }
-};
-
-const handleParamChange = () => {
-  deskWithContext.propagateTransform(tree.value);
-  if (tree.value.parent) deskWithContext.propagateTransform(tree.value.parent);
-};
-
 // Utilities from desk
-const keyClasses = computed(() => deskWithContext.getKeyClasses(tree.value));
 const getChildKey = (child: ObjectNode, index: number) =>
   deskWithContext.generateChildKey(child, index);
-const getFormattedStepValue = (index: number) => deskWithContext.formatStepValue(tree.value, index);
-const isStructuralTransform = (transformIndex: number) =>
-  deskWithContext.isStructuralTransform(tree.value, transformIndex);
-const getParamConfig = (transformName: string, paramIndex: number) =>
-  deskWithContext.getParamConfig(transformName, paramIndex);
-const toggleDelete = () => deskWithContext.toggleNodeDeletion(tree.value);
 </script>
 
 <template>
@@ -248,26 +188,12 @@ const toggleDelete = () => deskWithContext.toggleNodeDeletion(tree.value);
               v-if="tree.parent?.type === 'object' || tree.parent?.type === 'array'"
               ref="buttonElement"
             >
-              <NodeActions
-                :node="tree"
-                :is-visible="isHovered || editingKey"
-                @toggle="toggleDelete"
-              />
+              <NodeActions :node-id="nodeId" :is-visible="isHovered || editingKey" />
             </div>
 
             <!-- NodeKey Component -->
             <div ref="inputElement">
-              <NodeKeyEditor
-                v-model:input-ref="inputFieldElement"
-                :node="tree"
-                :is-editing="editingKey"
-                :temp-key="tempKey"
-                :key-classes="keyClasses"
-                @click="startEditKey"
-                @update:temp-key="updateTempKey"
-                @confirm="confirmKeyChange"
-                @cancel="cancelKeyChange"
-              />
+              <NodeKeyEditor v-model:input-ref="inputFieldElement" :node-id="nodeId" />
             </div>
 
             <!-- Value (lecture seule) - masquée pour object/array -->
@@ -308,16 +234,8 @@ const toggleDelete = () => deskWithContext.toggleNodeDeletion(tree.value);
     <!-- Transformations + paramètres (APRÈS les enfants) -->
     <NodeTransformsList
       v-if="tree.transforms.length"
-      v-model:step-select="stepSelect"
-      :node="tree"
-      :transforms="availableStepTransforms"
+      :node-id="nodeId"
       :padding-left="transformsPaddingLeft"
-      :is-primitive="isPrimitive"
-      :format-step-value="getFormattedStepValue"
-      :is-structural-transform="isStructuralTransform"
-      :get-param-config="getParamConfig"
-      @step-transform="handleStepTransform"
-      @param-change="handleParamChange"
     />
   </div>
 </template>

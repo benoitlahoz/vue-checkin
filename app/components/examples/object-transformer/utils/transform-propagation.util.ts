@@ -22,12 +22,12 @@ export const computeStepValue = (node: ObjectNode, index: number): any => {
 // Compute child transformed value (ignores structural transforms)
 export const computeChildTransformedValue = (child: ObjectNode): any => {
   if (child.transforms.length === 0) return child.value;
-  
-  const transformFns = child.transforms.map(t => (v: any) => {
+
+  const transformFns = child.transforms.map((t) => (v: any) => {
     const result = t.fn(v, ...(t.params || []));
     return isStructuralResult(result) ? v : result;
   });
-  
+
   return pipe(...transformFns)(child.value);
 };
 
