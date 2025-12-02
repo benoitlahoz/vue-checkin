@@ -48,13 +48,7 @@ export const autoRenameKey = (parent: ObjectNodeData, base: string): string => {
       .filter((k): k is string => Boolean(k)) || []
   );
 
-  console.log('[autoRenameKey]', { base, safeBase, existingKeys: Array.from(existingKeys) });
-
-  const result = existingKeys.has(safeBase) ? findUniqueKey(existingKeys, safeBase, 1) : safeBase;
-
-  console.log('[autoRenameKey] Result:', result);
-
-  return result;
+  return existingKeys.has(safeBase) ? findUniqueKey(existingKeys, safeBase, 1) : safeBase;
 };
 
 // Handle conflicts when restoring a soft deleted node

@@ -26,31 +26,16 @@ registerStructuralTransformHandler('split', (current, lastKey, result) => {
 registerStructuralTransformHandler('stringToObject', (current, lastKey, result) => {
   if (!result.object) return;
 
-  console.log('[stringToObject handler]', {
-    lastKey,
-    object: result.object,
-    removeSource: result.removeSource,
-  });
-
   // Create multiple properties from the object
   Object.entries(result.object).forEach(([key, value]) => {
     const newKey = `${lastKey}_${key}`;
-    console.log('[stringToObject handler] Creating key:', newKey, 'with value:', value);
     current[newKey] = value;
   });
 
   // Remove source if specified
   if (result.removeSource) {
-    console.log('[stringToObject handler] Removing source key:', lastKey);
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete current[lastKey];
-  } else {
-    console.log(
-      '[stringToObject handler] Keeping source key:',
-      lastKey,
-      'with value:',
-      current[lastKey]
-    );
   }
 });
 

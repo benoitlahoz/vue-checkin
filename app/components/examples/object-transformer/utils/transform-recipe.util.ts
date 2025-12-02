@@ -319,40 +319,27 @@ const deleteAtPath = (obj: any, path: string[]): void => {
  * Helper: Rename a key at a specific path
  */
 const renameKeyAtPath = (obj: any, path: string[], oldKey: string, newKey: string): void => {
-  console.log('[renameKeyAtPath]', { path, oldKey, newKey });
-
   if (path.length === 0) {
     if (obj[oldKey] !== undefined) {
-      console.log('[renameKeyAtPath] Renaming at root:', oldKey, '→', newKey);
       obj[newKey] = obj[oldKey];
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete obj[oldKey];
-    } else {
-      console.log('[renameKeyAtPath] Key not found at root:', oldKey);
     }
     return;
   }
 
   let current = obj;
   for (const segment of path) {
-    if (current[segment] === undefined) {
-      console.log('[renameKeyAtPath] Path segment not found:', segment);
-      return;
-    }
+    if (current[segment] === undefined) return;
     current = current[segment];
   }
 
   if (current[oldKey] !== undefined) {
-    console.log('[renameKeyAtPath] Renaming:', oldKey, '→', newKey, 'value:', current[oldKey]);
     current[newKey] = current[oldKey];
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete current[oldKey];
-  } else {
-    console.log('[renameKeyAtPath] Key not found:', oldKey);
   }
-};
-
-/**
+}; /**
  * Helper: Apply a transform at a specific path
  */
 const applyTransformAtPath = (

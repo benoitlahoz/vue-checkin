@@ -187,32 +187,9 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         // Check if we're restoring to original key
         const isRestoringToOriginal = node.originalKey === newKey;
 
-        console.log('[confirmEditKey]', {
-          nodeKey: node.key,
-          newKey,
-          originalKey: node.originalKey,
-          isRestoringToOriginal,
-          parentChildren: parent.children.map((c) => ({
-            key: c.key,
-            originalKey: c.originalKey,
-            deleted: c.deleted,
-          })),
-        });
-
         // Find conflicting node (same key but different node)
         const conflictingNode = parent.children.find(
           (c) => c !== node && c.key === newKey && !c.deleted
-        );
-
-        console.log(
-          '[confirmEditKey] conflictingNode:',
-          conflictingNode
-            ? {
-                key: conflictingNode.key,
-                originalKey: conflictingNode.originalKey,
-                keyModified: conflictingNode.keyModified,
-              }
-            : null
         );
 
         if (conflictingNode && isRestoringToOriginal) {
@@ -230,8 +207,6 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
               .filter((k): k is string => Boolean(k))
           );
           const uniqueKey = findUniqueKey(existingKeys, newKey, 1);
-
-          console.log('[confirmEditKey] Renaming conflicting node to:', uniqueKey);
 
           conflictingNode.key = uniqueKey;
           conflictingNode.keyModified = true;

@@ -56,18 +56,9 @@ const finalObject = computed(() => {
   // Track treeVersion to trigger reactivity
   void desk.treeVersion.value;
 
-  console.log(
-    '[ObjectPreview] Mode:',
-    desk.mode.value,
-    'isArray:',
-    Array.isArray(desk.originalData.value)
-  );
-
   // En mode model, appliquer la recipe à tous les objets de l'array
   if (desk.mode.value === 'model' && Array.isArray(desk.originalData.value)) {
     const recipe = desk.buildRecipe();
-
-    console.log('[ObjectPreview] Recipe:', recipe);
 
     return desk.originalData.value.map((item) => {
       return desk.applyRecipe(item, recipe);
