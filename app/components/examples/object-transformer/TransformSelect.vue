@@ -17,6 +17,7 @@ import {
   filterTransformsByType,
   applyNodeTransform,
   applyStepTransform,
+  partition,
 } from '.';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
@@ -52,6 +53,18 @@ const availableTransforms = computed(() => {
   if (!node.value) return [];
   return filterTransformsByType(deskWithContext.transforms.value, node.value.type);
 });
+
+// Separate structural and non-structural transforms using partition
+const transformsPartition = computed(() =>
+  partition(availableTransforms.value, (t) => {
+    // Check if transform is structural by testing if it returns a StructuralTransformResult
+    const testResult = t.fn(node.value?.value);
+    return testResult?.__structuralChange === true;
+  })
+);
+
+const structuralTransforms = computed(() => transformsPartition.value[0]);
+const regularTransforms = computed(() => transformsPartition.value[1]);
 
 // Current selection
 const currentSelection = computed({
@@ -151,10 +164,21 @@ const handleTransformChange = (name: unknown) => {
           <SelectLabel>Remove</SelectLabel>
           <SelectItem value="None" class="text-xs">{{ removeLabel }}</SelectItem>
         </SelectGroup>
-        <SelectGroup>
+        <SelectGroup v-if="regularTransforms.length">
           <SelectLabel>Transformations</SelectLabel>
           <SelectItem
-            v-for="tr in availableTransforms"
+            v-for="tr in regularTransforms"
+            :key="tr.name"
+            :value="tr.name"
+            class="text-xs"
+          >
+            {{ tr.name }}
+          </SelectItem>
+        </SelectGroup>
+        <SelectGroup v-if="structuralTransforms.length">
+          <SelectLabel>Structural</SelectLabel>
+          <SelectItem
+            v-for="tr in structuralTransforms"
             :key="tr.name"
             :value="tr.name"
             class="text-xs"
