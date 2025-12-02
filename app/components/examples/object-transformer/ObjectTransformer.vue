@@ -9,6 +9,7 @@ import {
   type Transform,
   type ObjectTransformerContext,
   type ObjectTransformerDesk,
+  type TransformerMode,
   buildNodeTree,
   computeIntermediateValue,
   computeStepValue,
@@ -27,6 +28,10 @@ import {
   exportRecipe as exportRecipeUtil,
   importRecipe as importRecipeUtil,
   validateRecipeTransforms as validateRecipeTransformsUtil,
+  findMostCompleteObject,
+  suggestModelMode,
+  getDataForMode,
+  extractModelRules as extractModelRulesUtil,
 } from '.';
 
 export interface ObjectTransformerProps {
@@ -42,13 +47,26 @@ const props = withDefaults(defineProps<ObjectTransformerProps>(), {
 });
 
 const { createDesk } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
+
+// Auto-detect mode
+const initialMode: TransformerMode = suggestModelMode(props.data) ? 'model' : 'object';
+const initialTemplateIndex =
+  initialMode === 'model' && Array.isArray(props.data) ? findMostCompleteObject(props.data) : 0;
+
+// Get data based on mode
+const initialData = getDataForMode(props.data, initialMode, initialTemplateIndex);
+
 const { desk } = createDesk(ObjectTransformerDeskKey, {
   devTools: true,
   context: {
     // Tree
     tree: ref<ObjectNodeData>(
-      buildNodeTree(props.data, Array.isArray(props.data) ? 'Array' : 'Object')
+      buildNodeTree(initialData, Array.isArray(props.data) ? 'Array' : 'Object')
     ),
+    treeVersion: ref(0), // Increment this to trigger reactivity
+    triggerTreeUpdate() {
+      this.treeVersion.value++;
+    },
     originalData: ref(props.data),
     getNode(id: string): ObjectNodeData | null {
       // Recursive search in the tree
@@ -63,6 +81,31 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         return null;
       };
       return findNode(this.tree.value);
+    },
+
+    // Mode
+    mode: ref<TransformerMode>(initialMode),
+    setMode(newMode: TransformerMode) {
+      this.mode.value = newMode;
+
+      // Rebuild tree with appropriate data
+      const data = getDataForMode(this.originalData.value, newMode, this.templateIndex.value);
+      this.tree.value = buildNodeTree(
+        data,
+        Array.isArray(this.originalData.value) ? 'Array' : 'Object'
+      );
+    },
+    templateIndex: ref<number>(initialTemplateIndex),
+    setTemplateIndex(index: number) {
+      if (!Array.isArray(this.originalData.value)) return;
+
+      this.templateIndex.value = index;
+
+      // Rebuild tree with new template object
+      if (this.mode.value === 'model') {
+        const data = getDataForMode(this.originalData.value, this.mode.value, index);
+        this.tree.value = buildNodeTree(data, 'Object');
+      }
     },
 
     // Constants
@@ -107,6 +150,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     propagateTransform(node: ObjectNodeData) {
       const propagate = createPropagateTransform(desk as ObjectTransformerDesk);
       propagate(node);
+      this.triggerTreeUpdate(); // Trigger reactivity after any transform change
     },
     computeStepValue,
 
@@ -150,6 +194,7 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         node.keyModified = true;
         this.tempKey.value = finalKey;
         this.propagateTransform(parent);
+        this.triggerTreeUpdate(); // Trigger reactivity
       }
 
       this.editingNode.value = null;
@@ -175,6 +220,8 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       if (node.parent) {
         this.propagateTransform(node.parent);
       }
+
+      this.triggerTreeUpdate(); // Trigger reactivity
     },
 
     // Transform selections
@@ -276,6 +323,15 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         transformedData,
         Array.isArray(transformedData) ? 'Array' : 'Object'
       );
+    },
+
+    // Model mode
+    extractModelRules() {
+      return extractModelRulesUtil(this.tree.value);
+    },
+    applyModelToAll() {
+      // Just switch to object mode to show the full transformed array
+      this.setMode('object');
     },
   },
 });

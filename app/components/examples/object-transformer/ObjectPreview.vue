@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
-import { ObjectTransformerDeskKey, computeChildTransformedValue } from '.';
+import { ObjectTransformerDeskKey, computeChildTransformedValue, applyModelRulesToArray } from '.';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-vue-next';
 
@@ -10,6 +10,16 @@ const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
 const { desk } = checkIn(ObjectTransformerDeskKey);
 
 const isCopied = ref(false);
+
+// Debug: watch treeVersion changes
+if (desk) {
+  watch(
+    () => desk.treeVersion.value,
+    (newVal, oldVal) => {
+      console.warn('⚠️ [ObjectPreview] treeVersion changed:', oldVal, '->', newVal);
+    }
+  );
+}
 
 // Fonction récursive pour construire l'objet final
 const buildFinalObject = (node: ObjectNodeData): any => {
@@ -51,13 +61,53 @@ const buildFinalObject = (node: ObjectNodeData): any => {
 
 const finalObject = computed(() => {
   if (!desk) return null;
+
+  // Track treeVersion to trigger reactivity
+  const version = desk.treeVersion.value;
+  console.warn('🔄 [finalObject] Computing, treeVersion:', version);
+
+  // En mode model, on veut voir l'array complet avec les transformations du template appliquées
+  if (desk.mode.value === 'model' && Array.isArray(desk.originalData.value)) {
+    console.warn('📊 [finalObject] MODE MODEL');
+
+    // Build the transformed template from the tree
+    const transformedTemplate = buildFinalObject(desk.tree.value);
+
+    // Extract rules from template
+    const rules = desk.extractModelRules();
+    console.warn('📋 [finalObject] Extracted rules:', rules);
+
+    // Apply rules to all items in the array (excluding template for now)
+    const transformedArray = applyModelRulesToArray(
+      desk.originalData.value,
+      rules,
+      desk.transforms.value,
+      desk.templateIndex.value,
+      false // Don't include template, we'll use transformedTemplate instead
+    );
+
+    // Replace the template item with the fully transformed version
+    transformedArray[desk.templateIndex.value] = transformedTemplate;
+    console.warn('✅ [finalObject] Result:', transformedArray);
+
+    return transformedArray;
+  }
+
+  // En mode object, afficher l'objet transformé normalement
   return buildFinalObject(desk.tree.value);
 });
 
 const formattedJson = computed(() => {
   if (!finalObject.value) return '';
   try {
-    return JSON.stringify(finalObject.value, null, 2);
+    // Use custom replacer to show undefined values as null (JSON.stringify ignores undefined)
+    return JSON.stringify(
+      finalObject.value,
+      (key, value) => {
+        return value === undefined ? null : value;
+      },
+      2
+    );
   } catch (error) {
     return `Error: ${error instanceof Error ? error.message : 'Unable to stringify object'}`;
   }

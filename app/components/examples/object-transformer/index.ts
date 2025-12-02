@@ -6,6 +6,8 @@ import type { InjectionKey, Ref } from 'vue';
  */
 export const CURRENT_RECIPE_VERSION = '1.0.0';
 
+export type TransformerMode = 'object' | 'model';
+
 export type ObjectNodeType =
   | 'string'
   | 'number'
@@ -71,8 +73,15 @@ export interface ObjectNodeData {
 export interface ObjectTransformerContext {
   // Tree
   tree: Ref<ObjectNodeData>;
+  treeVersion: Ref<number>;
+  triggerTreeUpdate: () => void;
   originalData: Ref<any>;
   getNode: (id: string) => ObjectNodeData | null;
+  // Mode
+  mode: Ref<TransformerMode>;
+  setMode: (mode: TransformerMode) => void;
+  templateIndex: Ref<number>;
+  setTemplateIndex: (index: number) => void;
   // Constants
   primitiveTypes: ObjectNodeType[];
   // Transforms
@@ -117,6 +126,9 @@ export interface ObjectTransformerContext {
   applyRecipe: (data: any, recipe: TransformRecipe) => any;
   exportRecipe: () => string;
   importRecipe: (recipeJson: string) => void;
+  // Model mode
+  extractModelRules: () => any[];
+  applyModelToAll: () => void;
 }
 
 export type ObjectTransformerDesk = DeskCore<ObjectNodeData> & ObjectTransformerContext;
@@ -128,6 +140,7 @@ export { default as ObjectTransformer } from './ObjectTransformer.vue';
 export { default as ObjectPreview } from './ObjectPreview.vue';
 export { default as RecipePreview } from './RecipePreview.vue';
 export { default as ObjectNode } from './ObjectNode.vue';
+export { default as ModeToggle } from './ModeToggle.vue';
 export { default as TransformSelect } from './TransformSelect.vue';
 export { default as TransformParam } from './TransformParam.vue';
 export { default as NodeKeyEditor } from './NodeKeyEditor.vue';

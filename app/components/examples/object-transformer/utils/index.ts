@@ -7,3 +7,5 @@ export * from './structural-transform-handlers.util';
 export * from './transform-propagation.util';
 export * from './transform-recipe.util';
 export * from './type-guards.util';
+export * from './model-mode.util';
+export * from './model-rules.util';
