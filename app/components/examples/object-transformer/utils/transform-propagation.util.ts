@@ -39,11 +39,11 @@ export const computeFinalTransformedValue = (node: ObjectNodeData): any => {
 
   // Build the base value
   let baseValue = node.value;
-  
+
   // If node has children, rebuild value from transformed children
   if (node.children && node.children.length > 0) {
     const children = activeChildren(node);
-    
+
     if (node.type === 'object') {
       baseValue = children.reduce(
         (acc, child) => ({

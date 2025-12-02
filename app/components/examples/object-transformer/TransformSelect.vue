@@ -126,7 +126,9 @@ const currentSelection = computed({
 
 // Handle transform change
 const handleTransformChange = (name: unknown) => {
-  if (!node.value) return;
+  if (!node.value) {
+    return;
+  }
 
   // Step transform mode
   if (props.stepIndex !== undefined) {

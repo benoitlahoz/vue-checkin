@@ -26,6 +26,7 @@ export const applyNodeTransform = (
       cleanupSplitNodes(node, node.parent);
       desk.propagateTransform(node.parent);
     }
+    desk.triggerTreeUpdate(); // Trigger reactivity
     return;
   }
 
@@ -33,7 +34,9 @@ export const applyNodeTransform = (
   const shouldChange =
     currentSelection && currentSelection !== '+' && currentSelection !== transformName;
 
-  if (!shouldAdd && !shouldChange) return;
+  if (!shouldAdd && !shouldChange) {
+    return;
+  }
 
   // Cleanup split nodes if changing transform
   if (shouldChange && node.parent) {
@@ -41,7 +44,9 @@ export const applyNodeTransform = (
   }
 
   const entry = desk.createTransformEntry(transformName, node);
-  if (!entry) return;
+  if (!entry) {
+    return;
+  }
 
   if (shouldAdd) {
     node.transforms.push(entry);
@@ -51,6 +56,7 @@ export const applyNodeTransform = (
 
   desk.propagateTransform(node);
   if (node.parent) desk.propagateTransform(node.parent);
+  desk.triggerTreeUpdate(); // Trigger reactivity
 };
 
 export const applyStepTransform = (
@@ -98,6 +104,7 @@ export const applyStepTransform = (
 
   desk.propagateTransform(node);
   if (node.parent) desk.propagateTransform(node.parent);
+  desk.triggerTreeUpdate(); // Trigger reactivity
 };
 
 /**

@@ -39,6 +39,7 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     // Track transformations - only for nodes with keys (not root)
     // Important: Capture transforms BEFORE checking deleted status
     if (node.transforms && node.transforms.length > 0 && node.key) {
+      console.log('[buildRecipe] Found transforms on node:', node.key, 'transforms:', node.transforms);
       node.transforms.forEach((transform) => {
         steps.push({
           path: [...path, node.key!],
@@ -155,9 +156,19 @@ export const applyRecipe = (
   // This ensures regular transforms are applied before structural ones
   stepsByPath.forEach((steps) => {
     steps.forEach((step) => {
-      const transform = availableTransforms.find((t) => t.name === step.transformName);
+      // Find transform that matches both name AND is compatible with the original type
+      // Create a mock node with the original type to test the transform's condition
+      const mockNode = { type: step.originalType, path: step.path };
+      
+      const transform = availableTransforms.find((t) => {
+        if (t.name !== step.transformName) return false;
+        // Check if transform's condition accepts this node type
+        if (t.if && !t.if(mockNode as any)) return false;
+        return true;
+      });
+      
       if (!transform) {
-        console.warn(`Transform "${step.transformName}" not found in available transforms`);
+        console.warn(`Transform "${step.transformName}" not found for type "${step.originalType}"`);
         return;
       }
 
@@ -367,7 +378,8 @@ const applyTransformAtPath = (
   if (!lastKey) return;
 
   if (current[lastKey] !== undefined) {
-    const result = transform.fn(current[lastKey], ...params);
+    const inputValue = current[lastKey];
+    const result = transform.fn(inputValue, ...params);
 
     // Handle structural transforms
     if (result?.__structuralChange) {

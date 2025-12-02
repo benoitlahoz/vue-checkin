@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
-import { ObjectTransformerDeskKey, computeFinalTransformedValue } from '.';
+import { ObjectTransformerDeskKey } from '.';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-vue-next';
 
@@ -11,80 +11,27 @@ const { desk } = checkIn(ObjectTransformerDeskKey);
 
 const isCopied = ref(false);
 
-// Fonction récursive pour construire l'objet final
-const buildFinalObject = (node: ObjectNodeData): any => {
-  // Si le node est deleted, l'ignorer
-  if (node.deleted) return undefined;
-
-  // Si le node a des transformations qui changent le type, utiliser la valeur transformée
-  // (ex: object -> string avec "To String")
-  if (node.transforms && node.transforms.length > 0) {
-    const transformedValue = computeFinalTransformedValue(node);
-    const transformedType = typeof transformedValue;
-    const originalType = node.type;
-    
-    // Si la transformation a changé le type (ex: object -> string), 
-    // retourner la valeur transformée directement
-    if (transformedType !== originalType && transformedType !== 'object') {
-      return transformedValue;
-    }
-  }
-
-  // Si le node a des enfants, les utiliser pour reconstruire la structure
-  // Les transformations structurales créent des enfants dans l'arbre
-  if (node.children && node.children.length > 0) {
-    // Pour les objects, construire récursivement
-    if (node.type === 'object') {
-      const result: Record<string, any> = {};
-      node.children.forEach((child) => {
-        if (!child.deleted && child.key) {
-          const value = buildFinalObject(child);
-          if (value !== undefined) {
-            result[child.key] = value;
-          }
-        }
-      });
-      return result;
-    }
-
-    // Pour les arrays, construire récursivement
-    if (node.type === 'array') {
-      return node.children
-        .filter((child) => !child.deleted)
-        .map((child) => buildFinalObject(child));
-    }
-  }
-
-  // Si le node a des transformations (et pas d'enfants), utiliser la valeur transformée
-  if (node.transforms && node.transforms.length > 0) {
-    return computeFinalTransformedValue(node);
-  }
-
-  // Sinon retourner la valeur brute
-  return node.value;
-};
-
 const finalObject = computed(() => {
   if (!desk) return null;
 
   // Track treeVersion to trigger reactivity
   void desk.treeVersion.value;
 
+  // Build recipe from current tree state
+  const recipe = desk.buildRecipe();
+
   // En mode model, appliquer la recipe à tous les objets de l'array
   if (desk.mode.value === 'model' && Array.isArray(desk.originalData.value)) {
-    const recipe = desk.buildRecipe();
-
-    return desk.originalData.value.map((item) => {
-      return desk.applyRecipe(item, recipe);
-    });
+    return desk.originalData.value.map((item) => desk.applyRecipe(item, recipe));
   }
 
-  // En mode object, afficher l'objet transformé normalement
-  return buildFinalObject(desk.tree.value);
+  // En mode object, appliquer la recipe à l'objet original
+  return desk.applyRecipe(desk.originalData.value, recipe);
 });
 
 const formattedJson = computed(() => {
   if (!finalObject.value) return '';
+  
   try {
     // Use custom replacer to show undefined values as null (JSON.stringify ignores undefined)
     return JSON.stringify(

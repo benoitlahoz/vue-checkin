@@ -142,6 +142,8 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
       const transform = this.findTransform(name, node);
       if (!transform) return null;
 
+      console.log('[createTransformEntry]', name, 'has fn:', typeof transform.fn, transform.fn);
+
       // Create a copy with params as VALUES array (not configs)
       return {
         ...transform,
