@@ -152,7 +152,8 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
         </div>
 
         <!-- Right part: transformation select -->
-        <div class="shrink-0 md:ml-auto">
+        <!-- Hidden for root node (Object/Array without parent) -->
+        <div v-if="tree.parent" class="shrink-0 md:ml-auto">
           <TransformSelect :node-id="nodeId" />
         </div>
       </div>
@@ -170,8 +171,9 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
     <Separator v-if="tree.children?.length && tree.transforms.length" class="my-2 md:hidden" />
 
     <!-- Transformations + parameters -->
+    <!-- Hidden for root node (Object/Array without parent) -->
     <NodeTransformsList
-      v-if="tree.transforms.length"
+      v-if="tree.transforms.length && tree.parent"
       :node-id="nodeId"
       :padding-left="transformsPaddingLeft"
     />
