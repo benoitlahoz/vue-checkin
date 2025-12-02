@@ -1,5 +1,5 @@
 import { defineNuxtPlugin } from '#app';
-import { setupAirportDevTools } from './index';
+import { setupAirportDevTools } from '.';
 
 /**
  * Nuxt plugin for vue-airport DevTools

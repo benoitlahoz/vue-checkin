@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, type HTMLAttributes } from 'vue';
 import { useCheckIn } from 'vue-airport';
+import { cn } from '@/lib/utils';
 import {
   ObjectTransformerDeskKey,
   type ObjectNode,
@@ -29,11 +30,13 @@ import {
 export interface ObjectTransformerProps {
   data?: Record<string, any> | any[];
   forbiddenKeys?: string[];
+  class?: HTMLAttributes['class'];
 }
 
 const props = withDefaults(defineProps<ObjectTransformerProps>(), {
   data: () => ({}),
   forbiddenKeys: () => keyGuards,
+  class: '',
 });
 
 const { createDesk } = useCheckIn<ObjectNode, ObjectTransformerContext>();
@@ -234,7 +237,9 @@ watch(
 </script>
 
 <template>
-  <slot />
+  <div data-slot="object-transformer" :class="cn('flex flex-col gap-4', props.class)">
+    <slot />
+  </div>
 </template>
 
 <style scoped></style>

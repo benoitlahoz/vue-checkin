@@ -17,10 +17,10 @@ const transforms: Transform[] = [
       removeSource: false,
     }),
   },
-  { name: 'To Uppercase', if: (node) => node.type === 'string', fn: (v: any) => v.toUpperCase() },
-  { name: 'To Lowercase', if: (node) => node.type === 'string', fn: (v: any) => v.toLowerCase() },
+  { name: 'Uppercase', if: (node) => node.type === 'string', fn: (v: any) => v.toUpperCase() },
+  { name: 'Lowercase', if: (node) => node.type === 'string', fn: (v: any) => v.toLowerCase() },
   {
-    name: 'To Capitalized',
+    name: 'Capitalized',
     if: (node) => node.type === 'string',
     fn: (v: any) => v.charAt(0).toUpperCase() + v.slice(1).toLowerCase(),
   },
@@ -79,6 +79,13 @@ const transforms: Transform[] = [
     name: 'Reverse',
     if: (node) => node.type === 'string',
     fn: (v: string) => v.split('').reverse().join(''),
+  },
+  {
+    name: 'To Number',
+    if: (node) => node.type === 'string',
+    fn: (v: string) => {
+      return Number(v);
+    },
   },
 ];
 

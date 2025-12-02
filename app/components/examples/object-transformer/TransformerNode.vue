@@ -5,13 +5,11 @@ import {
   TransformerNode,
   NodeKeyEditor,
   NodeActions,
-  TransformSelect,
+  TransformerSelect,
   NodeTransformsList,
   type ObjectNode,
   type ObjectTransformerContext,
   ObjectTransformerDeskKey,
-  filterTransformsByType,
-  applyNodeTransform,
   createClickOutsideChecker,
 } from '.';
 import { Separator } from '@/components/ui/separator';
@@ -49,14 +47,6 @@ const tree = computed(() => {
 // Computed node ID for sub-components
 const nodeId = computed(() => tree.value.id);
 
-// The node's type is the ORIGINAL type (set in buildNodeTree, never changed)
-const originalType = tree.value.type;
-
-// Available transforms
-const availableTransforms = computed(() =>
-  filterTransformsByType(deskWithContext.transforms.value, originalType)
-);
-
 // State
 const isOpen = ref(tree.value.isOpen ?? true);
 const isPrimitive = computed(() => isPrimitiveType(tree.value.type));
@@ -69,20 +59,6 @@ const toggleOpen = () => {
   isOpen.value = !isOpen.value;
   tree.value.isOpen = isOpen.value;
 };
-
-// Selections
-const nodeSelect = computed({
-  get: () => deskWithContext.getNodeSelection(tree.value),
-  set: (value) => deskWithContext.setNodeSelection(tree.value, value),
-});
-const stepSelect = computed({
-  get: () => {
-    // Add dependency on transforms length to trigger recalculation
-    const _ = tree.value.transforms.length;
-    return deskWithContext.getStepSelection(tree.value);
-  },
-  set: (value) => deskWithContext.setStepSelection(tree.value, value),
-});
 
 // Click outside handling
 const inputElement = ref<HTMLElement | null>(null);
@@ -136,18 +112,6 @@ const transformsPaddingLeft = computed(() => {
   return '0px';
 });
 
-// Transform handlers
-const handleNodeTransform = (name: unknown) => {
-  applyNodeTransform(tree.value, name as string | null, deskWithContext, nodeSelect.value);
-
-  if (name === 'None') {
-    nodeSelect.value = null;
-    stepSelect.value = {};
-  } else if (typeof name === 'string') {
-    nodeSelect.value = name;
-  }
-};
-
 // Utilities from desk
 const getChildKey = (child: ObjectNode, index: number) =>
   deskWithContext.generateChildKey(child, index);
@@ -156,7 +120,7 @@ const getChildKey = (child: ObjectNode, index: number) =>
 <template>
   <div
     data-slot="transformer-node"
-    class="text-xs transformer-node-root"
+    class="text-xs transformer-node-root flex-1"
     :class="{ 'opacity-50': tree.deleted }"
   >
     <!-- Wrapper avec scroll horizontal -->
@@ -213,12 +177,8 @@ const getChildKey = (child: ObjectNode, index: number) =>
         </div>
 
         <!-- Partie droite : select de transformation -->
-        <div v-if="availableTransforms.length" class="shrink-0 md:ml-auto">
-          <TransformSelect
-            v-model="nodeSelect"
-            :transforms="availableTransforms"
-            @update:model-value="handleNodeTransform"
-          />
+        <div class="shrink-0 md:ml-auto">
+          <TransformerSelect :node-id="nodeId" />
         </div>
       </div>
     </div>

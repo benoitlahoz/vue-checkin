@@ -70,7 +70,7 @@ const copyToClipboard = async () => {
 </script>
 
 <template>
-  <div data-slot="transformer-preview" class="border rounded-lg p-4 bg-card">
+  <div data-slot="transformer-preview" class="border rounded-lg p-4 bg-card flex-1 flex flex-col">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-sm font-semibold">Final Object Preview</h3>
       <button
@@ -81,7 +81,7 @@ const copyToClipboard = async () => {
       </button>
     </div>
     <pre
-      class="text-xs bg-muted p-3 rounded overflow-x-auto max-h-96 overflow-y-auto"
+      class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto flex-1 min-h-0"
     ><code>{{ formattedJson }}</code></pre>
   </div>
 </template>

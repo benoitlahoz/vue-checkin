@@ -52,6 +52,7 @@ const cancelEdit = () => {
 <template>
   <div
     v-if="node"
+    data-slot="node-key-editor"
     class="cursor-pointer flex items-center gap-2"
     @click="!isEditing && startEdit()"
   >

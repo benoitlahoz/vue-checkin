@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import { Button } from '@/components/ui/button';
 import { Undo, Trash } from 'lucide-vue-next';
-import type { ObjectNode, ObjectTransformerContext } from './index';
-import { ObjectTransformerDeskKey } from './index';
+import type { ObjectNode, ObjectTransformerContext } from '.';
+import { ObjectTransformerDeskKey } from '.';
 
 interface Props {
   nodeId: string;
@@ -27,6 +27,7 @@ const toggleDelete = () => {
 <template>
   <div
     v-if="node"
+    data-slot="node-actions"
     class="overflow-hidden transition-all duration-200"
     :class="isVisible ? 'w-4 mr-1.5' : 'w-0'"
   >
