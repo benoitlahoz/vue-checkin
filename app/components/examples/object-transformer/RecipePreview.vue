@@ -135,7 +135,7 @@ const handleFileUpload = async (event: Event) => {
         :class="{ 'opacity-100!': isCopied }"
         @click="copyToClipboard"
       >
-        <Check v-if="isCopied" class="h-3.5 w-3.5 text-green-500" />
+        <Check v-if="isCopied" class="h-3.5 w-3.5 text-primary" />
         <Copy v-else class="h-3.5 w-3.5" />
       </Button>
       <pre
