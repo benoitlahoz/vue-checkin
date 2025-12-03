@@ -91,27 +91,8 @@ const handleFileUpload = async (event: Event) => {
 </script>
 
 <template>
-  <div
-    data-slot="recipe-preview"
-    class="border rounded-lg p-4 bg-card flex-1 flex flex-col min-h-0"
-  >
-    <div class="mb-3">
-      <h3 class="text-sm font-semibold mb-2">Transform Recipe</h3>
-      <div v-if="stats" class="flex flex-wrap gap-3 text-xs text-muted-foreground">
-        <span>v{{ stats.version }}</span>
-        <span
-          >{{ stats.transformations }} transform{{ stats.transformations !== 1 ? 's' : '' }}</span
-        >
-        <span v-if="stats.deletions"
-          >{{ stats.deletions }} deletion{{ stats.deletions !== 1 ? 's' : '' }}</span
-        >
-        <span v-if="stats.renames"
-          >{{ stats.renames }} rename{{ stats.renames !== 1 ? 's' : '' }}</span
-        >
-      </div>
-    </div>
-
-    <div class="flex gap-2 mb-3">
+  <div data-slot="recipe-preview" class="flex-1 flex flex-col min-h-0 gap-3">
+    <div class="flex gap-2">
       <Button size="sm" variant="outline" @click="downloadRecipe">
         <Download class="h-3.5 w-3.5 mr-1.5" />
         Export

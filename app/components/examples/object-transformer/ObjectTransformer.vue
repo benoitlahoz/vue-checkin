@@ -261,15 +261,17 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
     // Update paths for all descendants when parent key changes
     updateDescendantPaths(
       parent: ObjectNodeData,
-      oldParentKey: string | undefined,
-      newParentKey: string
+      _oldParentKey: string | undefined,
+      _newParentKey: string
     ) {
       if (!parent.children) return;
 
       const traverse = (node: ObjectNodeData) => {
-        // Update this node's path tracking
-        // The originalKey should reflect the path from the root, not just the immediate parent
-        // So we don't change it here - buildRecipe will use the current tree structure
+        // Note: We don't update originalKey here because buildRecipe uses the current
+        // tree structure to compute paths. The parent's key change is already reflected
+        // in the tree, so descendants will automatically get the correct path.
+        // The parameters are kept for potential future use if we need to track
+        // path changes more explicitly.
 
         // Recursively process children
         if (node.children) {

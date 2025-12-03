@@ -57,9 +57,7 @@ const setTemplateIndex = (index: number) => {
         class="text-xs px-2 py-1 border rounded"
         @change="(e) => setTemplateIndex(Number((e.target as HTMLSelectElement).value))"
       >
-        <option v-for="i in arrayLength" :key="i - 1" :value="i - 1">
-          Object {{ i - 1 }} {{ i - 1 === templateIndex ? '(current)' : '' }}
-        </option>
+        <option v-for="i in arrayLength" :key="i - 1" :value="i - 1">Object {{ i - 1 }}</option>
       </select>
     </div>
 

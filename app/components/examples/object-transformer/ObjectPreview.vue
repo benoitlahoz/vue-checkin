@@ -112,27 +112,19 @@ const copyToClipboard = async () => {
 </script>
 
 <template>
-  <div
-    data-slot="object-transformer-preview"
-    class="border rounded-lg p-4 bg-card flex-1 flex flex-col"
-  >
-    <div class="mb-3">
-      <h3 class="text-sm font-semibold">Final Object Preview</h3>
-    </div>
-    <div class="relative group flex-1 min-h-0">
-      <Button
-        size="icon"
-        variant="ghost"
-        class="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        :class="{ 'opacity-100!': isCopied }"
-        @click="copyToClipboard"
-      >
-        <Check v-if="isCopied" class="h-3.5 w-3.5 text-primary" />
-        <Copy v-else class="h-3.5 w-3.5" />
-      </Button>
-      <pre
-        class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto h-full whitespace-pre-wrap wrap-break-word"
-      ><code>{{ formattedJson }}</code></pre>
-    </div>
+  <div data-slot="object-transformer-preview" class="relative group flex-1 min-h-0">
+    <Button
+      size="icon"
+      variant="ghost"
+      class="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      :class="{ 'opacity-100!': isCopied }"
+      @click="copyToClipboard"
+    >
+      <Check v-if="isCopied" class="h-3.5 w-3.5 text-primary" />
+      <Copy v-else class="h-3.5 w-3.5" />
+    </Button>
+    <pre
+      class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto h-full whitespace-pre-wrap wrap-break-word"
+    ><code>{{ formattedJson }}</code></pre>
   </div>
 </template>
