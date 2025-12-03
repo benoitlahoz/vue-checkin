@@ -72,13 +72,13 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'array',
     fn: (v: any[]): StructuralTransformResult => {
       if (!Array.isArray(v)) return v as any;
-      
+
       // Convert array to object with indexed keys
       const obj: Record<string, any> = {};
       v.forEach((part: any, index: number) => {
         obj[index.toString()] = part;
       });
-      
+
       return {
         __structuralChange: true,
         action: 'arrayToProperties',

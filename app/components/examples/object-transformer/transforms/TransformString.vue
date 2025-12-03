@@ -22,23 +22,6 @@ registerStructuralTransformHandler('split', (current, lastKey, result) => {
   }
 });
 
-// Register structural transform handler for 'stringToObject'
-registerStructuralTransformHandler('stringToObject', (current, lastKey, result) => {
-  if (!result.object) return;
-
-  // Create multiple properties from the object
-  Object.entries(result.object).forEach(([key, value]) => {
-    const newKey = `${lastKey}_${key}`;
-    current[newKey] = value;
-  });
-
-  // Remove source if specified
-  if (result.removeSource) {
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    delete current[lastKey];
-  }
-});
-
 const transforms: Transform[] = [
   {
     name: 'Split',
@@ -167,9 +150,9 @@ const transforms: Transform[] = [
       if (typeof v !== 'string') return v;
       return {
         __structuralChange: true,
-        action: 'stringToObject' as const,
+        action: 'toObject' as const,
         object: {
-          object: { name: v },
+          object: { value: v },
         },
         removeSource: false,
       };

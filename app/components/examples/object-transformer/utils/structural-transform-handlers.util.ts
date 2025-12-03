@@ -52,11 +52,10 @@ export const getRegisteredActions = (): string[] => {
 };
 
 /**
- * Check if an action creates multiple child nodes (like split or arrayToProperties)
+ * Check if an action creates multiple child nodes
  * Used by propagation to determine if structural split handling is needed
  */
 export const isMultiPartAction = (action: string): boolean => {
-  // Actions that create multiple parts from a single value
-  const multiPartActions = ['split', 'arrayToProperties', 'stringToObject'];
-  return multiPartActions.includes(action);
+  // Simply check if a handler is registered for this action
+  return hasStructuralTransformHandler(action);
 };

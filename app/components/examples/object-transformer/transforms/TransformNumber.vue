@@ -101,6 +101,25 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'number',
     fn: (v: any) => (typeof v === 'number' ? String(v) : v),
   },
+  {
+    name: 'To Object',
+    structural: true,
+    if: (node) => node.type === 'number',
+    fn: (v: number) => {
+      // Convert to number if it's a string representation
+      const numValue = typeof v === 'string' ? Number(v) : v;
+      if (typeof numValue !== 'number' || isNaN(numValue)) return v;
+
+      return {
+        __structuralChange: true,
+        action: 'toObject' as const,
+        object: {
+          object: { value: numValue },
+        },
+        removeSource: false,
+      };
+    },
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();

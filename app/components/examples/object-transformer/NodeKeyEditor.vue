@@ -33,6 +33,11 @@ const startEdit = () => {
   }
 };
 
+const canEdit = computed(() => {
+  if (!node.value) return false;
+  return shouldStartEdit(node.value, null);
+});
+
 const updateTempKey = (value: string) => {
   desk.tempKey.value = value;
 };
@@ -56,8 +61,9 @@ const cancelEdit = () => {
   <div
     v-if="node"
     data-slot="node-key-editor"
-    class="cursor-pointer flex items-center gap-2"
-    @click="!isEditing && startEdit()"
+    class="flex items-center gap-2"
+    :class="canEdit ? 'cursor-pointer' : 'cursor-default'"
+    @click="canEdit && !isEditing && startEdit()"
   >
     <Input
       v-if="isEditing"

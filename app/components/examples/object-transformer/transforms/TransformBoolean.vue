@@ -46,6 +46,24 @@ const transforms: Transform[] = [
       return v ? 'On' : 'Off';
     },
   },
+  {
+    name: 'To Object',
+    structural: true,
+    if: (node) => node.type === 'boolean',
+    fn: (v: boolean) => {
+      const boolValue = typeof v === 'string' ? v === 'true' : v;
+      if (typeof boolValue !== 'boolean') return v;
+
+      return {
+        __structuralChange: true,
+        action: 'toObject' as const,
+        object: {
+          object: { value: boolValue },
+        },
+        removeSource: false,
+      };
+    },
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();

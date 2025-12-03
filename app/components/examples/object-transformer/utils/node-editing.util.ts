@@ -8,7 +8,13 @@ export const shouldStartEdit = (
   node: ObjectNodeData,
   editingNode: ObjectNodeData | null
 ): boolean => {
-  return editingNode === null;
+  // Don't allow editing if another node is being edited
+  if (editingNode !== null) return false;
+
+  // Don't allow editing array indices (children of array nodes)
+  if (node.parent?.type === 'array') return false;
+
+  return true;
 };
 
 export const canConfirmEdit = (

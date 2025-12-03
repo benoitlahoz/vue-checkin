@@ -198,14 +198,14 @@ export const createPropagateTransform =
       const intermediateValue = computeIntermediateValue(node);
       const lastResult = lastTransform.fn(intermediateValue, ...(lastTransform.params || []));
 
-      // Check for structural split/arrayToProperties/stringToObject
+      // Check for structural split/arrayToProperties/toObject
       if (
         isStructuralResult(lastResult) &&
         isMultiPartAction(lastResult.action) &&
         (lastResult.parts || lastResult.object) &&
         node.parent
       ) {
-        // For stringToObject, extract keys and values separately
+        // For toObject, extract keys and values separately
         if (lastResult.object) {
           const entries = Object.entries(lastResult.object);
           const keys = entries.map(([k]) => k);

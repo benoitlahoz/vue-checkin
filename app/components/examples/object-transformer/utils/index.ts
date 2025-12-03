@@ -1,3 +1,6 @@
+// Register common structural handlers (must be imported first)
+import './common-structural-handlers.util';
+
 export * from './functional.util';
 export * from './node-builder.util';
 export * from './node-editing.util';

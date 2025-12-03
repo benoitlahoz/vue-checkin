@@ -65,6 +65,23 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'date',
     fn: (v: any) => (v instanceof Date ? v.getDate() : v), // Day of the month
   },
+  {
+    name: 'To Object',
+    structural: true,
+    if: (node) => node.type === 'date',
+    fn: (v: any) => {
+      if (!(v instanceof Date)) return v;
+
+      return {
+        __structuralChange: true,
+        action: 'toObject' as const,
+        object: {
+          object: { value: v },
+        },
+        removeSource: false,
+      };
+    },
+  },
 ];
 
 const { checkIn } = useCheckIn<Transform, ObjectTransformerContext>();
