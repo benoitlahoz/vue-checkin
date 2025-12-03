@@ -110,34 +110,34 @@ const createSplitNodes = (
     // Try to reuse existing node if available
     if (existingNodes && existingNodes[i]) {
       const existing = existingNodes[i];
-      
+
       // Update the existing node instead of creating a new one
       existing.value = part;
       existing.type = typeof part as any;
-      
+
       // firstKey never changes - it's the key at first creation
       // If not set yet, set it now (for backward compatibility)
       if (!existing.firstKey) {
         existing.firstKey = existing.key || key;
       }
-      
+
       // originalKey = what the key WOULD be if not manually renamed
       // Update it to reflect new parent name
       existing.originalKey = key;
-      
+
       // IMPORTANT: Only update key if NOT manually renamed
       // This preserves "firstname", "lastname" etc.
       if (!existing.keyModified) {
         existing.key = key;
       }
-      
+
       // Keep the same id, transforms, splitSourceId, splitIndex, etc.
       return existing;
     }
 
     // Create new node
     const node = buildNodeTree(part, key, parent);
-    
+
     // IMPORTANT: Set originalKey and firstKey on creation
     node.originalKey = key;
     node.firstKey = key; // The very first key, never changes

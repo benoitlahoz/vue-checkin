@@ -395,16 +395,25 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
         );
       }
 
-      // Apply recipe to original data and rebuild tree
-      // The recipe will be automatically recomputed from the new tree via the computed property
+      // Apply recipe to original data to get transformed data
       const transformedData = applyRecipeUtil(
         this.originalData.value,
         recipe,
         this.transforms.value
       );
+
+      // Update originalData with transformed data (this becomes the new baseline)
+      this.originalData.value = transformedData;
+
+      // Rebuild tree from transformed data
+      // In model mode, use first array element, otherwise use the full data
+      const dataForTree = this.mode.value === 'model' && Array.isArray(transformedData)
+        ? transformedData[0]
+        : transformedData;
+
       this.tree.value = buildNodeTree(
-        transformedData,
-        Array.isArray(transformedData) ? 'Array' : 'Object'
+        dataForTree,
+        Array.isArray(dataForTree) ? 'Array' : 'Object'
       );
     },
 

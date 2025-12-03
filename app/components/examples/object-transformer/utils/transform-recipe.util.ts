@@ -36,19 +36,25 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     node: ObjectNodeData,
     originalPath: string[] = [], // Path using originalKey (for transforms/deletions)
     renamePath: string[] = [], // Path using current key (for renames)
-    isRoot: boolean = true
+    isRoot: boolean = true,
+    parentIsArrayRoot: boolean = false // True if parent is the root array
   ) => {
     // Build paths - skip root node key (Object/Array), include all others
     const originalKeyToUse = node.originalKey || node.key;
     const currentKeyToUse = node.key;
 
-    const currentOriginalPath =
-      !isRoot && originalKeyToUse ? [...originalPath, originalKeyToUse] : originalPath;
-    const currentRenamePath =
-      !isRoot && currentKeyToUse ? [...renamePath, currentKeyToUse] : renamePath;
+    // For array items, skip numeric indices in paths (they're templates)
+    const shouldSkipInPath = parentIsArrayRoot && /^\d+$/.test(originalKeyToUse || '');
+
+    const currentOriginalPath = !isRoot && originalKeyToUse && !shouldSkipInPath
+      ? [...originalPath, originalKeyToUse]
+      : originalPath;
+    const currentRenamePath = !isRoot && currentKeyToUse && !shouldSkipInPath
+      ? [...renamePath, currentKeyToUse]
+      : renamePath;
 
     // Track transformations - use originalPath to reference source data
-    if (node.transforms && node.transforms.length > 0 && originalKeyToUse) {
+    if (node.transforms && node.transforms.length > 0 && originalKeyToUse && !shouldSkipInPath) {
       node.transforms.forEach((transform) => {
         steps.push({
           path: [...originalPath, originalKeyToUse], // Use original key path
@@ -64,13 +70,13 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     if (node.deleted) {
       const hasActiveChildren = node.children && node.children.some((child) => !child.deleted);
 
-      if (originalKeyToUse && !hasActiveChildren) {
+      if (originalKeyToUse && !hasActiveChildren && !shouldSkipInPath) {
         deletedPaths.push([...originalPath, originalKeyToUse]);
       }
     }
 
     // Track renamed keys - use renamePath (reflects current renamed structure)
-    if (node.keyModified && node.key && node.firstKey && node.firstKey !== node.key) {
+    if (node.keyModified && node.key && node.firstKey && node.firstKey !== node.key && !shouldSkipInPath) {
       renamedKeys.push({
         path: renamePath, // Parent path using CURRENT keys (after renames)
         oldKey: node.firstKey, // The original key at creation time
@@ -80,8 +86,15 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
 
     // Recurse through children
     if (node.children) {
-      node.children.forEach((child) => {
-        traverse(child, currentOriginalPath, currentRenamePath, false);
+      // For root array, only process first child as template
+      const childrenToProcess = isRoot && node.type === 'array' && node.children.length > 0
+        ? [node.children[0]!]
+        : node.children;
+
+      const isArrayRoot = isRoot && node.type === 'array';
+
+      childrenToProcess.forEach((child) => {
+        traverse(child, currentOriginalPath, currentRenamePath, false, isArrayRoot);
       });
     }
   };
@@ -151,6 +164,32 @@ export const applyRecipe = (
   // Clone the data to avoid mutations - preserve Dates
   const result = deepClone(data);
 
+  // If data is an array but recipe is for a single object,
+  // apply recipe to each element (template mode)
+  if (Array.isArray(result) && recipe.rootType === 'object') {
+    return result.map((item) => applySingleRecipe(item, recipe, availableTransforms));
+  }
+
+  // If root is an array AND recipe is for an array, apply to each element
+  if (recipe.rootType === 'array' && Array.isArray(result)) {
+    return result.map((item) => applySingleRecipe(item, recipe, availableTransforms));
+  }
+
+  // Otherwise, apply recipe to the single object
+  return applySingleRecipe(result, recipe, availableTransforms);
+};
+
+/**
+ * Apply recipe to a single object (not array root)
+ */
+const applySingleRecipe = (
+  data: any,
+  recipe: TransformRecipe,
+  availableTransforms: Transform[]
+): any => {
+  // Clone the data to avoid mutations - preserve Dates
+  const result = deepClone(data);
+
   // IMPORTANT: Apply steps in the ORDER they were recorded in the tree
   // This is critical for structural transforms that create new paths:
   // - "To Object" on name creates name_object with child name_object/name
@@ -199,7 +238,7 @@ export const applyRecipe = (
   // IMPORTANT: Sort renames by path depth (parents before children)
   // This ensures parent keys are renamed before we try to navigate through them to rename children
   const sortedRenames = [...recipe.renamedKeys].sort((a, b) => a.path.length - b.path.length);
-  
+
   sortedRenames.forEach(({ path, oldKey, newKey }) => {
     renameKeyAtPath(result, path, oldKey, newKey);
   });
@@ -436,4 +475,69 @@ const isStructuralTransform = (transform: Transform): boolean => {
   } catch {
     return false;
   }
+};
+
+/**
+ * Apply recipe to tree structure (for import)
+ * This reconstructs the tree with transformations applied
+ */
+export const applyRecipeToTree = (
+  data: any,
+  recipe: TransformRecipe,
+  availableTransforms: Transform[],
+  buildNodeTree: (value: any, key?: string, parent?: any) => ObjectNodeData
+): ObjectNodeData => {
+  // Start with a fresh tree from original data
+  const tree = buildNodeTree(data, Array.isArray(data) ? 'Array' : 'Object');
+
+  // Helper to find node by path
+  const findNodeByPath = (root: ObjectNodeData, path: string[]): ObjectNodeData | null => {
+    if (path.length === 0) return root;
+    
+    let current = root;
+    for (const segment of path) {
+      if (!current.children) return null;
+      const child = current.children.find((c) => c.key === segment || c.originalKey === segment);
+      if (!child) return null;
+      current = child;
+    }
+    return current;
+  };
+
+  // Apply each step's transform to the tree
+  recipe.steps.forEach((step) => {
+    const node = findNodeByPath(tree, step.path);
+    if (!node) return;
+
+    const transform = availableTransforms.find((t) => t.name === step.transformName);
+    if (!transform) return;
+
+    // Add transform to node
+    node.transforms.push({
+      ...transform,
+      params: step.params,
+    });
+  });
+
+  // Mark deleted nodes
+  recipe.deletedPaths.forEach((path) => {
+    const node = findNodeByPath(tree, path);
+    if (node) {
+      node.deleted = true;
+    }
+  });
+
+  // Apply renamed keys
+  recipe.renamedKeys.forEach(({ path, oldKey, newKey }) => {
+    const parentNode = path.length === 0 ? tree : findNodeByPath(tree, path);
+    if (!parentNode || !parentNode.children) return;
+
+    const child = parentNode.children.find((c) => c.key === oldKey || c.firstKey === oldKey);
+    if (child) {
+      child.key = newKey;
+      child.keyModified = true;
+    }
+  });
+
+  return tree;
 };
