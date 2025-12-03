@@ -46,12 +46,14 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     // For array items, skip numeric indices in paths (they're templates)
     const shouldSkipInPath = parentIsArrayRoot && /^\d+$/.test(originalKeyToUse || '');
 
-    const currentOriginalPath = !isRoot && originalKeyToUse && !shouldSkipInPath
-      ? [...originalPath, originalKeyToUse]
-      : originalPath;
-    const currentRenamePath = !isRoot && currentKeyToUse && !shouldSkipInPath
-      ? [...renamePath, currentKeyToUse]
-      : renamePath;
+    const currentOriginalPath =
+      !isRoot && originalKeyToUse && !shouldSkipInPath
+        ? [...originalPath, originalKeyToUse]
+        : originalPath;
+    const currentRenamePath =
+      !isRoot && currentKeyToUse && !shouldSkipInPath
+        ? [...renamePath, currentKeyToUse]
+        : renamePath;
 
     // Track transformations - use originalPath to reference source data
     if (node.transforms && node.transforms.length > 0 && originalKeyToUse && !shouldSkipInPath) {
@@ -76,7 +78,13 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     }
 
     // Track renamed keys - use renamePath (reflects current renamed structure)
-    if (node.keyModified && node.key && node.firstKey && node.firstKey !== node.key && !shouldSkipInPath) {
+    if (
+      node.keyModified &&
+      node.key &&
+      node.firstKey &&
+      node.firstKey !== node.key &&
+      !shouldSkipInPath
+    ) {
       renamedKeys.push({
         path: renamePath, // Parent path using CURRENT keys (after renames)
         oldKey: node.firstKey, // The original key at creation time
@@ -87,9 +95,10 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     // Recurse through children
     if (node.children) {
       // For root array, only process first child as template
-      const childrenToProcess = isRoot && node.type === 'array' && node.children.length > 0
-        ? [node.children[0]!]
-        : node.children;
+      const childrenToProcess =
+        isRoot && node.type === 'array' && node.children.length > 0
+          ? [node.children[0]!]
+          : node.children;
 
       const isArrayRoot = isRoot && node.type === 'array';
 
@@ -493,7 +502,7 @@ export const applyRecipeToTree = (
   // Helper to find node by path
   const findNodeByPath = (root: ObjectNodeData, path: string[]): ObjectNodeData | null => {
     if (path.length === 0) return root;
-    
+
     let current = root;
     for (const segment of path) {
       if (!current.children) return null;

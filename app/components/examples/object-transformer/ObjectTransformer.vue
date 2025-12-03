@@ -407,14 +407,12 @@ const { desk } = createDesk(ObjectTransformerDeskKey, {
 
       // Rebuild tree from transformed data
       // In model mode, use first array element, otherwise use the full data
-      const dataForTree = this.mode.value === 'model' && Array.isArray(transformedData)
-        ? transformedData[0]
-        : transformedData;
+      const dataForTree =
+        this.mode.value === 'model' && Array.isArray(transformedData)
+          ? transformedData[0]
+          : transformedData;
 
-      this.tree.value = buildNodeTree(
-        dataForTree,
-        Array.isArray(dataForTree) ? 'Array' : 'Object'
-      );
+      this.tree.value = buildNodeTree(dataForTree, Array.isArray(dataForTree) ? 'Array' : 'Object');
     },
 
     // Model mode
