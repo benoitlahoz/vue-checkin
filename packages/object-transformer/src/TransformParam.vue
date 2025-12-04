@@ -89,7 +89,7 @@ function handleKeydown(event: KeyboardEvent) {
       :placeholder="config?.label"
       class="transform-param-input"
       @keydown="handleKeydown"
-      @input="(e) => handleInput((e.target as HTMLInputElement).value, true)"
+      @input="(e) => handleInput(Number((e.target as HTMLInputElement).value), true)"
     />
 
     <div v-else-if="config?.type === 'boolean'" class="transform-param-checkbox">
@@ -111,6 +111,7 @@ function handleKeydown(event: KeyboardEvent) {
 /* TransformParam styles - using ObjectNode variables */
 .transform-param-input {
   height: 1.5rem;
+  width: 100%;
   padding: 0 0.5rem;
   font-size: 0.75rem;
   line-height: 1rem;
@@ -122,7 +123,7 @@ function handleKeydown(event: KeyboardEvent) {
   transition-property: border-color, box-shadow;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-  min-width: 80px;
+  box-sizing: border-box;
 }
 
 .transform-param-input:focus {

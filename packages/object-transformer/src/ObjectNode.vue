@@ -221,7 +221,8 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 .object-node-grid:hover .object-node-main-row,
 .object-node-grid:hover .object-node-main-right,
 .object-node-grid:hover .transform-spacer,
-.object-node-grid:hover .transform-item-content {
+.object-node-grid:hover .transform-item-content,
+.object-node-grid:hover .transform-params-content {
   background-color: oklch(from var(--object-node-primary) l c h / 0.1);
 }
 
@@ -338,6 +339,14 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   visibility: hidden;
   width: 0;
   height: 0;
+}
+
+/* Main params - paramètres de la première transformation sur la ligne principale */
+.object-node-main-params {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 /* Transform select positioning */

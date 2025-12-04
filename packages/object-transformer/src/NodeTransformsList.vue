@@ -39,68 +39,65 @@ const getParamConfig = (transformName: string, paramIndex: number) => {
 
 const handleParamChange = () => {
   if (!node.value) return;
+  // Force re-computation by triggering propagation
   desk!.propagateTransform(node.value);
-  if (node.value.parent) desk!.propagateTransform(node.value.parent);
+  if (node.value.parent) {
+    desk!.propagateTransform(node.value.parent);
+  }
 };
 </script>
 
 <template>
   <template v-if="node?.transforms.length">
-    <!-- Chaque transformation = wrapper avec display:contents contenant 2 éléments de grille -->
-    <div
-      v-for="(t, index) in node.transforms"
-      :key="`${t.name}-${index}`"
-      class="transform-row-wrapper"
-    >
-      <!-- Colonne 1: Vide -->
-      <div class="transform-spacer"></div>
+    <!-- Chaque transformation = 1 ou 2 wrappers (ligne params optionnelle + ligne transform) -->
+    <template v-for="(t, index) in node.transforms" :key="`${t.name}-${index}`">
+      <!-- Ligne de paramètres (seulement si la transformation a des params) -->
+      <div v-if="t.params" class="transform-row-wrapper">
+        <!-- Colonne 1: Vide -->
+        <div class="transform-spacer"></div>
 
-      <!-- Colonne 2: Valeur transformée + params + select -->
-      <div class="transform-item-content">
-        <!-- Valeur transformée -->
-        <span class="transform-value">
-          {{ formatStepValue(index) }}
-        </span>
-
-        <!-- Paramètres + Select suivant (si pas structurel) -->
-        <template v-if="!isStructuralTransform(index)">
-          <div class="transform-controls">
-            <!-- Paramètres -->
-            <div v-if="t.params" class="transform-params">
-              <TransformerParamInput
-                v-for="(_p, pi) in t.params"
-                :key="`param-${index}-${pi}`"
-                v-model="t.params[pi]"
-                :config="getParamConfig(t.name, pi)"
-                @change="handleParamChange()"
-              />
-            </div>
-
-            <!-- Select suivant -->
-            <TransformSelect
-              v-if="transforms.length > 1"
-              :key="`select-${index + 1}`"
-              :node-id="nodeId"
-              :step-index="index"
-              remove-label="This & following"
-            />
-          </div>
-        </template>
-
-        <!-- Si structurel, juste les params -->
-        <template v-else>
-          <div v-if="t.params" class="transform-params">
+        <!-- Colonne 2: Paramètres avec labels -->
+        <div class="transform-params-content">
+          <div
+            v-for="(_p, pi) in t.params"
+            :key="`param-${index}-${pi}`"
+            class="transform-param-item"
+          >
+            <label class="transform-param-label">
+              {{ getParamConfig(t.name, pi)?.label || `Param ${pi + 1}` }}
+            </label>
             <TransformerParamInput
-              v-for="(_p, pi) in t.params"
-              :key="`param-${index}-${pi}`"
               v-model="t.params[pi]"
               :config="getParamConfig(t.name, pi)"
               @change="handleParamChange()"
             />
           </div>
-        </template>
+        </div>
       </div>
-    </div>
+
+      <!-- Ligne de transformation : valeur + select -->
+      <div class="transform-row-wrapper">
+        <!-- Colonne 1: Vide -->
+        <div class="transform-spacer"></div>
+
+        <!-- Colonne 2: Valeur transformée + select suivant -->
+        <div class="transform-item-content">
+          <!-- Valeur transformée -->
+          <span class="transform-value">
+            {{ formatStepValue(index) }}
+          </span>
+
+          <!-- Select suivant (si pas structurel et pas dernier) -->
+          <TransformSelect
+            v-if="!isStructuralTransform(index) && transforms.length > 1"
+            :key="`select-${index + 1}`"
+            :node-id="nodeId"
+            :step-index="index"
+            remove-label="This & following"
+          />
+        </div>
+      </div>
+    </template>
   </template>
 </template>
 
@@ -140,6 +137,7 @@ const handleParamChange = () => {
   grid-column: 2;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--object-node-row-gap);
   padding-top: var(--object-node-row-my);
   padding-bottom: var(--object-node-row-my);
@@ -149,6 +147,33 @@ const handleParamChange = () => {
   transition-duration: 150ms;
 }
 
+.transform-params-content {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: var(--object-node-row-my);
+  padding-bottom: var(--object-node-row-my);
+  padding-right: 0.375rem;
+  padding-left: 0.5rem;
+}
+
+.transform-param-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 120px;
+}
+
+.transform-param-label {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+  color: var(--object-node-muted-foreground);
+  font-weight: 500;
+  text-align: right;
+}
+
 .transform-value {
   color: var(--object-node-muted-foreground);
   font-size: 0.75rem;
@@ -156,20 +181,6 @@ const handleParamChange = () => {
   transition-property: color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-}
-
-.transform-controls {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.75rem;
-  margin-left: auto;
-}
-
-.transform-params {
-  display: flex;
-  flex-direction: row;
-  gap: 0.75rem;
 }
 
 /* Desktop styles - simple flex layout in grid column */
