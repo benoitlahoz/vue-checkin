@@ -7,7 +7,6 @@ import { ObjectTransformerDeskKey, TransformSelect, filterTransformsByType, getN
 
 interface Props {
   nodeId: string;
-  paddingLeft: string;
   class?: string;
 }
 
@@ -46,50 +45,24 @@ const handleParamChange = () => {
 </script>
 
 <template>
-  <div v-if="node?.transforms.length" data-slot="node-transforms-list" :class="props.class">
-    <div class="md:overflow-x-auto">
-      <div v-for="(t, index) in node.transforms" :key="`${t.name}-${index}`" class="my-2">
-        <div
-          class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-2 md:p-0 border md:border-0 rounded-md md:rounded-none bg-card md:bg-transparent transition-all group hover:bg-accent/30 min-w-fit"
-        >
-          <!-- Valeur transformée -->
-          <span
-            class="text-muted-foreground text-xs"
-            :style="{ paddingLeft: paddingLeft }"
-            :class="{ 'max-md:pl-0!': true }"
-          >
-            {{ formatStepValue(index) }}
-          </span>
+  <template v-if="node?.transforms.length">
+    <!-- Chaque transformation = 2 éléments de grille (col 1 vide, col 2 contenu) -->
+    <template v-for="(t, index) in node.transforms" :key="`${t.name}-${index}`">
+      <!-- Colonne 1: Vide -->
+      <div class="transform-spacer"></div>
 
-          <!-- Paramètres + Select suivant (si pas structurel) -->
-          <template v-if="!isStructuralTransform(index)">
-            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-              <!-- Paramètres -->
-              <div v-if="t.params" class="flex flex-col md:flex-row gap-2 md:gap-3">
-                <TransformerParamInput
-                  v-for="(_p, pi) in t.params"
-                  :key="`param-${index}-${pi}`"
-                  v-model="t.params[pi]"
-                  :config="getParamConfig(t.name, pi)"
-                  @change="handleParamChange()"
-                />
-              </div>
+      <!-- Colonne 2: Valeur transformée + params + select -->
+      <div class="transform-item-content">
+        <!-- Valeur transformée -->
+        <span class="transform-value">
+          {{ formatStepValue(index) }}
+        </span>
 
-              <!-- Select suivant -->
-              <TransformSelect
-                v-if="transforms.length > 1"
-                :key="`select-${index + 1}`"
-                :node-id="nodeId"
-                :step-index="index"
-                remove-label="This & following"
-                class="w-full md:w-auto"
-              />
-            </div>
-          </template>
-
-          <!-- Si structurel, juste les params -->
-          <template v-else>
-            <div v-if="t.params" class="flex flex-col md:flex-row gap-2 md:gap-3">
+        <!-- Paramètres + Select suivant (si pas structurel) -->
+        <template v-if="!isStructuralTransform(index)">
+          <div class="transform-controls">
+            <!-- Paramètres -->
+            <div v-if="t.params" class="transform-params">
               <TransformerParamInput
                 v-for="(_p, pi) in t.params"
                 :key="`param-${index}-${pi}`"
@@ -98,9 +71,122 @@ const handleParamChange = () => {
                 @change="handleParamChange()"
               />
             </div>
-          </template>
-        </div>
+
+            <!-- Select suivant -->
+            <TransformSelect
+              v-if="transforms.length > 1"
+              :key="`select-${index + 1}`"
+              :node-id="nodeId"
+              :step-index="index"
+              remove-label="This & following"
+            />
+          </div>
+        </template>
+
+        <!-- Si structurel, juste les params -->
+        <template v-else>
+          <div v-if="t.params" class="transform-params">
+            <TransformerParamInput
+              v-for="(_p, pi) in t.params"
+              :key="`param-${index}-${pi}`"
+              v-model="t.params[pi]"
+              :config="getParamConfig(t.name, pi)"
+              @change="handleParamChange()"
+            />
+          </div>
+        </template>
       </div>
-    </div>
-  </div>
+    </template>
+  </template>
 </template>
+
+<style>
+/* NodeTransformsList styles - using ObjectNode variables */
+.transforms-list-wrapper {
+  overflow-x: auto;
+}
+
+.transform-item {
+  margin-top: var(--object-node-row-my);
+  margin-bottom: var(--object-node-row-my);
+}
+
+.transform-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--object-node-muted);
+  border-radius: 0.375rem;
+  background-color: var(--object-node-accent);
+  transition-property: background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  min-width: fit-content;
+}
+
+.transform-item-content:hover {
+  background-color: oklch(from var(--object-node-accent) calc(l * 0.98) c h);
+}
+
+.transform-value {
+  color: var(--object-node-muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.transform-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transform-params {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Desktop styles - simple flex layout in grid column */
+@media (min-width: 768px) {
+  .transform-item-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--object-node-row-gap);
+    min-height: 1.5rem;
+    padding-top: var(--object-node-row-my);
+    padding-bottom: var(--object-node-row-my);
+    border-left-width: 2px;
+    border-left-color: transparent;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 0;
+    background-color: transparent;
+  }
+
+  .transform-item-content:hover {
+    background-color: oklch(from var(--object-node-primary) l c h / 0.1);
+    border-left-color: var(--object-node-primary);
+  }
+
+  .transform-value {
+    color: var(--object-node-muted-foreground);
+    flex: 0 0 auto;
+  }
+
+  .transform-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+  }
+
+  .transform-params {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+}
+</style>

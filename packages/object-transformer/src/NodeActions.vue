@@ -97,7 +97,8 @@ const toggleDelete = () => {
   color: var(--object-node-destructive, #ef4444);
 }
 
-.node-actions-button:has(.node-actions-icon:not(.node-actions-icon-delete)):hover .node-actions-icon {
+.node-actions-button:has(.node-actions-icon:not(.node-actions-icon-delete)):hover
+  .node-actions-icon {
   color: var(--object-node-primary);
 }
 </style>

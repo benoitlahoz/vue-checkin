@@ -65,33 +65,6 @@ onClickOutside(inputElement, () => {
   }
 });
 
-// Layout helpers
-const valueElement = ref<HTMLElement | null>(null);
-const firstChildElement = ref<HTMLElement | null>(null);
-const transformsPaddingLeft = computed(() => {
-  // Pour les primitives, utiliser valueElement
-  if (isPrimitive.value && valueElement.value) {
-    const rect = valueElement.value.getBoundingClientRect();
-    const containerEl = valueElement.value.closest('.text-xs');
-    if (!containerEl) return '0px';
-    const containerRect = containerEl.getBoundingClientRect();
-    const offset = rect.left - containerRect.left;
-    return `${offset}px`;
-  }
-
-  // For non-primitives, use firstChildElement
-  if (!isPrimitive.value && firstChildElement.value) {
-    const rect = firstChildElement.value.getBoundingClientRect();
-    const containerEl = firstChildElement.value.closest('.object-node-root');
-    if (!containerEl) return '0px';
-    const containerRect = containerEl.getBoundingClientRect();
-    const offset = rect.left - containerRect.left;
-    return `${offset}px`;
-  }
-
-  return '0px';
-});
-
 // Utilities from desk
 const getChildKey = (child: ObjectNodeData, index: number) =>
   deskWithContext.generateChildKey(child, index);
@@ -107,31 +80,24 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   >
     <!-- Wrapper with horizontal scroll -->
     <div class="object-node-scroll-wrapper">
+      <!-- Grille 2 colonnes: gauche (chevron+actions+key) | droite (value+transforms) -->
       <div
-        :class="
-          cn('object-node-row', {
-            'object-node-row-with-chevron': tree.children?.length && tree.parent,
-          })
-        "
+        class="object-node-grid"
+        :class="{
+          'object-node-row-with-chevron': tree.children?.length && tree.parent,
+        }"
         @mouseenter="isHovered = true"
         @mouseleave="isHovered = false"
       >
-        <!-- Content (with hover) -->
-        <div
-          :class="
-            cn('object-node-row-content', {
-              'object-node-row-content-hoverable': tree.parent,
-            })
-          "
-        >
-          <!-- Left part: chevron + key + button + value -->
+        <!-- Colonne 1, Ligne 1: Chevron + Actions + Key -->
+        <div class="object-node-row">
           <div class="object-node-left-section">
             <!-- Chevron space (always reserved) -->
             <div class="object-node-chevron">
               <NodeOpen :node-id="nodeId" />
             </div>
 
-            <!-- Key + Delete/Restore + Value container -->
+            <!-- Key + Delete/Restore container -->
             <div class="object-node-content-section">
               <!-- Delete/Restore (shown on row hover) -->
               <div
@@ -145,21 +111,27 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
               <div ref="inputElement">
                 <NodeKeyEditor v-model:input-ref="inputFieldElement" :node-id="nodeId" />
               </div>
-
-              <!-- Value (read-only) -->
-              <span v-if="tree.type === 'array'" ref="valueElement" class="object-node-value-array">
-                Array({{ tree.children?.length || 0 }})
-              </span>
-              <span v-else-if="tree.type !== 'object'" ref="valueElement" class="object-node-value">
-                {{ formatValue(tree.value, tree.type) }}
-              </span>
-              <span v-else ref="valueElement" class="object-node-value-hidden" />
             </div>
           </div>
+        </div>
 
-          <!-- Right part: transformation select -->
+        <!-- Colonne 2, Ligne 1: Value + Transform select -->
+        <div class="object-node-right-section">
+          <!-- Value (read-only) -->
+          <span v-if="tree.type === 'array'" class="object-node-value-array">
+            Array({{ tree.children?.length || 0 }})
+          </span>
+          <span v-else-if="tree.type !== 'object'" class="object-node-value">
+            {{ formatValue(tree.value, tree.type) }}
+          </span>
+          <span v-else class="object-node-value-hidden" />
+
+          <!-- Transformation select -->
           <TransformSelect v-if="tree.parent" :node-id="nodeId" class="object-node-transform" />
         </div>
+
+        <!-- Lignes suivantes: Transformations (générées par NodeTransformsList) -->
+        <NodeTransformsList v-if="tree.transforms.length" :node-id="nodeId" />
       </div>
     </div>
 
@@ -175,13 +147,6 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
     <Separator
       v-if="tree.children?.length && tree.transforms.length"
       class="object-node-separator"
-    />
-
-    <!-- Transformations + parameters -->
-    <NodeTransformsList
-      v-if="tree.transforms.length"
-      :node-id="nodeId"
-      :padding-left="transformsPaddingLeft"
     />
   </div>
 </template>
@@ -205,6 +170,14 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   --object-node-input-bg: var(--object-node-accent);
   --object-node-input-ring: var(--object-node-accent-foreground);
   --object-node-input-ring-offset: var(--object-node-accent);
+
+  /* Layout offsets - pour alignement des transformations */
+  --object-node-action-width: 1rem; /* largeur du bouton NodeActions */
+  --object-node-action-margin: 0.375rem; /* margin-right du bouton NodeActions */
+  --object-node-value-offset: calc(
+    var(--object-node-indent-width) + var(--object-node-row-gap) + var(--object-node-action-width) +
+      var(--object-node-action-margin) + var(--object-node-row-gap)
+  ); /* offset total pour aligner avec la valeur: chevron + gap + bouton + margin + gap */
 }
 
 :root.dark {
@@ -238,13 +211,28 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   overflow-x: auto;
 }
 
-/* Indentation wrapper */
-.object-node-indent {
-  margin-left: var(--object-node-indent-width);
+/* Main grid: 2 columns × dynamic rows */
+.object-node-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0;
 }
 
-/* Row container */
+.object-node-grid:hover .object-node-row,
+.object-node-grid:hover .object-node-right-section {
+  background-color: oklch(from var(--object-node-primary) l c h / 0.1);
+}
+
+.object-node-grid:hover .object-node-row {
+  border-left: 2px solid var(--object-node-primary);
+}
+
+.object-node-grid.object-node-row-with-chevron:hover .object-node-row {
+  padding-left: 0.625rem;
+}
+
 .object-node-row {
+  grid-column: 1;
   display: flex;
   align-items: center;
   gap: var(--object-node-row-gap);
@@ -261,14 +249,35 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   transition-duration: 150ms;
 }
 
-.object-node-row:hover {
-  background-color: oklch(from var(--object-node-primary) l c h / 0.1);
-  border-left-color: var(--object-node-primary);
+.object-node-right-section {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--object-node-row-gap);
+  padding-top: var(--object-node-row-my);
+  padding-bottom: var(--object-node-row-my);
+  padding-right: 0.375rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-.object-node-row-with-chevron:hover {
-  padding-left: 0.625rem;
+.object-node-spacer {
+  grid-column: 1;
 }
+
+.object-node-transforms-list {
+  /* NodeTransformsList will create grid items for column 1 & 2 */
+  display: contents;
+}
+
+/* Indentation wrapper */
+.object-node-indent {
+  margin-left: var(--object-node-indent-width);
+}
+
+/* Row container - now flex inside grid */
 
 /* Left section: chevron + content */
 .object-node-left-section {
@@ -323,18 +332,14 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 }
 
 .object-node-value-hidden {
-  display: none;
+  visibility: hidden;
+  width: 0;
+  height: 0;
 }
 
 /* Transform select positioning */
 .object-node-transform {
   flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .object-node-transform {
-    margin-left: auto;
-  }
 }
 
 /* Separator */

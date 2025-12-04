@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Input } from './components/ui/input';
-import { Checkbox } from './components/ui/checkbox';
 
 export interface ParamConfig {
   type: 'text' | 'number' | 'boolean';
@@ -79,29 +77,99 @@ function handleKeydown(event: KeyboardEvent) {
 
 <template>
   <div data-slot="transform-param">
-    <Input
+    <input
       v-if="config?.type === 'text'"
       v-model="localValue"
       :placeholder="config?.label"
-      class="h-6 px-2 py-0"
-      style="font-size: var(--text-xs)"
+      class="transform-param-input"
       @keydown="handleKeydown"
       @blur="handleBlur"
     />
 
-    <Input
+    <input
       v-else-if="config?.type === 'number'"
       v-model="localValue"
       type="number"
       :placeholder="config?.label"
-      class="h-6 px-2 py-0 text-xs"
+      class="transform-param-input"
       @keydown="handleKeydown"
       @change="handleNumberChange"
     />
 
-    <div v-else-if="config?.type === 'boolean'" class="flex items-center gap-1">
-      <Checkbox :checked="localValue" @update:checked="(v: boolean) => handleInput(v, true)" />
-      <span class="text-xs">{{ localValue ? 'true' : 'false' }}</span>
+    <div v-else-if="config?.type === 'boolean'" class="transform-param-checkbox">
+      <input
+        :id="`checkbox-${config?.label}`"
+        type="checkbox"
+        :checked="localValue"
+        class="transform-param-checkbox-input"
+        @change="(e) => handleInput((e.target as HTMLInputElement).checked, true)"
+      />
+      <label :for="`checkbox-${config?.label}`" class="transform-param-checkbox-label">
+        {{ localValue ? 'true' : 'false' }}
+      </label>
     </div>
   </div>
 </template>
+
+<style>
+/* TransformParam styles - using ObjectNode variables */
+.transform-param-input {
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border: 1px solid var(--object-node-input-border);
+  border-radius: 0.375rem;
+  background-color: var(--object-node-input-bg);
+  color: inherit;
+  outline: none;
+  transition-property: border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  min-width: 80px;
+}
+
+.transform-param-input:focus {
+  border-color: var(--object-node-input-ring);
+  box-shadow: 0 0 0 3px oklch(from var(--object-node-input-ring) l c h / 0.1);
+}
+
+.transform-param-input::placeholder {
+  color: var(--object-node-muted-foreground);
+}
+
+.transform-param-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.transform-param-checkbox-input {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--object-node-input-border);
+  border-radius: 0.25rem;
+  background-color: var(--object-node-input-bg);
+  cursor: pointer;
+  transition-property: border-color, background-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transform-param-checkbox-input:checked {
+  background-color: var(--object-node-primary);
+  border-color: var(--object-node-primary);
+}
+
+.transform-param-checkbox-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px oklch(from var(--object-node-input-ring) l c h / 0.1);
+}
+
+.transform-param-checkbox-label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+</style>
