@@ -36,6 +36,9 @@ export default defineNuxtConfig({
     'vue-airport-devtools/nuxt': fileURLToPath(
       new URL('./packages/devtools/src/nuxt-module.ts', import.meta.url)
     ),
+    '@vue-airport/object-transformer': fileURLToPath(
+      new URL('./packages/object-transformer/src', import.meta.url)
+    ),
   },
   vite: {
     resolve: {

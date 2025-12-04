@@ -1,36 +1,53 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useCheckIn } from 'vue-airport';
+import type {
+  TransformerMode,
+  ObjectTransformerContext,
+  ObjectTransformerDesk,
+} from '@vue-airport/object-transformer';
 import { Button } from '@/components/ui/button';
-import { type ObjectNodeData, type ObjectTransformerContext, ObjectTransformerDeskKey } from '.';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Field, FieldLabel } from '@/components/ui/field';
 
-const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
-const { desk } = checkIn(ObjectTransformerDeskKey);
-
-if (!desk) {
-  throw new Error('ObjectTransformer desk not found');
+interface Props {
+  desk: ObjectTransformerDesk;
+  class?: string;
 }
 
-const mode = computed(() => desk.mode.value);
-const templateIndex = computed(() => desk.templateIndex.value);
-const isArray = computed(() => Array.isArray(desk.originalData.value));
-const arrayLength = computed(() => (isArray.value ? (desk.originalData.value as any[]).length : 0));
+const props = withDefaults(defineProps<Props>(), {
+  class: '',
+});
 
-const setMode = (newMode: 'object' | 'model') => {
-  desk.setMode(newMode);
+const desk = computed(() => props.desk as ObjectTransformerContext | undefined);
+
+const mode = computed(() => desk.value?.mode.value);
+const templateIndex = computed(() => desk.value?.templateIndex.value);
+const isArray = computed(() => Array.isArray(desk.value?.originalData.value));
+const arrayLength = computed(() =>
+  isArray.value ? (desk.value?.originalData.value as any[]).length : 0
+);
+
+const setMode = (newMode: TransformerMode) => {
+  desk.value?.setMode(newMode);
 };
 
 const setTemplateIndex = (index: number) => {
-  desk.setTemplateIndex(index);
+  desk.value?.setTemplateIndex(index);
 };
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 p-2 border rounded-md bg-muted/30">
+  <div class="flex gap-4 p-2 border rounded-md bg-muted/30" :class="props.class">
     <!-- Mode Toggle -->
-    <div class="flex gap-2 items-center">
-      <span class="text-xs font-semibold text-muted-foreground">Mode:</span>
-      <div class="flex gap-1">
+    <Field>
+      <FieldLabel class="text-sm">Mode</FieldLabel>
+      <div class="flex gap-4">
         <Button
           size="sm"
           :variant="mode === 'object' ? 'default' : 'outline'"
@@ -47,26 +64,24 @@ const setTemplateIndex = (index: number) => {
           Model
         </Button>
       </div>
-    </div>
+    </Field>
 
     <!-- Template Selector (only in model mode with array) -->
-    <div v-if="mode === 'model' && isArray" class="flex gap-2 items-center">
-      <span class="text-xs font-semibold text-muted-foreground">Template:</span>
-      <select
-        :value="templateIndex"
-        class="text-xs px-2 py-1 border rounded"
-        @change="(e) => setTemplateIndex(Number((e.target as HTMLSelectElement).value))"
+    <Field v-if="mode === 'model' && isArray">
+      <FieldLabel class="text-sm">Template</FieldLabel>
+      <Select
+        :model-value="String(templateIndex)"
+        @update:model-value="(val) => setTemplateIndex(Number(val))"
       >
-        <option v-for="i in arrayLength" :key="i - 1" :value="i - 1">Object {{ i - 1 }}</option>
-      </select>
-    </div>
-
-    <!-- Info -->
-    <div class="text-xs text-muted-foreground">
-      <span v-if="mode === 'object'"> Transform complete data structure </span>
-      <span v-else-if="mode === 'model'">
-        Define transformations on template (Object {{ templateIndex }})
-      </span>
-    </div>
+        <SelectTrigger class="w-32 text-xs h-8">
+          <SelectValue placeholder="Select template" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="i in arrayLength" :key="i - 1" :value="String(i - 1)">
+            Object {{ i - 1 }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </Field>
   </div>
 </template>

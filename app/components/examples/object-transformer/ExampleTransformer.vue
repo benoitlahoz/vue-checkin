@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useCheckIn } from 'vue-airport';
+import { computed, ref } from 'vue';
 import {
   ObjectTransformer,
   ObjectPreview,
   RecipePreview,
   ObjectNode,
-  ModeToggle,
   TransformString,
   TransformNumber,
   TransformDate,
   TransformBoolean,
   TransformObject,
   TransformArray,
-  ObjectTransformerDeskKey,
-  type ObjectNodeData,
   type ObjectTransformerContext,
-} from '.';
+} from '@vue-airport/object-transformer';
+import ModeToggle from './ModeToggle.vue';
 import {
   Accordion,
   AccordionContent,
@@ -24,11 +21,12 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
-const { checkIn } = useCheckIn<ObjectNodeData, ObjectTransformerContext>();
-const { desk } = checkIn(ObjectTransformerDeskKey);
+// Reference to ObjectTransformer component instance
+const transformerRef = ref<InstanceType<typeof ObjectTransformer>>();
 
-// Recipe stats for display
+// Recipe stats for display - access desk through component ref
 const stats = computed(() => {
+  const desk = transformerRef.value?.desk as ObjectTransformerContext | undefined;
   if (!desk) return null;
   const recipe = desk.buildRecipe();
   return {
@@ -87,7 +85,12 @@ const data = [
 
 <template>
   <div class="space-y-4 max-h-196 overflow-auto">
-    <ObjectTransformer :data="data" class="flex md:flex-row w-full">
+    <ObjectTransformer
+      ref="transformerRef"
+      v-slot="{ desk }"
+      :data="data"
+      class="flex md:flex-row w-full"
+    >
       <TransformString />
       <TransformNumber />
       <TransformDate />
@@ -96,7 +99,7 @@ const data = [
       <TransformArray />
 
       <div class="flex-1 flex flex-col gap-2">
-        <ModeToggle />
+        <ModeToggle :desk="desk" />
         <ObjectNode />
       </div>
 

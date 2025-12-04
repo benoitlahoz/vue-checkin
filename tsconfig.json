@@ -13,7 +13,9 @@
       "vue-airport": ["./packages/core/src"],
       "vue-airport/*": ["./packages/core/src/*"],
       "vue-airport-devtools": ["./packages/devtools/src"],
-      "vue-airport-devtools/*": ["./packages/devtools/src/*"]
+      "vue-airport-devtools/*": ["./packages/devtools/src/*"],
+      "@vue-airport/object-transformer": ["./packages/object-transformer/src"],
+      "@vue-airport/object-transformer/*": ["./packages/object-transformer/src/*"]
     }
   }
 }

@@ -1,0 +1,45 @@
+import type { Config } from 'tailwindcss';
+
+export default {
+  content: [
+    './app/components/**/*.{js,vue,ts}',
+    './app/layouts/**/*.vue',
+    './app/pages/**/*.vue',
+    './content/**/*.md',
+    './packages/object-transformer/src/**/*.{js,vue,ts}',
+  ],
+  safelist: [
+    // Force include all common utility classes
+    { pattern: /^(flex|grid|block|inline|hidden)$/ },
+    { pattern: /^(relative|absolute|fixed|sticky)$/ },
+    { pattern: /^gap-/ },
+    { pattern: /^p-/ },
+    { pattern: /^m-/ },
+    { pattern: /^w-/ },
+    { pattern: /^h-/ },
+    { pattern: /^text-/ },
+    { pattern: /^bg-/ },
+    { pattern: /^border-/ },
+    { pattern: /^rounded-/ },
+    { pattern: /^opacity-/ },
+    { pattern: /^z-/ },
+    { pattern: /^overflow-/ },
+    { pattern: /^transition-/ },
+    { pattern: /^duration-/ },
+    { pattern: /^cursor-/ },
+    { pattern: /^(group|hover|focus):/ },
+    { pattern: /^md:/ },
+    { pattern: /^max-md:/ },
+    // Specific important classes
+    'group',
+    'flex-1',
+    'flex-col',
+    'items-center',
+    'justify-between',
+    'min-h-0',
+    'min-w-fit',
+    'shrink-0',
+    'whitespace-pre-wrap',
+    'italic',
+  ],
+} as Config;
