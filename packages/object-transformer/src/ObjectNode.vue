@@ -192,10 +192,10 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 :root {
   --object-node-indent-width: 0.85rem;
   --object-node-row-gap: 0.5rem;
-  --object-node-row-my: 0.25rem;
+  --object-node-row-my: 0.5rem;
   --object-node-primary: oklch(0.6723 0.1606 244.9955);
   --object-node-primary-foreground: oklch(1 0 0);
-  --object-node-muted: oklch(0.209 0 0);
+  --object-node-muted: oklch(0.8422 0.0039 247.8581);
   --object-node-muted-foreground: oklch(0.5637 0.0078 247.9662);
   --object-node-accent: oklch(0.9392 0.0166 250.8453);
   --object-node-accent-foreground: oklch(0.6723 0.1606 244.9955);
@@ -204,8 +204,8 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 :root.dark {
   --object-node-primary: oklch(0.6692 0.1607 245.011);
   --object-node-primary-foreground: oklch(1 0 0);
-  --object-node-muted: oklch(0.9222 0.0013 286.3737);
-  --object-node-muted-foreground: oklch(0.75 0.0128 248.5103);
+  --object-node-muted: oklch(0.3628 0.0138 256.8435);
+  --object-node-muted-foreground: oklch(0.65 0.0128 248.5103);
   --object-node-accent: oklch(0.1928 0.0331 242.5459);
   --object-node-accent-foreground: oklch(0.6692 0.1607 245.011);
 }
@@ -235,15 +235,13 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 .object-node-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--object-node-row-gap);
-  margin-top: var(--object-node-row-my);
-  margin-bottom: var(--object-node-row-my);
   min-width: fit-content;
-}
-
-.object-node-row-with-chevron {
+  min-height: 1.5rem;
+  padding-top: var(--object-node-row-my);
+  padding-bottom: var(--object-node-row-my);
   padding-left: 0.375rem;
+  padding-right: 0.375rem;
   border-left-width: 2px;
   border-left-color: transparent;
   transition-property: all;
@@ -251,9 +249,12 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   transition-duration: 150ms;
 }
 
-.object-node-row-with-chevron:hover {
+.object-node-row:hover {
   background-color: oklch(from var(--object-node-primary) l c h / 0.1);
   border-left-color: var(--object-node-primary);
+}
+
+.object-node-row-with-chevron:hover {
   padding-left: 0.625rem;
 }
 
@@ -262,6 +263,7 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   display: flex;
   align-items: center;
   gap: var(--object-node-row-gap);
+  flex: 1;
 }
 
 /* Chevron container (always reserves space) */
@@ -278,6 +280,7 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   display: flex;
   align-items: center;
   gap: var(--object-node-row-gap);
+  flex: 1;
 }
 
 /* Action button container with extra margin */
@@ -297,28 +300,13 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
   transition-duration: 150ms;
 }
 
-.object-node-row:hover .object-node-row-content-hoverable:not(.object-node-row-with-chevron *) {
-  background-color: oklch(from var(--object-node-primary) l c h / 0.1);
-}
-
-.object-node-row:not(.object-node-row-with-chevron) .object-node-row-content {
-  padding-left: 0.375rem;
-  border-left-width: 2px;
-  border-left-color: transparent;
-}
-
-.object-node-row:not(.object-node-row-with-chevron):hover .object-node-row-content-hoverable {
-  border-left-color: var(--object-node-primary);
-  padding-left: 0.625rem;
-}
-
 /* Value displays */
 .object-node-value {
-  color: var(--object-node-muted);
+  color: var(--object-node-muted-foreground);
 }
 
 .object-node-value-array {
-  color: var(--object-node-muted);
+  color: var(--object-node-muted-foreground);
   font-style: italic;
 }
 

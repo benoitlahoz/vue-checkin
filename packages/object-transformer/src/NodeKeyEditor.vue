@@ -40,6 +40,18 @@ const displayKey = computed(() => {
 
 const inputRef = defineModel<HTMLInputElement | null>('inputRef');
 
+// Calculate input width based on content
+const inputWidth = computed(() => {
+  if (!isEditing.value) return 'auto';
+  const text = tempKey.value || '';
+  // Rough estimate: 1 character ≈ 0.6em for monospace-ish font at 0.75rem
+  const charWidth = 0.6;
+  const padding = 1; // 0.5rem on each side
+  const minChars = 3;
+  const chars = Math.max(minChars, text.length + 1);
+  return `${chars * charWidth + padding}rem`;
+});
+
 const startEdit = () => {
   if (!node.value) return;
   if (shouldStartEdit(node.value, desk.editingNode.value)) {
@@ -93,6 +105,7 @@ const cancelEdit = () => {
       v-if="isEditing"
       ref="inputRef"
       :value="tempKey || ''"
+      :style="{ width: inputWidth }"
       class="node-key-input"
       @input="(e) => updateTempKey((e.target as HTMLInputElement).value)"
       @keyup.enter="confirmEdit()"
