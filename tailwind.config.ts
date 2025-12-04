@@ -7,6 +7,7 @@ export default {
     './app/pages/**/*.vue',
     './content/**/*.md',
     './packages/object-transformer/src/**/*.{js,vue,ts}',
+    './packages/object-transformer/src/components/**/*-variants.ts',
   ],
   safelist: [
     // Force include all common utility classes
@@ -30,6 +31,7 @@ export default {
     { pattern: /^(group|hover|focus):/ },
     { pattern: /^md:/ },
     { pattern: /^max-md:/ },
+    { pattern: /^group-hover:/ },
     // Specific important classes
     'group',
     'flex-1',
@@ -41,5 +43,19 @@ export default {
     'shrink-0',
     'whitespace-pre-wrap',
     'italic',
+    // ObjectNode specific classes
+    'text-xs',
+    'object-node-root',
+    'my-1',
+    'ml-2',
+    '-ml-0.5',
+    'pl-1.5',
+    'gap-2',
+    'hover:bg-accent/30',
+    'group-hover:border-l-2',
+    'group-hover:border-primary',
+    'group-hover:pl-2.5',
+    'text-muted-foreground',
+    'md:ml-auto',
   ],
 } as Config;

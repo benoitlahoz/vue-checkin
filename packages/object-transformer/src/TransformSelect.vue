@@ -164,7 +164,12 @@ const handleTransformChange = (name: unknown) => {
 
 <template>
   <div data-slot="transform-select" :class="cn('', props.class)" :style="props.style">
-    <Select v-if="node" :model-value="currentSelection" @update:model-value="handleTransformChange">
+    <Select
+      v-if="node"
+      :model-value="currentSelection"
+      :disabled="node.deleted"
+      @update:model-value="handleTransformChange"
+    >
       <SelectTrigger
         class="h-auto max-h-6 px-2 py-0.5 text-xs group-hover:border-primary md:min-w-[120px]"
       >

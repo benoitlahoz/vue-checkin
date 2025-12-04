@@ -1,14 +1,11 @@
 import type {
   ObjectNodeData,
-  ObjectNodeType,
   ObjectTransformerContext,
-  ObjectTransformerDesk,
   Transform,
   TransformRecipe,
   TransformStep,
 } from '../../types';
-import { CURRENT_RECIPE_VERSION, ObjectTransformerDeskKey } from '../../types';
-import { useCheckIn } from 'vue-airport';
+import { CURRENT_RECIPE_VERSION } from '../../types';
 import { getStructuralTransformHandler } from './structural-transform-handlers.util';
 
 /**
@@ -23,8 +20,6 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     newKey: string;
     isStructuralResult?: boolean;
   }> = [];
-
-  console.log('[buildRecipe] Starting...');
 
   const traverse = (
     node: ObjectNodeData,
@@ -62,16 +57,19 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
       });
     }
 
-    // Track deleted nodes - use originalPath
-    if (node.deleted) {
-      const hasActiveChildren = node.children && node.children.some((child) => !child.deleted);
-
-      if (originalKeyToUse && !hasActiveChildren && !shouldSkipInPath) {
-        deletedPaths.push([...originalPath, originalKeyToUse]);
+    // Track deleted nodes
+    // For deleted nodes:
+    // - If the node was renamed (keyModified), use CURRENT key (it was auto-renamed to avoid conflicts)
+    // - Otherwise, use ORIGINAL key (the key it had in the source data)
+    if (node.deleted && !shouldSkipInPath) {
+      const keyToDelete = node.keyModified ? node.key : originalKeyToUse;
+      if (keyToDelete) {
+        deletedPaths.push([...originalPath, keyToDelete]);
       }
     }
 
     // Track renamed keys - store parent path using ORIGINAL keys
+    // Include deleted nodes that were renamed (they need to be renamed before deletion)
     if (node.keyModified && node.key && !shouldSkipInPath) {
       const oldKey = node.firstKey || node.originalKey;
       if (oldKey && oldKey !== node.key) {
@@ -90,6 +88,7 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
           isStructuralNode,
           ancestorIsStructural,
           isStructuralResult,
+          deleted: node.deleted,
         });
 
         renamedKeys.push({
@@ -230,7 +229,6 @@ const applySingleRecipe = (
     const translatedPath: string[] = [];
     for (let i = 0; i < originalPath.length; i++) {
       const partialOriginalPath = originalPath.slice(0, i);
-      const partialTranslatedPath = translatePath(partialOriginalPath);
       const originalKey = originalPath[i];
 
       // Check if this key was renamed

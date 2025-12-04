@@ -12,12 +12,17 @@ export default defineConfig({
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
     }),
   ],
+  css: {
+    postcss: {
+      plugins: [],
+    },
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'VueAirportObjectTransformer',
       formats: ['es', 'cjs'],
-      fileName: (format) => `object-transformer.${format === 'es' ? 'mjs' : 'cjs'}`,
+      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
     rollupOptions: {
       external: ['vue', 'vue-airport'],
@@ -26,6 +31,10 @@ export default defineConfig({
           vue: 'Vue',
         },
         exports: 'named',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'style.css') return 'object-node.css';
+          return assetInfo.name || 'asset';
+        },
       },
     },
     sourcemap: true,

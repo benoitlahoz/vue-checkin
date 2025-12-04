@@ -2,6 +2,7 @@
 // Re-export types, core utils and Vue components bundled in this package
 
 export * from './types';
+export * from './object-node-slot.types';
 
 // Core utilities
 export * from './utils/type-guards.util';
@@ -19,6 +20,7 @@ export { default as ObjectTransformer } from './ObjectTransformer.vue';
 export { default as ObjectPreview } from './ObjectPreview.vue';
 export { default as RecipePreview } from './RecipePreview.vue';
 export { default as ObjectNode } from './ObjectNode.vue';
+export { default as DefaultObjectNodeRender } from './DefaultObjectNodeRender.vue';
 export { default as TransformSelect } from './TransformSelect.vue';
 export { default as TransformParam } from './TransformParam.vue';
 export { default as NodeKeyEditor } from './NodeKeyEditor.vue';

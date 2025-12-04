@@ -18,7 +18,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./styles": "./dist/object-node.css"
   },
   "files": [
     "dist"

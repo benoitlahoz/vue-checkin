@@ -15,6 +15,7 @@ import {
 } from '.';
 import { Separator } from './components/ui/separator';
 import { isPrimitive as isPrimitiveType, formatValue } from '.';
+import { cn } from './lib/utils';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
@@ -99,61 +100,71 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
 <template>
   <div
     data-slot="object-node"
-    class="text-xs object-node-root flex-1"
-    :class="[{ 'opacity-50': tree.deleted }, props.class]"
+    class="object-node-root"
+    :class="
+      cn('object-node-container', { 'object-node-container-deleted': tree.deleted }, props.class)
+    "
   >
     <!-- Wrapper with horizontal scroll -->
-    <div class="overflow-x-auto">
+    <div class="object-node-scroll-wrapper">
       <div
-        class="flex items-center justify-between gap-2 my-1 ml-2 transition-all group hover:bg-accent/30 min-w-fit"
+        :class="
+          cn('object-node-row', {
+            'object-node-row-with-chevron': tree.children?.length && tree.parent,
+          })
+        "
+        @mouseenter="isHovered = true"
+        @mouseleave="isHovered = false"
       >
-        <!-- Left part: chevron + delete + key + value -->
-        <div class="flex items-center gap-2">
-          <NodeOpen :node-id="nodeId" />
-
-          <!-- Container for button + name with common hover -->
-          <div
-            ref="firstChildElement"
-            class="flex items-center transition-all group-hover:border-l-2 group-hover:border-primary group-hover:pl-2.5 -ml-0.5 pl-1.5"
-            @mouseenter="isHovered = true"
-            @mouseleave="!editingKey && (isHovered = false)"
-          >
-            <!-- Delete/Restore -->
-            <div v-if="tree.parent?.type === 'object' || tree.parent?.type === 'array'">
-              <NodeActions :node-id="nodeId" :is-visible="isHovered || editingKey" />
+        <!-- Content (with hover) -->
+        <div
+          :class="
+            cn('object-node-row-content', {
+              'object-node-row-content-hoverable': tree.parent,
+            })
+          "
+        >
+          <!-- Left part: chevron + key + button + value -->
+          <div class="object-node-left-section">
+            <!-- Chevron space (always reserved) -->
+            <div class="object-node-chevron">
+              <NodeOpen :node-id="nodeId" />
             </div>
 
-            <!-- NodeKey Component -->
-            <div ref="inputElement">
-              <NodeKeyEditor v-model:input-ref="inputFieldElement" :node-id="nodeId" />
-            </div>
+            <!-- Key + Delete/Restore + Value container -->
+            <div class="object-node-content-section">
+              <!-- Delete/Restore (shown on row hover) -->
+              <div
+                v-if="tree.parent?.type === 'object' || tree.parent?.type === 'array'"
+                class="object-node-action-button"
+              >
+                <NodeActions :node-id="nodeId" :is-visible="isHovered || editingKey" />
+              </div>
 
-            <!-- Value (read-only) -->
-            <span
-              v-if="tree.type === 'array'"
-              ref="valueElement"
-              class="ml-2 text-muted-foreground italic"
-            >
-              Array({{ tree.children?.length || 0 }})
-            </span>
-            <span
-              v-else-if="tree.type !== 'object'"
-              ref="valueElement"
-              class="ml-2 text-muted-foreground"
-            >
-              {{ formatValue(tree.value, tree.type) }}
-            </span>
-            <span v-else ref="valueElement" class="hidden" />
+              <!-- NodeKey Component -->
+              <div ref="inputElement">
+                <NodeKeyEditor v-model:input-ref="inputFieldElement" :node-id="nodeId" />
+              </div>
+
+              <!-- Value (read-only) -->
+              <span v-if="tree.type === 'array'" ref="valueElement" class="object-node-value-array">
+                Array({{ tree.children?.length || 0 }})
+              </span>
+              <span v-else-if="tree.type !== 'object'" ref="valueElement" class="object-node-value">
+                {{ formatValue(tree.value, tree.type) }}
+              </span>
+              <span v-else ref="valueElement" class="object-node-value-hidden" />
+            </div>
           </div>
-        </div>
 
-        <!-- Right part: transformation select -->
-        <TransformSelect v-if="tree.parent" :node-id="nodeId" class="shrink-0 md:ml-auto" />
+          <!-- Right part: transformation select -->
+          <TransformSelect v-if="tree.parent" :node-id="nodeId" class="object-node-transform" />
+        </div>
       </div>
     </div>
 
     <!-- Recursive children -->
-    <div v-if="tree.children?.length && isOpen">
+    <div v-if="tree.children?.length && isOpen" class="object-node-indent">
       <ObjectNode
         v-for="(child, index) in tree.children"
         :id="child.id"
@@ -161,7 +172,10 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
       />
     </div>
 
-    <Separator v-if="tree.children?.length && tree.transforms.length" class="my-2 md:hidden" />
+    <Separator
+      v-if="tree.children?.length && tree.transforms.length"
+      class="object-node-separator"
+    />
 
     <!-- Transformations + parameters -->
     <NodeTransformsList
@@ -171,3 +185,167 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
     />
   </div>
 </template>
+
+<style>
+/* Base CSS custom properties for ObjectNode that can be overridden by users */
+
+:root {
+  --object-node-indent-width: 0.85rem;
+  --object-node-row-gap: 0.5rem;
+  --object-node-row-my: 0.25rem;
+  --object-node-primary: oklch(0.6723 0.1606 244.9955);
+  --object-node-primary-foreground: oklch(1 0 0);
+  --object-node-muted: oklch(0.209 0 0);
+  --object-node-muted-foreground: oklch(0.5637 0.0078 247.9662);
+  --object-node-accent: oklch(0.9392 0.0166 250.8453);
+  --object-node-accent-foreground: oklch(0.6723 0.1606 244.9955);
+}
+
+:root.dark {
+  --object-node-primary: oklch(0.6692 0.1607 245.011);
+  --object-node-primary-foreground: oklch(1 0 0);
+  --object-node-muted: oklch(0.9222 0.0013 286.3737);
+  --object-node-muted-foreground: oklch(0.75 0.0128 248.5103);
+  --object-node-accent: oklch(0.1928 0.0331 242.5459);
+  --object-node-accent-foreground: oklch(0.6692 0.1607 245.011);
+}
+
+/* Main container */
+.object-node-container {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  flex: 1;
+}
+
+.object-node-container-deleted {
+  opacity: 0.5;
+}
+
+/* Scroll wrapper */
+.object-node-scroll-wrapper {
+  overflow-x: auto;
+}
+
+/* Indentation wrapper */
+.object-node-indent {
+  margin-left: var(--object-node-indent-width);
+}
+
+/* Row container */
+.object-node-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--object-node-row-gap);
+  margin-top: var(--object-node-row-my);
+  margin-bottom: var(--object-node-row-my);
+  min-width: fit-content;
+}
+
+.object-node-row-with-chevron {
+  padding-left: 0.375rem;
+  border-left-width: 2px;
+  border-left-color: transparent;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.object-node-row-with-chevron:hover {
+  background-color: oklch(from var(--object-node-primary) l c h / 0.1);
+  border-left-color: var(--object-node-primary);
+  padding-left: 0.625rem;
+}
+
+/* Left section: chevron + content */
+.object-node-left-section {
+  display: flex;
+  align-items: center;
+  gap: var(--object-node-row-gap);
+}
+
+/* Chevron container (always reserves space) */
+.object-node-chevron {
+  width: var(--object-node-indent-width);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Content section: key + button + value */
+.object-node-content-section {
+  display: flex;
+  align-items: center;
+  gap: var(--object-node-row-gap);
+}
+
+/* Action button container with extra margin */
+.object-node-action-button {
+  margin-right: 0.25rem;
+}
+
+/* Row content */
+.object-node-row-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--object-node-row-gap);
+  flex: 1;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.object-node-row:hover .object-node-row-content-hoverable:not(.object-node-row-with-chevron *) {
+  background-color: oklch(from var(--object-node-primary) l c h / 0.1);
+}
+
+.object-node-row:not(.object-node-row-with-chevron) .object-node-row-content {
+  padding-left: 0.375rem;
+  border-left-width: 2px;
+  border-left-color: transparent;
+}
+
+.object-node-row:not(.object-node-row-with-chevron):hover .object-node-row-content-hoverable {
+  border-left-color: var(--object-node-primary);
+  padding-left: 0.625rem;
+}
+
+/* Value displays */
+.object-node-value {
+  color: var(--object-node-muted);
+}
+
+.object-node-value-array {
+  color: var(--object-node-muted);
+  font-style: italic;
+}
+
+.object-node-value-hidden {
+  display: none;
+}
+
+/* Transform select positioning */
+.object-node-transform {
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .object-node-transform {
+    margin-left: auto;
+  }
+}
+
+/* Separator */
+.object-node-separator {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768md) {
+  .object-node-separator {
+    display: none;
+  }
+}
+</style>

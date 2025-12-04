@@ -58,7 +58,7 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
         }
 
         // Also check if there's a deleted node with this key
-        // If we're renaming to a deleted node's key, we should take over that position
+        // If we're renaming to a deleted node's key, we need to auto-rename the deleted node
         const deletedNodeWithKey = parent.children.find(
           (c) => c !== node && c.key === newKey && c.deleted
         );
@@ -92,12 +92,37 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
             context.propagateTransform(conflictingNode);
           }
         } else {
-          // Normal rename - use autoRenameKey to avoid conflicts
+          // Normal rename
           const oldKey = node.key;
 
-          // If there's a deleted node with the target key, we're taking over that key
-          // The deleted node will need to be auto-renamed if it's ever restored
-          const finalKey = deletedNodeWithKey ? newKey : autoRenameKey(parent, newKey);
+          // If there's a deleted node with the target key, auto-rename it first
+          if (deletedNodeWithKey) {
+            // Store original key of deleted node BEFORE changing it
+            if (!deletedNodeWithKey.originalKey) {
+              deletedNodeWithKey.originalKey = deletedNodeWithKey.key;
+            }
+
+            // Find a unique key for the deleted node
+            // Exclude both the deleted node AND the current node being renamed
+            const existingKeys = new Set(
+              parent.children
+                .filter((c) => !c.deleted && c !== deletedNodeWithKey && c !== node)
+                .map((c) => c.key)
+                .filter((k): k is string => Boolean(k))
+            );
+            const uniqueKey = findUniqueKey(existingKeys, newKey, 1);
+
+            deletedNodeWithKey.key = uniqueKey;
+            deletedNodeWithKey.keyModified = true;
+
+            console.log('[confirmEditKey] Auto-renamed deleted node:', {
+              oldKey: newKey,
+              newKey: uniqueKey,
+            });
+          }
+
+          // Check if there's still a conflict with an active node and find a unique key
+          const finalKey = conflictingNode ? autoRenameKey(parent, newKey) : newKey;
 
           // Store original key before renaming (only if not already stored)
           if (!node.originalKey && oldKey !== finalKey) {

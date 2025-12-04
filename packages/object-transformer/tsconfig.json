@@ -16,7 +16,9 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "vue-airport": ["../core/src"],
+      "vue-airport/*": ["../core/src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue"],
