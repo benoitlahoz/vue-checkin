@@ -160,45 +160,26 @@ const handleParamChange = () => {
 
 .transform-controls {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
 }
 
 .transform-params {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-direction: row;
+  gap: 0.75rem;
 }
 
 /* Desktop styles - simple flex layout in grid column */
 @media (min-width: 768px) {
   .transform-item-content {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--object-node-row-gap);
     min-height: 1.5rem;
-    padding-top: var(--object-node-row-my);
-    padding-bottom: var(--object-node-row-my);
-    background-color: transparent;
   }
 
   .transform-value {
-    color: var(--object-node-muted-foreground);
     flex: 0 0 auto;
-  }
-
-  .transform-controls {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
-  }
-
-  .transform-params {
-    flex-direction: row;
-    gap: 0.75rem;
   }
 }
 </style>

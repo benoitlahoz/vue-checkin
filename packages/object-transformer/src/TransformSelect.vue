@@ -145,6 +145,9 @@ const handleTransformChange = (event: Event) => {
         [props.stepIndex + 1]: name,
       });
     }
+    
+    // Blur the select after selection
+    target.blur();
     return;
   }
 
@@ -156,6 +159,9 @@ const handleTransformChange = (event: Event) => {
   } else if (typeof name === 'string') {
     currentSelection.value = name;
   }
+  
+  // Blur the select after selection
+  target.blur();
 };
 </script>
 

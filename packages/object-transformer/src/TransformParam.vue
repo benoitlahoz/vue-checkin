@@ -64,11 +64,6 @@ function handleBlur() {
   emit('change');
 }
 
-// Handle number change - emit immediately
-function handleNumberChange() {
-  emit('change');
-}
-
 // Prevent keyboard events from bubbling up to parent components (like Select)
 function handleKeydown(event: KeyboardEvent) {
   event.stopPropagation();
@@ -83,17 +78,18 @@ function handleKeydown(event: KeyboardEvent) {
       :placeholder="config?.label"
       class="transform-param-input"
       @keydown="handleKeydown"
+      @input="(e) => handleInput((e.target as HTMLInputElement).value)"
       @blur="handleBlur"
     />
 
     <input
       v-else-if="config?.type === 'number'"
-      v-model="localValue"
+      v-model.number="localValue"
       type="number"
       :placeholder="config?.label"
       class="transform-param-input"
       @keydown="handleKeydown"
-      @change="handleNumberChange"
+      @input="(e) => handleInput((e.target as HTMLInputElement).value, true)"
     />
 
     <div v-else-if="config?.type === 'boolean'" class="transform-param-checkbox">
