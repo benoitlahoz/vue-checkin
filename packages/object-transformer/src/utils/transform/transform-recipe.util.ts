@@ -59,18 +59,21 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
 
     // Track deleted nodes
     // For deleted nodes:
-    // - If the node was renamed (keyModified), use CURRENT key (it was auto-renamed to avoid conflicts)
+    // - If the node was renamed by the user (keyModified && !autoRenamed), use CURRENT key
+    // - If the node was auto-renamed to avoid conflicts (autoRenamed), use ORIGINAL key
     // - Otherwise, use ORIGINAL key (the key it had in the source data)
     if (node.deleted && !shouldSkipInPath) {
-      const keyToDelete = node.keyModified ? node.key : originalKeyToUse;
+      const isAutoRenamed = (node as any).autoRenamed;
+      const keyToDelete = node.keyModified && !isAutoRenamed ? node.key : originalKeyToUse;
       if (keyToDelete) {
         deletedPaths.push([...originalPath, keyToDelete]);
       }
     }
 
     // Track renamed keys - store parent path using ORIGINAL keys
-    // Include deleted nodes that were renamed (they need to be renamed before deletion)
-    if (node.keyModified && node.key && !shouldSkipInPath) {
+    // Skip deleted nodes - they don't need rename tracking in the recipe
+    // since they're going to be deleted anyway
+    if (node.keyModified && node.key && !shouldSkipInPath && !node.deleted) {
       const oldKey = node.firstKey || node.originalKey;
       if (oldKey && oldKey !== node.key) {
         // A node is a structural result if:
@@ -128,12 +131,24 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     (p) => JSON.parse(p)
   );
 
+  // Deduplicate renamedKeys - keep only the last rename for each oldKey + path combination
+  // This handles successive renames (e.g., age_object -> age -> foo should only keep age_object -> foo)
+  const deduplicatedRenames: typeof renamedKeys = [];
+  const renameMap = new Map<string, (typeof renamedKeys)[0]>();
+
+  renamedKeys.forEach((rename) => {
+    const key = `${rename.path.join('.')}|${rename.oldKey}`;
+    renameMap.set(key, rename); // Last one wins
+  });
+
+  renameMap.forEach((rename) => deduplicatedRenames.push(rename));
+
   const recipe = {
     version: '1.0.0',
     rootType: tree.type,
     steps,
     deletedPaths: uniqueDeletedPaths,
-    renamedKeys,
+    renamedKeys: deduplicatedRenames,
     requiredTransforms,
     createdAt: new Date().toISOString(),
   };

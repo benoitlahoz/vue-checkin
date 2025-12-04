@@ -114,6 +114,8 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
 
             deletedNodeWithKey.key = uniqueKey;
             deletedNodeWithKey.keyModified = true;
+            // Mark as auto-renamed to distinguish from user renames
+            (deletedNodeWithKey as any).autoRenamed = true;
 
             console.log('[confirmEditKey] Auto-renamed deleted node:', {
               oldKey: newKey,
@@ -121,8 +123,14 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
             });
           }
 
-          // Check if there's still a conflict with an active node and find a unique key
-          const finalKey = conflictingNode ? autoRenameKey(parent, newKey) : newKey;
+          // Re-check for conflicts after renaming deleted node
+          // The deleted node has been moved to a different key, so check if there's still a conflict
+          const stillConflicting = parent.children.find(
+            (c) => c !== node && c.key === newKey && !c.deleted
+          );
+
+          // Use the recalculated conflict check instead of the original conflictingNode
+          const finalKey = stillConflicting ? autoRenameKey(parent, newKey) : newKey;
 
           // Store original key before renaming (only if not already stored)
           if (!node.originalKey && oldKey !== finalKey) {

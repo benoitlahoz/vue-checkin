@@ -274,27 +274,12 @@ export const createPropagateTransform =
         (lastResult.parts || lastResult.object) &&
         node.parent
       ) {
-        console.log('[DEBUG] Structural transform detected:', {
-          action: lastResult.action,
-          hasObject: !!lastResult.object,
-          hasParts: !!lastResult.parts,
-          nodeKey: node.key,
-          parentKey: node.parent.key,
-          parentHasChildren: !!node.parent.children,
-          parentChildrenCount: node.parent.children?.length,
-        });
-
         // For toObject, extract keys and values separately
         if (lastResult.object) {
           const entries = Object.entries(lastResult.object);
           const keys = entries.map(([k]) => k);
           const values = entries.map(([, v]) => v);
-          console.log('[DEBUG] toObject entries:', { entries, keys, values });
           handleStructuralSplit(node, values, lastResult.removeSource, desk, keys);
-          console.log('[DEBUG] After handleStructuralSplit:', {
-            parentChildrenCount: node.parent.children?.length,
-            parentChildren: node.parent.children?.map((c) => ({ key: c.key, type: c.type })),
-          });
         } else if (lastResult.parts) {
           handleStructuralSplit(node, lastResult.parts, lastResult.removeSource, desk);
         }
