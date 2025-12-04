@@ -84,7 +84,17 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
     // Skip deleted nodes - they don't need rename tracking in the recipe
     // since they're going to be deleted anyway
     if (isKeyModifiedCompat(node) && node.key && !shouldSkipInPath && !node.deleted) {
-      const oldKey = getFirstKeyCompat(node) || getOriginalKeyCompat(node);
+      // 🔧 FIX: For structural nodes, use the original key from metadata
+      // For regular nodes, use firstKey/originalKey compat
+      let oldKey: string | undefined;
+      if (isStructuralNode) {
+        // For structural nodes created by transforms, use keyMetadata.original
+        oldKey = node.keyMetadata?.original || getOriginalKeyCompat(node);
+      } else {
+        // For regular source nodes, use firstKey or originalKey
+        oldKey = getFirstKeyCompat(node) || getOriginalKeyCompat(node);
+      }
+      
       if (oldKey && oldKey !== node.key) {
         // A node is a structural result if:
         // 1. It has splitSourceId (it was created by a structural transform), OR
@@ -93,7 +103,7 @@ export const buildRecipe = (tree: ObjectNodeData): TransformRecipe => {
 
         renamedKeys.push({
           path: originalPath, // Parent path using ORIGINAL keys
-          oldKey: oldKey, // Original key (firstKey for structural, originalKey for regular)
+          oldKey: oldKey, // Original key from metadata or compat
           newKey: node.key, // Current key
           isStructuralResult,
         });

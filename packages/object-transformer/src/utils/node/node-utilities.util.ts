@@ -1,5 +1,6 @@
 import type { ObjectNodeData, ObjectNodeType } from '../../types';
 import { all, maybe } from 'vue-airport';
+import { getOriginalKey, isKeyModified, getKeyMetadata, markKeyAsModified } from './node-key-metadata.util';
 
 /**
  * Key Validation - Pure predicates and validation
@@ -77,11 +78,12 @@ export const handleRestoreConflict = (
     // Use the restoredNode's key as base to find alternatives (e.g., name -> name_1)
     const newKey = findUniqueKey(existingKeys, restoredNode.key!, 1);
     conflictingNode.key = newKey;
-    conflictingNode.keyModified = true;
+    markKeyAsModified(conflictingNode);
 
     // If the conflicting node doesn't have an originalKey yet, set it now
-    if (!conflictingNode.originalKey) {
-      conflictingNode.originalKey = restoredNode.key!;
+    const conflictingMetadata = getKeyMetadata(conflictingNode);
+    if (!conflictingMetadata.original) {
+      conflictingMetadata.original = restoredNode.key!;
     }
   }
 };
@@ -126,7 +128,7 @@ export const formatValue = (value: any, type: ObjectNodeType): string => {
 // Check if property was added (from structural transforms like split or stringToObject)
 export const isAddedProperty = (node: ObjectNodeData): boolean => {
   // Check the original key (before any renames) to determine if it was added by a transformation
-  const keyToCheck = node.originalKey || node.key;
+  const keyToCheck = getOriginalKey(node) || node.key;
   if (!keyToCheck) return false;
   // Match patterns: _0, _1, ... (from split) or _object, _original, etc. (from stringToObject)
   return /_\d+$/.test(keyToCheck) || /_[a-zA-Z]+$/.test(keyToCheck);
@@ -135,7 +137,7 @@ export const isAddedProperty = (node: ObjectNodeData): boolean => {
 // Get CSS classes based on node state
 export const getKeyClasses = (node: ObjectNodeData): string => {
   if (isAddedProperty(node)) return 'font-semibold text-blue-600';
-  if (node.keyModified) return 'font-semibold text-yellow-600';
+  if (isKeyModified(node)) return 'font-semibold text-yellow-600';
   return 'font-semibold';
 };
 

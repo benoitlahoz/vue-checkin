@@ -1,6 +1,7 @@
 import type { ObjectNodeData, Transform, ObjectTransformerContext } from '../../types';
 import { getStructuralTransformHandler } from '../transform/structural-transform-handlers.util';
 import { mergeWithTemplate } from './model-mode.util';
+import { getOriginalKey, isKeyModified } from '../node/node-key-metadata.util';
 
 export interface ModelRule {
   path: string[];
@@ -14,13 +15,14 @@ export const extractModelRules = (node: ObjectNodeData, path: string[] = []): Mo
   const rules: ModelRule[] = [];
   const isRoot = path.length === 0;
 
-  const keyForPath = node.key && node.originalKey && node.keyModified ? node.originalKey : node.key;
+  const originalKey = getOriginalKey(node);
+  const keyForPath = node.key && originalKey && isKeyModified(node) ? originalKey : node.key;
   const currentPath = keyForPath && !isRoot ? [...path, keyForPath] : path;
 
-  const hasModifications = node.transforms.length > 0 || node.deleted || node.keyModified;
+  const hasModifications = node.transforms.length > 0 || node.deleted || isKeyModified(node);
 
   if (!isRoot && node.key && hasModifications) {
-    const keyInPath = node.originalKey && node.keyModified ? node.originalKey : node.key;
+    const keyInPath = originalKey && isKeyModified(node) ? originalKey : node.key;
 
     const rule: ModelRule = {
       path: [...path, keyInPath],
@@ -29,8 +31,8 @@ export const extractModelRules = (node: ObjectNodeData, path: string[] = []): Mo
     };
 
     if (node.deleted) rule.deleted = true;
-    if (node.keyModified && node.originalKey && node.originalKey !== node.key) {
-      rule.renamed = { from: node.originalKey, to: node.key };
+    if (isKeyModified(node) && originalKey && originalKey !== node.key) {
+      rule.renamed = { from: originalKey, to: node.key };
     }
 
     rules.push(rule);
