@@ -63,62 +63,66 @@ const getCoverageColor = (coverage: number) => {
         <div class="space-y-4">
           <!-- Property Coverage Summary -->
           <div v-if="incompleteCoverage.length > 0" class="space-y-2">
-      <div class="flex items-center justify-between">
-        <h4 class="text-xs font-medium text-muted-foreground">Incomplete Properties</h4>
-        <Badge variant="outline" class="text-xs">
-          {{ incompleteCoverage.length }} / {{ propertyVariations.length }}
-        </Badge>
-      </div>
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-medium text-muted-foreground">Incomplete Properties</h4>
+              <Badge variant="outline" class="text-xs">
+                {{ incompleteCoverage.length }} / {{ propertyVariations.length }}
+              </Badge>
+            </div>
 
-      <div class="space-y-1">
-        <div
-          v-for="variation in incompleteCoverage.slice(0, 10)"
-          :key="variation.property"
-          class="flex items-center justify-between gap-2 text-xs p-2 rounded border"
-          :class="getCoverageColor(variation.coverage)"
-        >
-          <code class="font-mono flex-1 truncate">{{ variation.property }}</code>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="font-medium">{{ variation.coverage }}%</span>
-            <span class="text-muted-foreground">
-              ({{ variation.presentIn }}/{{ variation.totalObjects }})
-            </span>
+            <div class="space-y-1">
+              <div
+                v-for="variation in incompleteCoverage.slice(0, 10)"
+                :key="variation.property"
+                class="flex items-center justify-between gap-2 text-xs p-2 rounded border"
+                :class="getCoverageColor(variation.coverage)"
+              >
+                <code class="font-mono flex-1 truncate">{{ variation.property }}</code>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="font-medium">{{ variation.coverage }}%</span>
+                  <span class="text-muted-foreground">
+                    ({{ variation.presentIn }}/{{ variation.totalObjects }})
+                  </span>
+                </div>
+              </div>
+
+              <div
+                v-if="incompleteCoverage.length > 10"
+                class="text-xs text-muted-foreground text-center"
+              >
+                ... and {{ incompleteCoverage.length - 10 }} more
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div
-          v-if="incompleteCoverage.length > 10"
-          class="text-xs text-muted-foreground text-center"
-        >
-          ... and {{ incompleteCoverage.length - 10 }} more
-        </div>
-      </div>
-    </div>
+          <!-- Perfect Coverage Info -->
+          <div v-if="perfectCoverage.length > 0" class="space-y-1">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-medium text-muted-foreground">Complete Properties</h4>
+              <Badge
+                variant="outline"
+                class="text-xs bg-green-500/30 text-green-700 dark:text-green-200 border-green-500/60"
+              >
+                {{ perfectCoverage.length }} properties
+              </Badge>
+            </div>
+            <p class="text-xs text-muted-foreground">
+              All objects have these {{ perfectCoverage.length }} properties
+            </p>
+          </div>
 
-    <!-- Perfect Coverage Info -->
-    <div v-if="perfectCoverage.length > 0" class="space-y-1">
-      <div class="flex items-center justify-between">
-          <h4 class="text-xs font-medium text-muted-foreground">Complete Properties</h4>
-          <Badge
-            variant="outline"
-            class="text-xs bg-green-500/30 text-green-700 dark:text-green-200 border-green-500/60"
+          <!-- No Variations -->
+          <div
+            v-if="incompleteCoverage.length === 0 && perfectCoverage.length > 0"
+            class="text-center p-3 rounded bg-green-500/20 border border-green-500/40"
           >
-          {{ perfectCoverage.length }} properties
-        </Badge>
-      </div>
-      <p class="text-xs text-muted-foreground">
-        All objects have these {{ perfectCoverage.length }} properties
-      </p>
-    </div>
-
-        <!-- No Variations -->
-        <div
-          v-if="incompleteCoverage.length === 0 && perfectCoverage.length > 0"
-          class="text-center p-3 rounded bg-green-500/20 border border-green-500/40"
-        >
-          <p class="text-sm font-medium text-green-700 dark:text-green-200">Perfect Consistency</p>
-          <p class="text-xs text-green-600 dark:text-green-300">All objects have identical structure</p>
-        </div>
+            <p class="text-sm font-medium text-green-700 dark:text-green-200">
+              Perfect Consistency
+            </p>
+            <p class="text-xs text-green-600 dark:text-green-300">
+              All objects have identical structure
+            </p>
+          </div>
         </div>
       </AccordionContent>
     </AccordionItem>

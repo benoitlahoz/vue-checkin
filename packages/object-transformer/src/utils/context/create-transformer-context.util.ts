@@ -16,6 +16,7 @@ import { createSelectionManagementMethods } from './selection-management.util';
 import { createRecipeOperationsMethods } from './recipe-operations.util';
 import { createModeManagementMethods } from './mode-management.util';
 import { findMostCompleteObject, analyzeArrayDifferences } from '../model/model-mode.util';
+import { applyRecipe } from '../../recipe/recipe-applier';
 
 export interface CreateContextParams {
   initialData: any;
@@ -57,12 +58,6 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
   const mostCompleteIndex = computed(() => {
     if (!Array.isArray(originalDataRef.value)) return 0;
     return findMostCompleteObject(originalDataRef.value);
-  });
-
-  // Computed: property variations across array items
-  const propertyVariations = computed(() => {
-    if (!Array.isArray(originalDataRef.value)) return [];
-    return analyzeArrayDifferences(originalDataRef.value);
   });
 
   const editingNode = ref<ObjectNodeData | null>(null);
@@ -119,6 +114,30 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
     mode,
     templateIndex,
     treeKey,
+  });
+
+  // Computed: property variations across array items
+  // Must be after recipeOps is created so we can use the recorder's recipe
+  const propertyVariations = computed(() => {
+    if (!Array.isArray(originalDataRef.value)) return [];
+
+    // Force reactivity by accessing tree.value
+    // This ensures the computed re-runs when the tree changes  
+    const currentTree = tree.value;
+    if (!currentTree) return analyzeArrayDifferences(originalDataRef.value);
+
+    // Use imported recipe if available, otherwise use recorder's recipe
+    const recipe = recipeOps.importedRecipe.value || recipeOps.recorder.recipe.value;
+
+    // If no operations, analyze original data
+    if (!recipe.operations || recipe.operations.length === 0) {
+      return analyzeArrayDifferences(originalDataRef.value);
+    }
+
+    // Apply recipe to original data to get transformed structure
+    const transformedData = applyRecipe(originalDataRef.value, recipe, transforms.value);
+
+    return analyzeArrayDifferences(Array.isArray(transformedData) ? transformedData : []);
   });
 
   // Assemble the complete context

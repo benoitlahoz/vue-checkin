@@ -151,6 +151,52 @@ export interface PropertyVariation {
   coverage: number; // Percentage (0-100)
 }
 
+/**
+ * Extract transformed data from a tree node (like ObjectPreview does)
+ */
+const buildValueFromNode = (node: any): any => {
+  if (node.deleted) return undefined;
+
+  // If node has children (from structural transforms), build from children
+  if (node.children && node.children.length > 0) {
+    const activeChildren = node.children.filter((child: any) => !child.deleted);
+
+    // Build array if type is 'array'
+    if (node.type === 'array') {
+      return activeChildren.map(buildValueFromNode).filter((v: any) => v !== undefined);
+    }
+
+    // Build object (for 'object' type or structural transforms)
+    if (node.type === 'object' || activeChildren.some((c: any) => c.key)) {
+      return activeChildren.reduce(
+        (acc: any, child: any) => {
+          const value = buildValueFromNode(child);
+          if (value !== undefined && child.key) {
+            acc[child.key] = value;
+          }
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+  }
+
+  // For primitives without children, return the value
+  return node.value;
+};
+
+/**
+ * Build transformed data array from tree (for analyzing actual transformed structure)
+ */
+export const buildTransformedDataFromTree = (tree: any): any[] => {
+  if (!tree || tree.type !== 'array' || !tree.children) return [];
+
+  return tree.children
+    .filter((child: any) => !child.deleted)
+    .map(buildValueFromNode)
+    .filter((v: any) => v !== undefined);
+};
+
 export const analyzeArrayDifferences = (items: any[]): PropertyVariation[] => {
   if (!Array.isArray(items) || items.length === 0) return [];
 

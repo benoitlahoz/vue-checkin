@@ -46,9 +46,15 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
   // Create recorder
   const recorder: RecipeRecorder = createRecipeRecorder(requiredTransforms, rootType);
 
+  // Store imported recipe separately (when recipe is imported, recorder is cleared)
+  const importedRecipe = ref<any>(null);
+
   return {
     // Expose recorder for direct access
     recorder,
+
+    // Expose imported recipe (null if no import or after manual changes)
+    importedRecipe,
 
     // Expose recipe (reactive)
     recipe: recorder.recipe,
@@ -71,6 +77,9 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
     // Import recipe
     async importRecipe(recipeJson: string) {
       const recipe = JSON.parse(recipeJson);
+
+      // Store the imported recipe for later use (e.g., propertyVariations)
+      importedRecipe.value = recipe;
 
       // 🟢 DESTRUCTIVE IMPORT PROCESS:
       // 1. Apply recipe to original input data
