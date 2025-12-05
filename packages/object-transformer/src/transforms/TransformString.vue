@@ -17,13 +17,34 @@ const transforms: Transform[] = [
     name: 'Split',
     structural: true, // This is a structural transform
     if: (node) => node.type === 'string',
-    params: [{ key: 'delimiter', label: 'Delimiter', type: 'text', default: ' ' }],
-    fn: (v: string, delimiter: string) => {
+    params: [
+      { key: 'delimiter', label: 'Delimiter', type: 'text', default: ' ' },
+      { key: 'splitAt', label: 'Split at index (0 = all)', type: 'number', default: 0 },
+    ],
+    fn: (v: string, delimiter: string, splitAt: number) => {
       if (typeof delimiter !== 'string') delimiter = ' ';
+      const index = typeof splitAt === 'number' && splitAt > 0 ? splitAt : 0;
+
+      let parts: string[];
+      if (index > 0) {
+        // Split at specific index
+        const allParts = v.split(delimiter);
+        if (allParts.length <= index) {
+          // Not enough parts, return all
+          parts = allParts;
+        } else {
+          // Split at index: everything before index vs everything from index onward
+          parts = [allParts.slice(0, index).join(delimiter), allParts.slice(index).join(delimiter)];
+        }
+      } else {
+        // Default: split all
+        parts = v.split(delimiter);
+      }
+
       return {
         __structuralChange: true,
         action: 'split' as const,
-        parts: v.split(delimiter),
+        parts: parts,
         removeSource: false,
       };
     },

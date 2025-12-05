@@ -107,6 +107,28 @@ export const createObjectNode = (
 };
 
 /**
+ * Destroy tree by breaking all circular references
+ * This ensures proper garbage collection and prevents memory leaks
+ */
+export const destroyNodeTree = (node: ObjectNodeData): void => {
+  if (!node) return;
+
+  // Recursively destroy children first
+  if (node.children) {
+    node.children.forEach(destroyNodeTree);
+    node.children = undefined;
+  }
+
+  // Break parent reference
+  node.parent = undefined;
+
+  // Clear transforms to break any function references
+  if (node.transforms) {
+    node.transforms = [];
+  }
+};
+
+/**
  * Build Node Tree - Main recursive builder using pattern matching
  */
 

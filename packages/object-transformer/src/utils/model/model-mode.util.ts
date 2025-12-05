@@ -138,3 +138,103 @@ export const normalizeArrayWithTemplate = (items: any[], templateIndex: number):
     return mergeWithTemplate(item, template);
   });
 };
+
+/**
+ * Analyze differences between objects in an array
+ * Returns a summary of property variations
+ */
+export interface PropertyVariation {
+  property: string;
+  presentIn: number; // Number of objects that have this property
+  missingIn: number; // Number of objects missing this property
+  totalObjects: number;
+  coverage: number; // Percentage (0-100)
+}
+
+/**
+ * Extract transformed data from a tree node (like ObjectPreview does)
+ */
+const buildValueFromNode = (node: any): any => {
+  if (node.deleted) return undefined;
+
+  // If node has children (from structural transforms), build from children
+  if (node.children && node.children.length > 0) {
+    const activeChildren = node.children.filter((child: any) => !child.deleted);
+
+    // Build array if type is 'array'
+    if (node.type === 'array') {
+      return activeChildren.map(buildValueFromNode).filter((v: any) => v !== undefined);
+    }
+
+    // Build object (for 'object' type or structural transforms)
+    if (node.type === 'object' || activeChildren.some((c: any) => c.key)) {
+      return activeChildren.reduce(
+        (acc: any, child: any) => {
+          const value = buildValueFromNode(child);
+          if (value !== undefined && child.key) {
+            acc[child.key] = value;
+          }
+          return acc;
+        },
+        {} as Record<string, any>
+      );
+    }
+  }
+
+  // For primitives without children, return the value
+  return node.value;
+};
+
+/**
+ * Build transformed data array from tree (for analyzing actual transformed structure)
+ */
+export const buildTransformedDataFromTree = (tree: any): any[] => {
+  if (!tree || tree.type !== 'array' || !tree.children) return [];
+
+  return tree.children
+    .filter((child: any) => !child.deleted)
+    .map(buildValueFromNode)
+    .filter((v: any) => v !== undefined);
+};
+
+export const analyzeArrayDifferences = (items: any[]): PropertyVariation[] => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const propertyCount = new Map<string, number>();
+  const totalObjects = items.length;
+
+  // Count occurrences of each property across all objects
+  const countProperties = (obj: any, prefix: string = '') => {
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return;
+
+    Object.keys(obj).forEach((key) => {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      propertyCount.set(fullKey, (propertyCount.get(fullKey) || 0) + 1);
+
+      // Recursively count nested properties
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        countProperties(obj[key], fullKey);
+      }
+    });
+  };
+
+  items.forEach((item) => countProperties(item));
+
+  // Convert to PropertyVariation array
+  const variations: PropertyVariation[] = [];
+  propertyCount.forEach((presentIn, property) => {
+    const missingIn = totalObjects - presentIn;
+    const coverage = Math.round((presentIn / totalObjects) * 100);
+
+    variations.push({
+      property,
+      presentIn,
+      missingIn,
+      totalObjects,
+      coverage,
+    });
+  });
+
+  // Sort by coverage (properties present in fewer objects first)
+  return variations.sort((a, b) => a.coverage - b.coverage);
+};

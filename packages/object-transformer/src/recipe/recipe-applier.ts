@@ -20,7 +20,6 @@ import { applyOperations } from './operations';
  * @returns Transformed data
  */
 export const applyRecipe = (data: any, recipe: Recipe, transforms: Transform[]): any => {
-  // Build transform index for fast lookup
   const transformsMap = new Map(transforms.map((t) => [t.name, t]));
 
   // Handle template mode: array data with object recipe

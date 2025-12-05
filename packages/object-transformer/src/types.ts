@@ -3,6 +3,14 @@ import type { ComputedRef, InjectionKey, Ref } from 'vue';
 
 export type TransformerMode = 'object' | 'model';
 
+export interface PropertyVariation {
+  property: string;
+  presentIn: number;
+  missingIn: number;
+  totalObjects: number;
+  coverage: number;
+}
+
 export type ObjectNodeType =
   | 'string'
   | 'number'
@@ -61,14 +69,19 @@ export interface ObjectNodeData {
 export interface ObjectTransformerContext {
   // Tree
   tree: Ref<ObjectNodeData>;
+  treeKey: Ref<number>; // Key to force complete remount of tree
   triggerTreeUpdate: () => void;
   originalData: Ref<any>;
   getNode: (id: string) => ObjectNodeData | null;
   // Mode
   mode: Ref<TransformerMode>;
   setMode: (mode: TransformerMode) => void;
+  isObjectModeAvailable: ComputedRef<boolean>;
+  isModelModeAvailable: ComputedRef<boolean>;
   templateIndex: Ref<number>;
   setTemplateIndex: (index: number) => void;
+  mostCompleteIndex: ComputedRef<number>; // Index of the most complete object in array
+  propertyVariations: ComputedRef<PropertyVariation[]>; // Property differences across array items
   // Constants
   primitiveTypes: ObjectNodeType[];
   // Structural Transform Handlers Registry
