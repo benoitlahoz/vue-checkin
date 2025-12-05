@@ -138,3 +138,57 @@ export const normalizeArrayWithTemplate = (items: any[], templateIndex: number):
     return mergeWithTemplate(item, template);
   });
 };
+
+/**
+ * Analyze differences between objects in an array
+ * Returns a summary of property variations
+ */
+export interface PropertyVariation {
+  property: string;
+  presentIn: number; // Number of objects that have this property
+  missingIn: number; // Number of objects missing this property
+  totalObjects: number;
+  coverage: number; // Percentage (0-100)
+}
+
+export const analyzeArrayDifferences = (items: any[]): PropertyVariation[] => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const propertyCount = new Map<string, number>();
+  const totalObjects = items.length;
+
+  // Count occurrences of each property across all objects
+  const countProperties = (obj: any, prefix: string = '') => {
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return;
+
+    Object.keys(obj).forEach((key) => {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      propertyCount.set(fullKey, (propertyCount.get(fullKey) || 0) + 1);
+
+      // Recursively count nested properties
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        countProperties(obj[key], fullKey);
+      }
+    });
+  };
+
+  items.forEach((item) => countProperties(item));
+
+  // Convert to PropertyVariation array
+  const variations: PropertyVariation[] = [];
+  propertyCount.forEach((presentIn, property) => {
+    const missingIn = totalObjects - presentIn;
+    const coverage = Math.round((presentIn / totalObjects) * 100);
+
+    variations.push({
+      property,
+      presentIn,
+      missingIn,
+      totalObjects,
+      coverage,
+    });
+  });
+
+  // Sort by coverage (properties present in fewer objects first)
+  return variations.sort((a, b) => a.coverage - b.coverage);
+};

@@ -14,6 +14,7 @@ import {
   type ObjectTransformerContext,
 } from '@vue-airport/object-transformer';
 import ModeToggle from './ModeToggle.vue';
+import ModelInsights from './ModelInsights.vue';
 import {
   Accordion,
   AccordionContent,
@@ -45,28 +46,28 @@ const stats = computed(() => {
 // Generate large dataset for performance testing
 function generateLargeDataset(count: number) {
   const firstNames = [
-    'john',
-    'jane',
-    'bob',
-    'alice',
-    'charlie',
-    'diana',
-    'eve',
-    'frank',
-    'grace',
-    'henry',
+    'marina',
+    'pina',
+    'laurie',
+    'romeo',
+    'anne Teresa',
+    'william',
+    'robert',
+    'merce',
+    'lucinda',
+    'crystal',
   ];
   const lastNames = [
-    'doe',
-    'smith',
+    'abramović',
+    'bausch',
+    'anderson',
+    'castellucci',
+    'de keersmaeker',
+    'forsythe',
     'wilson',
-    'brown',
-    'jones',
-    'garcia',
-    'miller',
-    'davis',
-    'rodriguez',
-    'martinez',
+    'cunningham',
+    'childs',
+    'pite',
   ];
   const cities = [
     'marseille',
@@ -91,13 +92,13 @@ function generateLargeDataset(count: number) {
     'ash ct',
   ];
   const hobbiesList = [
-    ['reading', 'traveling', 'swimming'],
-    ['cooking', 'painting', 'dancing'],
-    ['gaming', 'hiking', 'photography'],
-    ['music', 'sports', 'gardening'],
-    ['yoga', 'cycling', 'fishing'],
+    ['performance art', 'installation', 'video art'],
+    ['choreography', 'contemporary dance', 'butoh'],
+    ['experimental music', 'multimedia', 'storytelling'],
+    ['theatre direction', 'scenography', 'dramaturgy'],
+    ['physical theatre', 'improvisation', 'composition'],
   ];
-  const tags = ['tag1', 'tag2', 'tag3', 'tag4', 'tag5'];
+  const tags = ['avant-garde', 'experimental', 'contemporary', 'multidisciplinary', 'immersive'];
 
   const result = [];
 
@@ -222,6 +223,7 @@ const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smal
 
       <div class="flex-1 flex flex-col gap-2 min-h-0">
         <ModeToggle :desk="desk" class="shrink-0" />
+        <ModelInsights :desk="desk" class="shrink-0" />
         <ObjectNode :key="treeKey" class="flex-1 min-h-0 overflow-auto" />
       </div>
 

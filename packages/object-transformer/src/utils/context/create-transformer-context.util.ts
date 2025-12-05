@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 import type { ObjectNodeData, ObjectNodeType, ObjectTransformerContext } from '../../types';
 import { buildNodeTree } from '../node/node-builder.util';
 import { getTypeFromValue } from '../type-guards.util';
@@ -15,6 +15,7 @@ import { createTransformOperationsMethods } from './transform-operations.util';
 import { createSelectionManagementMethods } from './selection-management.util';
 import { createRecipeOperationsMethods } from './recipe-operations.util';
 import { createModeManagementMethods } from './mode-management.util';
+import { findMostCompleteObject, analyzeArrayDifferences } from '../model/model-mode.util';
 
 export interface CreateContextParams {
   initialData: any;
@@ -47,6 +48,23 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
   const templateIndex = ref<number>(initialTemplateIndex);
   const originalDataRef = ref(originalData);
   const transforms = ref<any[]>([]);
+
+  // Computed: mode availability
+  const isObjectModeAvailable = computed(() => !Array.isArray(originalDataRef.value));
+  const isModelModeAvailable = computed(() => Array.isArray(originalDataRef.value));
+
+  // Computed: most complete object index
+  const mostCompleteIndex = computed(() => {
+    if (!Array.isArray(originalDataRef.value)) return 0;
+    return findMostCompleteObject(originalDataRef.value);
+  });
+
+  // Computed: property variations across array items
+  const propertyVariations = computed(() => {
+    if (!Array.isArray(originalDataRef.value)) return [];
+    return analyzeArrayDifferences(originalDataRef.value);
+  });
+
   const editingNode = ref<ObjectNodeData | null>(null);
   const tempKey = ref<string | null>(null);
   const forbiddenKeysRef = ref<string[]>(forbiddenKeys);
@@ -100,6 +118,7 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
     originalData: originalDataRef,
     mode,
     templateIndex,
+    treeKey,
   });
 
   // Assemble the complete context
@@ -114,6 +133,10 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
 
     // Mode
     mode,
+    isObjectModeAvailable,
+    isModelModeAvailable,
+    mostCompleteIndex,
+    propertyVariations,
     templateIndex,
     ...modeOps,
 
