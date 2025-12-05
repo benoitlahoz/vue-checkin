@@ -41,6 +41,11 @@ export interface RecipeRecorder {
   recordDelete(path: Path): void;
 
   /**
+   * Remove a delete operation (when restoring a soft deleted node)
+   */
+  removeDelete(path: Path): void;
+
+  /**
    * Record an add operation
    */
   recordAdd(parentPath: Path, key: string, value: any): void;
@@ -152,14 +157,21 @@ export const createRecipeRecorder = (
       });
     },
 
-    recordDelete(path: Path) {
-      operations.value.push({
-        type: 'delete',
-        path: [...path],
-      });
-    },
+  recordDelete(path: Path) {
+    operations.value.push({
+      type: 'delete',
+      path: [...path],
+    });
+  },
 
-    recordAdd(parentPath: Path, key: string, value: any) {
+  removeDelete(path: Path) {
+    // Remove the delete operation for this path when restoring a soft deleted node
+    const pathKey = path.join('.');
+    operations.value = operations.value.filter((op) => {
+      if (op.type !== 'delete') return true;
+      return op.path.join('.') !== pathKey;
+    });
+  },    recordAdd(parentPath: Path, key: string, value: any) {
       operations.value.push({
         type: 'add',
         path: [...parentPath],

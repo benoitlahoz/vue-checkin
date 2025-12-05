@@ -43,10 +43,10 @@ export function createNodeOperationsMethods(context: NodeOperationsContext) {
         if (!wasDeleted && node.deleted) {
           // Node was visible, now deleted → record delete
           desk.recorder.recordDelete(path);
+        } else if (wasDeleted && !node.deleted) {
+          // Node was deleted, now restored → remove the delete operation from recipe
+          desk.recorder.removeDelete(path);
         }
-        // Note: If restoring (wasDeleted && !node.deleted), we don't record anything
-        // because the delete operation is already in the recipe history
-        // Replay will just skip the recordDelete when the node is restored
       }
 
       // If restoring a node, check for conflicts with added properties
