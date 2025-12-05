@@ -1,12 +1,21 @@
 import type { Ref } from 'vue';
 import type { ObjectNodeData } from '../../types';
 import { sanitizeKey, autoRenameKey, findUniqueKey } from '../node/node-utilities.util';
+import {
+  getOriginalKey,
+  markKeyAsModified,
+  markKeyAsAutoRenamed,
+  getKeyMetadata,
+  isKeyModified,
+} from '../node/node-key-metadata.util';
+import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 export interface KeyEditingContext {
   editingNode: Ref<ObjectNodeData | null>;
   tempKey: Ref<string | null>;
   propagateTransform: (node: ObjectNodeData) => void;
   triggerTreeUpdate: () => void;
+  deskRef?: () => any; // Access to desk for recorder
 }
 
 export function createKeyEditingMethods(context: KeyEditingContext) {
@@ -33,7 +42,7 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
       const parent = node.parent;
       if (parent?.type === 'object' && parent.children) {
         // Check if we're restoring to original key
-        const isRestoringToOriginal = node.originalKey === newKey;
+        const isRestoringToOriginal = getOriginalKey(node) === newKey;
 
         // Find conflicting node (same key but different node)
         // Ignore deleted nodes in conflict detection
@@ -51,8 +60,9 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // We're restoring to original key - rename the conflicting node instead
 
           // Store original key of conflicting node BEFORE changing it
-          if (!conflictingNode.originalKey) {
-            conflictingNode.originalKey = conflictingNode.key;
+          const conflictingMetadata = getKeyMetadata(conflictingNode);
+          if (!conflictingMetadata.original) {
+            conflictingMetadata.original = conflictingNode.key;
           }
 
           const existingKeys = new Set(
@@ -64,12 +74,15 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           const uniqueKey = findUniqueKey(existingKeys, newKey, 1);
 
           conflictingNode.key = uniqueKey;
-          conflictingNode.keyModified = true;
+          markKeyAsModified(conflictingNode);
 
           // Restore this node to original key
           node.key = newKey;
-          node.keyModified = false; // No longer modified since we're back to original
-          node.originalKey = undefined; // Clear original key
+          const nodeMetadata = getKeyMetadata(node);
+
+          // We're back to original, so not modified anymore
+          // But keep the original value stored for future renames
+          nodeMetadata.modified = false;
 
           // Propagate both nodes to update recipe
           if (conflictingNode.transforms && conflictingNode.transforms.length > 0) {
@@ -82,8 +95,9 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // If there's a deleted node with the target key, auto-rename it first
           if (deletedNodeWithKey) {
             // Store original key of deleted node BEFORE changing it
-            if (!deletedNodeWithKey.originalKey) {
-              deletedNodeWithKey.originalKey = deletedNodeWithKey.key;
+            const deletedMetadata = getKeyMetadata(deletedNodeWithKey);
+            if (!deletedMetadata.original) {
+              deletedMetadata.original = deletedNodeWithKey.key;
             }
 
             // Find a unique key for the deleted node
@@ -97,9 +111,7 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
             const uniqueKey = findUniqueKey(existingKeys, newKey, 1);
 
             deletedNodeWithKey.key = uniqueKey;
-            deletedNodeWithKey.keyModified = true;
-            // Mark as auto-renamed to distinguish from user renames
-            (deletedNodeWithKey as any).autoRenamed = true;
+            markKeyAsAutoRenamed(deletedNodeWithKey, newKey);
           }
 
           // Re-check for conflicts after renaming deleted node
@@ -111,13 +123,26 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // Use the recalculated conflict check instead of the original conflictingNode
           const finalKey = stillConflicting ? autoRenameKey(parent, newKey) : newKey;
 
-          // Store original key before renaming (only if not already stored)
-          if (!node.originalKey && oldKey !== finalKey) {
-            node.originalKey = oldKey;
+          // Get or initialize metadata
+          const nodeMetadata = getKeyMetadata(node);
+
+          // Store original key BEFORE any rename (if not already stored)
+          // This is the key from the source data, before user modifications
+          if (!nodeMetadata.original) {
+            nodeMetadata.original = oldKey;
           }
 
           node.key = finalKey;
-          node.keyModified = true;
+          markKeyAsModified(node);
+
+          // 🟢 RECORD THE RENAME OPERATION
+          const desk = context.deskRef?.();
+          if (desk?.recorder && nodeMetadata.original && nodeMetadata.original !== finalKey) {
+            const parentPath = node.parent
+              ? computePathFromNode(node.parent, desk.mode?.value)
+              : [];
+            desk.recorder.recordRename(parentPath, nodeMetadata.original, finalKey);
+          }
 
           // IMPORTANT: When renaming a node with children (like name_object -> name),
           // we need to update the originalKey of all descendants so the recipe

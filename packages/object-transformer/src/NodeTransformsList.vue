@@ -4,6 +4,7 @@ import { useCheckIn } from 'vue-airport';
 import TransformerParamInput from './TransformParam.vue';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey, TransformSelect, filterTransformsByType, getNodeType } from '.';
+import { computePathFromNode } from './recipe/recipe-recorder';
 
 interface Props {
   nodeId: string;
@@ -39,6 +40,23 @@ const getParamConfig = (transformName: string, paramIndex: number) => {
 
 const handleParamChange = () => {
   if (!node.value) return;
+
+  // 🟢 RECORD THE PARAMETER CHANGE
+  // When params change, record the complete transform state
+  const path = computePathFromNode(node.value, desk!.mode?.value);
+  if ((desk as any).recorder) {
+    const isModelMode = desk!.mode?.value === 'model';
+    const isTemplateRoot = path.length === 0;
+
+    if (!isModelMode || !isTemplateRoot) {
+      const transforms = node.value.transforms.map((t) => ({
+        name: t.name,
+        params: t.params || [],
+      }));
+      (desk as any).recorder.recordSetTransforms(path, transforms);
+    }
+  }
+
   // Force re-computation by triggering propagation
   desk!.propagateTransform(node.value);
   if (node.value.parent) {

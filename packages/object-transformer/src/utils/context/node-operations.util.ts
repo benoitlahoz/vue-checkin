@@ -2,10 +2,12 @@ import type { Ref } from 'vue';
 import { triggerRef } from 'vue';
 import type { ObjectNodeData } from '../../types';
 import { handleRestoreConflict } from '../node/node-utilities.util';
+import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 export interface NodeOperationsContext {
   tree: Ref<ObjectNodeData>;
   propagateTransform: (node: ObjectNodeData) => void;
+  deskRef?: () => any;
 }
 
 export function createNodeOperationsMethods(context: NodeOperationsContext) {
@@ -32,6 +34,20 @@ export function createNodeOperationsMethods(context: NodeOperationsContext) {
     toggleNodeDeletion(node: ObjectNodeData) {
       const wasDeleted = node.deleted;
       node.deleted = !node.deleted;
+
+      // 🟢 RECORD THE OPERATION (Delta-based recording)
+      const desk = context.deskRef?.();
+      if (desk?.recorder && node.parent) {
+        const path = computePathFromNode(node, desk.mode?.value);
+
+        if (!wasDeleted && node.deleted) {
+          // Node was visible, now deleted → record delete
+          desk.recorder.recordDelete(path);
+        }
+        // Note: If restoring (wasDeleted && !node.deleted), we don't record anything
+        // because the delete operation is already in the recipe history
+        // Replay will just skip the recordDelete when the node is restored
+      }
 
       // If restoring a node, check for conflicts with added properties
       if (wasDeleted && !node.deleted && node.parent) {

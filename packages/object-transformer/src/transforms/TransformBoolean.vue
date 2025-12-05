@@ -11,7 +11,6 @@ const transforms: Transform[] = [
     name: 'Negate',
     if: (node) => node.type === 'boolean',
     fn: (v: boolean) => {
-      if (typeof v !== 'boolean') return v;
       return !v;
     },
   },
@@ -19,7 +18,10 @@ const transforms: Transform[] = [
     name: 'To String',
     if: (node) => node.type === 'boolean',
     fn: (v: boolean) => {
-      if (typeof v !== 'boolean') return v;
+      // Safety check: only convert booleans with specific formatting
+      if (typeof v !== 'boolean') {
+        return String(v); // Fallback to standard String conversion
+      }
       return String(v);
     },
   },
@@ -27,7 +29,10 @@ const transforms: Transform[] = [
     name: 'To Number',
     if: (node) => node.type === 'boolean',
     fn: (v: boolean) => {
-      if (typeof v !== 'boolean') return v;
+      // Safety check: only convert booleans
+      if (typeof v !== 'boolean') {
+        return Number(v); // Fallback to standard Number conversion for non-booleans
+      }
       return v ? 1 : 0;
     },
   },
@@ -35,7 +40,6 @@ const transforms: Transform[] = [
     name: 'To Yes/No',
     if: (node) => node.type === 'boolean',
     fn: (v: boolean) => {
-      if (typeof v !== 'boolean') return v;
       return v ? 'Yes' : 'No';
     },
   },
@@ -43,7 +47,6 @@ const transforms: Transform[] = [
     name: 'To On/Off',
     if: (node) => node.type === 'boolean',
     fn: (v: boolean) => {
-      if (typeof v !== 'boolean') return v;
       return v ? 'On' : 'Off';
     },
   },
@@ -53,6 +56,7 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'boolean',
     fn: (v: any) => {
       // Accept any value type after intermediate transformations
+      // Wrap any value in an object structure
       return {
         __structuralChange: true,
         action: 'toObject' as const,

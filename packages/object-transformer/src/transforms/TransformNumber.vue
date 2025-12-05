@@ -100,7 +100,13 @@ const transforms: Transform[] = [
   {
     name: 'To String',
     if: (node) => node.type === 'number',
-    fn: (v: any) => (typeof v === 'number' ? String(v) : v),
+    fn: (v: any) => {
+      // Safety check: convert numbers with proper formatting
+      if (typeof v !== 'number') {
+        return String(v); // Fallback to standard String conversion
+      }
+      return String(v);
+    },
   },
   {
     name: 'To Object',
@@ -108,6 +114,7 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'number',
     fn: (v: any) => {
       // Accept any value type after intermediate transformations
+      // Wrap any value in an object structure
       return {
         __structuralChange: true,
         action: 'toObject' as const,

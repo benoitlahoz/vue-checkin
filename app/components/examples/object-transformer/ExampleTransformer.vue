@@ -29,11 +29,17 @@ const stats = computed(() => {
   const desk = transformerRef.value?.desk as ObjectTransformerContext | undefined;
   if (!desk) return null;
   const recipe = desk.buildRecipe();
+
+  // Count operations by type in Recipe v2
+  const transformations = recipe.operations.filter((op: any) => op.type === 'transform').length;
+  const deletions = recipe.operations.filter((op: any) => op.type === 'delete').length;
+  const renames = recipe.operations.filter((op: any) => op.type === 'rename').length;
+
   return {
     version: recipe.version,
-    transformations: recipe.steps.length,
-    deletions: recipe.deletedPaths.length,
-    renames: recipe.renamedKeys.length,
+    transformations,
+    deletions,
+    renames,
   };
 });
 

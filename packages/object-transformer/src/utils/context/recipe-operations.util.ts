@@ -1,82 +1,94 @@
-import type { Ref, ComputedRef } from 'vue';
-import { computed } from 'vue';
-import type { ObjectNodeData, Transform, TransformRecipe } from '../../types';
-import {
-  buildRecipe as buildRecipeUtil,
-  applyRecipe as applyRecipeUtil,
-  exportRecipe as exportRecipeUtil,
-  importRecipe as importRecipeUtil,
-  validateRecipeTransforms as validateRecipeTransformsUtil,
-} from '../transform/transform-recipe.util';
-import { buildNodeTree } from '../node/node-builder.util';
+import { ref, computed, type Ref } from 'vue';
+import type { ObjectNodeData, Transform } from '../../types';
+import { applyRecipe as applyRecipeUtil } from '../../recipe/recipe-applier';
+
+// 🟢 Use delta-based recording (like Quill Delta / Excel Macros)
+import { createRecipeRecorder } from '../../recipe/recipe-recorder';
+import type { RecipeRecorder } from '../../recipe/recipe-recorder';
 
 export interface RecipeOperationsContext {
   tree: Ref<ObjectNodeData>;
   originalData: Ref<any>;
   mode: Ref<'object' | 'model'>;
   transforms: Ref<Transform[]>;
-  deskRef?: () => any; // Function to get desk reference (avoids circular dependency)
+  deskRef?: () => any;
 }
 
+/**
+ * Create recipe operations methods
+ *
+ * Uses delta-based recording: operations are captured as they happen.
+ * This is the ONLY reliable way - trying to reconstruct from tree state is unreliable.
+ */
 export function createRecipeOperationsMethods(context: RecipeOperationsContext) {
-  const recipe: ComputedRef<TransformRecipe> = computed(() => {
-    return buildRecipeUtil(context.tree.value);
+  // Compute required transforms from tree
+  const requiredTransforms = computed(() => {
+    const transforms = new Set<string>();
+    const collectTransforms = (node: ObjectNodeData) => {
+      if (node.transforms) {
+        node.transforms.forEach((t) => transforms.add(t.name));
+      }
+      if (node.children) {
+        node.children.forEach(collectTransforms);
+      }
+    };
+    collectTransforms(context.tree.value);
+    return Array.from(transforms);
   });
 
+  // Compute root type from mode
+  const rootType = computed(() => (context.mode.value === 'model' ? 'array' : 'object'));
+
+  // Create recorder
+  const recorder: RecipeRecorder = createRecipeRecorder(requiredTransforms, rootType);
+
   return {
-    recipe,
+    // Expose recorder for direct access
+    recorder,
 
+    // Expose recipe (reactive)
+    recipe: recorder.recipe,
+
+    // Build recipe (for compatibility)
     buildRecipe() {
-      return recipe.value;
+      return recorder.recipe.value;
     },
 
-    applyRecipe(data: any, recipeToApply: TransformRecipe) {
-      const desk = context.deskRef?.();
-      return applyRecipeUtil(data, recipeToApply, context.transforms.value, desk);
+    // Apply recipe (uses recipe-applier)
+    applyRecipe(data: any, recipeToApply: any) {
+      return applyRecipeUtil(data, recipeToApply, context.transforms.value);
     },
 
+    // Export recipe
     exportRecipe() {
-      return exportRecipeUtil(recipe.value);
+      return JSON.stringify(recorder.recipe.value, null, 2);
     },
 
+    // Import recipe
     importRecipe(recipeJson: string) {
-      const parsedRecipe = importRecipeUtil(recipeJson);
+      const recipe = JSON.parse(recipeJson);
+      recorder.clear();
+      recipe.operations.forEach((op: any) => {
+        switch (op.type) {
+          case 'transform':
+            recorder.recordTransform(op.path, op.transformName, op.params);
+            break;
+          case 'rename':
+            recorder.recordRename(op.path, op.from, op.to);
+            break;
+          case 'delete':
+            recorder.recordDelete(op.path);
+            break;
+          case 'add':
+            recorder.recordAdd(op.path, op.key, op.value);
+            break;
+        }
+      });
+    },
 
-      // Validate that all required transforms are available
-      const missingTransforms = validateRecipeTransformsUtil(
-        parsedRecipe,
-        context.transforms.value
-      );
-      if (missingTransforms.length > 0) {
-        throw new Error(
-          `Missing required transforms: ${missingTransforms.join(', ')}. ` +
-            `Please add the corresponding transform components to the ObjectTransformer.`
-        );
-      }
-
-      // Apply recipe to original data to get transformed data
-      const desk = context.deskRef?.();
-      const transformedData = applyRecipeUtil(
-        context.originalData.value,
-        parsedRecipe,
-        context.transforms.value,
-        desk
-      );
-
-      // Update originalData with transformed data (this becomes the new baseline)
-      context.originalData.value = transformedData;
-
-      // Rebuild tree from transformed data
-      // In model mode, use first array element, otherwise use the full data
-      const dataForTree =
-        context.mode.value === 'model' && Array.isArray(transformedData)
-          ? transformedData[0]
-          : transformedData;
-
-      context.tree.value = buildNodeTree(
-        dataForTree,
-        Array.isArray(dataForTree) ? 'Array' : 'Object'
-      );
+    // Clear recipe
+    clearRecipe() {
+      recorder.clear();
     },
   };
 }

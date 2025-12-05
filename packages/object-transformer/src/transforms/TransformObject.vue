@@ -37,6 +37,10 @@ const transforms: Transform[] = [
     name: 'To String',
     if: (node) => node.type === 'object',
     fn: (v: any) => {
+      // Safety check: only stringify objects
+      if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+        return String(v); // Fallback to standard String conversion
+      }
       try {
         return JSON.stringify(v);
       } catch {

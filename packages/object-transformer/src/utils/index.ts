@@ -4,7 +4,6 @@ export * from './node/node-transforms.util';
 export * from './node/node-utilities.util';
 export * from './transform/structural-transform-handlers.util';
 export * from './transform/transform-propagation.util';
-export * from './transform/transform-recipe.util';
 export * from './type-guards.util';
 export * from './model/model-mode.util';
 export * from './model/model-rules.util';

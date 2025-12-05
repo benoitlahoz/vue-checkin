@@ -3,6 +3,7 @@ import { isStructuralResult } from '../type-guards.util';
 import { buildNodeTree } from '../node/node-builder.util';
 import { pipe, not } from 'vue-airport';
 import { isMultiPartAction } from './structural-transform-handlers.util';
+import { initKeyMetadata, isKeyModifiedCompat } from '../node/node-key-metadata.util';
 
 /**
  * Transform Application - Pure functions for applying transforms
@@ -130,19 +131,23 @@ const createSplitNodes = (
       existing.value = part;
       existing.type = typeof part as any;
 
+      // 🟡 OPTIMIZATION: Use new metadata structure
       // firstKey never changes - it's the key at first creation
       // If not set yet, set it now (for backward compatibility)
-      if (!existing.firstKey) {
-        existing.firstKey = existing.key || key;
+      if (!existing.keyMetadata?.original) {
+        initKeyMetadata(existing, existing.key || key);
       }
 
       // originalKey = what the key WOULD be if not manually renamed
       // Update it to reflect new parent name
-      existing.originalKey = key;
+      if (!existing.keyMetadata) {
+        existing.keyMetadata = {};
+      }
+      existing.keyMetadata.original = key;
 
       // IMPORTANT: Only update key if NOT manually renamed
       // This preserves "firstname", "lastname" etc.
-      if (!existing.keyModified) {
+      if (!isKeyModifiedCompat(existing)) {
         existing.key = key;
       }
 
@@ -153,9 +158,8 @@ const createSplitNodes = (
     // Create new node
     const node = buildNodeTree(part, key, parent);
 
-    // IMPORTANT: Set originalKey and firstKey on creation
-    node.originalKey = key;
-    node.firstKey = key; // The very first key, never changes
+    // 🟡 OPTIMIZATION: Use new metadata structure
+    initKeyMetadata(node, key);
     // Track the source node and index for reliable matching
     if (sourceNodeId !== undefined) {
       node.splitSourceId = sourceNodeId;
@@ -286,7 +290,39 @@ export const createPropagateTransform =
     }
 
     // Propagate based on current type (rebuild value from children)
-    propagators[node.type]?.(node);
+    // Only propagate if node has children (containers)
+    if (node.children && node.children.length > 0) {
+      propagators[node.type]?.(node);
+    }
+
+    // 🔄 Update node type if transforms changed it
+    // For primitives with transforms, check if the final transformed value has a different type
+    if (node.transforms.length > 0 && !node.children?.length) {
+      const finalValue = computeFinalTransformedValue(node);
+      const finalType = typeof finalValue;
+      
+      // DON'T update node.value - it should stay as the original value
+      // Only update the type so the correct transforms are available
+      
+      // Map JavaScript types to ObjectNodeType
+      let newType: string = finalType;
+      if (finalType === 'object') {
+        if (finalValue === null) {
+          newType = 'null';
+        } else if (finalValue instanceof Date) {
+          newType = 'date';
+        } else if (Array.isArray(finalValue)) {
+          newType = 'array';
+        } else {
+          newType = 'object';
+        }
+      }
+      
+      // Update type if it changed
+      if (newType !== node.type) {
+        node.type = newType as any;
+      }
+    }
 
     // Recursive propagation
     if (node.parent) desk.propagateTransform(node.parent);

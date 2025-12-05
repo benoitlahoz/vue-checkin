@@ -13,17 +13,38 @@ export interface TransformOperationsContext {
 }
 
 export function createTransformOperationsMethods(context: TransformOperationsContext) {
+  // 🟢 OPTIMIZATION: Map-based index for O(1) transform lookup
+  const transformsByName = new Map<string, Transform[]>();
+
+  const rebuildTransformIndex = () => {
+    transformsByName.clear();
+    for (const transform of context.transforms.value) {
+      const existing = transformsByName.get(transform.name);
+      if (existing) {
+        existing.push(transform);
+      } else {
+        transformsByName.set(transform.name, [transform]);
+      }
+    }
+  };
+
   return {
     addTransforms(...newTransforms: Transform[]) {
       context.transforms.value.push(...newTransforms);
+      // Rebuild index after adding transforms
+      rebuildTransformIndex();
     },
 
     findTransform(name: string, node?: ObjectNodeData): Transform | undefined {
+      // 🟢 OPTIMIZATION: Use Map lookup O(1) instead of Array.find O(n)
+      const candidates = transformsByName.get(name);
+      if (!candidates) return undefined;
+
       // If node is provided, filter by type compatibility
       if (node) {
-        return context.transforms.value.find((t) => t.name === name && t.if(node));
+        return candidates.find((t) => t.if(node));
       }
-      return context.transforms.value.find((t) => t.name === name);
+      return candidates[0];
     },
 
     initParams(transform: Transform) {
@@ -32,10 +53,12 @@ export function createTransformOperationsMethods(context: TransformOperationsCon
     },
 
     createTransformEntry(name: string, node?: ObjectNodeData) {
+      // 🟢 OPTIMIZATION: Use Map lookup O(1) instead of Array.find O(n)
+      const candidates = transformsByName.get(name);
+      if (!candidates) return null;
+
       // If node is provided, filter by type compatibility
-      const transform = node
-        ? context.transforms.value.find((t) => t.name === name && t.if(node))
-        : context.transforms.value.find((t) => t.name === name);
+      const transform = node ? candidates.find((t) => t.if(node)) : candidates[0];
 
       if (!transform) return null;
 
@@ -54,5 +77,13 @@ export function createTransformOperationsMethods(context: TransformOperationsCon
     },
 
     computeStepValue,
+
+    // 🟢 OPTIMIZATION: Expose map-based lookup for external use (e.g., applyRecipe)
+    getTransformsByName(): Map<string, Transform[]> {
+      return transformsByName;
+    },
+
+    // Rebuild index (useful after bulk operations or initial load)
+    rebuildTransformIndex,
   };
 }

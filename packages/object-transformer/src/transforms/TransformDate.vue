@@ -72,6 +72,7 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'date',
     fn: (v: any) => {
       // Accept any value type after intermediate transformations
+      // Wrap any value in an object structure
       return {
         __structuralChange: true,
         action: 'toObject' as const,

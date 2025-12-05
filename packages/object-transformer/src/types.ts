@@ -1,8 +1,6 @@
 // Public types for @vue-airport/object-transformer
 import type { ComputedRef, InjectionKey, Ref } from 'vue';
 
-export const CURRENT_RECIPE_VERSION = '1.0.0';
-
 export type TransformerMode = 'object' | 'model';
 
 export type ObjectNodeType =
@@ -35,42 +33,27 @@ export interface Transform {
   structural?: boolean;
 }
 
-export interface TransformRecipe {
-  version: string;
-  rootType: ObjectNodeType;
-  steps: TransformStep[];
-  deletedPaths: string[][];
-  renamedKeys: Array<{
-    path: string[];
-    oldKey: string;
-    newKey: string;
-    isStructuralResult?: boolean;
-  }>;
-  requiredTransforms: string[]; // List of transform names required for this recipe
-  createdAt?: string; // ISO timestamp of recipe creation
-}
-
-export interface TransformStep {
-  path: string[];
-  originalType: ObjectNodeType;
-  transformName: string;
-  params: any[];
-  structural?: boolean;
+// 🟡 OPTIMIZATION: Simplified key metadata structure
+export interface NodeKeyMetadata {
+  original?: string; // Original key from source data or at creation
+  modified?: boolean; // True if user manually renamed this key
+  autoRenamed?: boolean; // True if renamed automatically to avoid conflicts
+  splitSource?: string; // ID of parent node if created by split
+  splitIndex?: number; // Index in split array
 }
 
 export interface ObjectNodeData {
   id: string; // Unique identifier for the node
   type: ObjectNodeType;
-  key?: string;
-  originalKey?: string; // Current expected key (updated when parent is renamed)
-  firstKey?: string; // The very first key when node was created (never changes)
+  key?: string; // Current key (the only key property we need!)
+  // 🟡 OPTIMIZATION: All key tracking in one metadata object
+  keyMetadata?: NodeKeyMetadata;
   splitSourceId?: string; // ID of the node that created this node via split
   splitIndex?: number; // Index in the split array (0, 1, 2...)
   value: any;
   transforms: Transform[];
   children?: ObjectNodeData[];
   parent?: ObjectNodeData;
-  keyModified?: boolean; // True si la clé a été modifiée par l'utilisateur
   deleted?: boolean; // True si la propriété est marquée comme supprimée
   isOpen?: boolean; // État d'ouverture des enfants (pour object/array)
 }
@@ -101,6 +84,9 @@ export interface ObjectTransformerContext {
   ) => (Transform & { params: any[] }) | null;
   propagateTransform: (node: ObjectNodeData) => void;
   computeStepValue: (node: ObjectNodeData, index: number) => any;
+  // 🟢 OPTIMIZATION: Map-based transform lookup
+  getTransformsByName: () => Map<string, Transform[]>;
+  rebuildTransformIndex: () => void;
   // Nodes
   forbiddenKeys: Ref<string[]>;
   getComputedValueType: (node: ObjectNodeData, value: any) => ObjectNodeType;
@@ -126,10 +112,10 @@ export interface ObjectTransformerContext {
   getParamConfig: (transformName: string, paramIndex: number) => any;
   formatStepValue: (node: ObjectNodeData, index: number) => string;
   isStructuralTransform: (node: ObjectNodeData, transformIndex: number) => boolean;
-  // Recipe management
-  recipe: ComputedRef<TransformRecipe>;
-  buildRecipe: () => TransformRecipe;
-  applyRecipe: (data: any, recipe: TransformRecipe) => any;
+  // Recipe management (v2)
+  recipe: ComputedRef<any>; // Recipe from recipe/types.ts
+  buildRecipe: () => any;
+  applyRecipe: (data: any, recipe: any) => any;
   exportRecipe: () => string;
   importRecipe: (recipeJson: string) => void;
   // Model mode

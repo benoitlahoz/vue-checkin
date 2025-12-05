@@ -19,7 +19,6 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'string',
     params: [{ key: 'delimiter', label: 'Delimiter', type: 'text', default: ' ' }],
     fn: (v: string, delimiter: string) => {
-      if (typeof v !== 'string') return v;
       if (typeof delimiter !== 'string') delimiter = ' ';
       return {
         __structuralChange: true,
@@ -53,7 +52,6 @@ const transforms: Transform[] = [
       { key: 'replace', label: 'Replace', type: 'text', default: '' },
     ],
     fn: (v: string, s: string, r: string) => {
-      if (typeof v !== 'string') return v;
       if (typeof s !== 'string') s = '';
       if (typeof r !== 'string') r = '';
       // replaceAll may not be supported in older lib targets; use split/join for compatibility
@@ -71,7 +69,6 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'string',
     params: [{ key: 'suffix', label: 'Suffix', type: 'text', default: '' }],
     fn: (v: string, s: string) => {
-      if (typeof v !== 'string') return v;
       if (typeof s !== 'string') s = '';
       return v + s;
     },
@@ -81,7 +78,6 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'string',
     params: [{ key: 'prefix', label: 'Prefix', type: 'text', default: '' }],
     fn: (v: string, p: string) => {
-      if (typeof v !== 'string') return v;
       if (typeof p !== 'string') p = '';
       return p + v;
     },
@@ -94,7 +90,6 @@ const transforms: Transform[] = [
       { key: 'end', label: 'End Index', type: 'number', default: undefined },
     ],
     fn: (v: string, start: number, end?: number) => {
-      if (typeof v !== 'string') return v;
       const startIdx = typeof start === 'number' ? start : 0;
       const endIdx = typeof end === 'number' ? end : undefined;
       return v.substring(startIdx, endIdx);
@@ -105,7 +100,6 @@ const transforms: Transform[] = [
     if: (node) => node.type === 'string',
     params: [{ key: 'count', label: 'Count', type: 'number', default: 1 }],
     fn: (v: string, count: number) => {
-      if (typeof v !== 'string') return v;
       const repeatCount = typeof count === 'number' && count > 0 ? Math.floor(count) : 1;
       return v.repeat(repeatCount);
     },
@@ -113,25 +107,24 @@ const transforms: Transform[] = [
   {
     name: 'Remove Spaces',
     if: (node) => node.type === 'string',
-    fn: (v: string) => (typeof v === 'string' ? v.replace(/\s+/g, '') : v),
+    fn: (v: string) => v.replace(/\s+/g, ''),
   },
   {
     name: 'Remove Multiple Spaces',
     if: (node) => node.type === 'string',
-    fn: (v: string) => (typeof v === 'string' ? v.replace(/\s+/g, ' ') : v),
+    fn: (v: string) => v.replace(/\s+/g, ' '),
   },
   {
     name: 'Reverse',
     if: (node) => node.type === 'string',
-    fn: (v: string) => (typeof v === 'string' ? v.split('').reverse().join('') : v),
+    fn: (v: string) => v.split('').reverse().join(''),
   },
   {
     name: 'To Number',
     if: (node) => node.type === 'string',
     fn: (v: string) => {
       if (typeof v !== 'string') return v;
-      const num = Number(v);
-      return isNaN(num) ? v : num;
+      return Number(v); // Always return number, even if NaN
     },
   },
   {

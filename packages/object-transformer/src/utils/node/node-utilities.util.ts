@@ -1,5 +1,11 @@
 import type { ObjectNodeData, ObjectNodeType } from '../../types';
 import { all, maybe } from 'vue-airport';
+import {
+  getOriginalKey,
+  isKeyModified,
+  getKeyMetadata,
+  markKeyAsModified,
+} from './node-key-metadata.util';
 
 /**
  * Key Validation - Pure predicates and validation
@@ -76,13 +82,20 @@ export const handleRestoreConflict = (
 
     // Use the restoredNode's key as base to find alternatives (e.g., name -> name_1)
     const newKey = findUniqueKey(existingKeys, restoredNode.key!, 1);
-    conflictingNode.key = newKey;
-    conflictingNode.keyModified = true;
 
-    // If the conflicting node doesn't have an originalKey yet, set it now
-    if (!conflictingNode.originalKey) {
-      conflictingNode.originalKey = restoredNode.key!;
-    }
+    // Store the CURRENT key as the original before renaming
+    // This is important for the recipe system to track the rename correctly
+    const conflictingMetadata = getKeyMetadata(conflictingNode);
+    const currentKey = conflictingNode.key;
+
+    // Update the node's key to the new unique name
+    conflictingNode.key = newKey;
+    markKeyAsModified(conflictingNode);
+
+    // Set original to the CURRENT key (before the automatic rename)
+    // This ensures the recipe captures: "rename from 'name' to 'name_1'"
+    // instead of trying to use an older original key like 'name_object'
+    conflictingMetadata.original = currentKey;
   }
 };
 
@@ -126,7 +139,7 @@ export const formatValue = (value: any, type: ObjectNodeType): string => {
 // Check if property was added (from structural transforms like split or stringToObject)
 export const isAddedProperty = (node: ObjectNodeData): boolean => {
   // Check the original key (before any renames) to determine if it was added by a transformation
-  const keyToCheck = node.originalKey || node.key;
+  const keyToCheck = getOriginalKey(node) || node.key;
   if (!keyToCheck) return false;
   // Match patterns: _0, _1, ... (from split) or _object, _original, etc. (from stringToObject)
   return /_\d+$/.test(keyToCheck) || /_[a-zA-Z]+$/.test(keyToCheck);
@@ -135,7 +148,7 @@ export const isAddedProperty = (node: ObjectNodeData): boolean => {
 // Get CSS classes based on node state
 export const getKeyClasses = (node: ObjectNodeData): string => {
   if (isAddedProperty(node)) return 'font-semibold text-blue-600';
-  if (node.keyModified) return 'font-semibold text-yellow-600';
+  if (isKeyModified(node)) return 'font-semibold text-yellow-600';
   return 'font-semibold';
 };
 
