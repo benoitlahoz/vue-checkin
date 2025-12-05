@@ -20,6 +20,18 @@ export const applyNodeTransform = (
 ): void => {
   if (!transformName || transformName === 'None') {
     node.transforms = [];
+
+    // 🟢 RECORD THE REMOVAL (empty transforms list)
+    const path = computePathFromNode(node);
+    if ((desk as any).recorder) {
+      const isModelMode = desk.mode?.value === 'model';
+      const isTemplateRoot = path.length === 0;
+
+      if (!isModelMode || !isTemplateRoot) {
+        (desk as any).recorder.recordSetTransforms(path, []);
+      }
+    }
+
     // Cleanup split nodes when removing transform
     if (node.parent) {
       cleanupSplitNodes(node, node.parent);
@@ -54,16 +66,20 @@ export const applyNodeTransform = (
   }
 
   // 🟢 RECORD THE OPERATION (Delta-based recording)
-  // In model mode, don't record operations on the template root (path=[])
-  // because they modify the template structure, not the data transformation
+  // Record the COMPLETE transform state, not just the last addition
+  // This allows for reversibility: removing/changing transforms updates the recipe
   const path = computePathFromNode(node);
   if ((desk as any).recorder) {
     const isModelMode = desk.mode?.value === 'model';
     const isTemplateRoot = path.length === 0;
-    
+
     // Skip recording template root operations in model mode
     if (!isModelMode || !isTemplateRoot) {
-      (desk as any).recorder.recordTransform(path, entry.name, entry.params || []);
+      const transforms = node.transforms.map((t) => ({
+        name: t.name,
+        params: t.params || [],
+      }));
+      (desk as any).recorder.recordSetTransforms(path, transforms);
     }
   }
 

@@ -20,16 +20,30 @@ export type Path = string[];
  * Operation: atomic transformation that can be applied to data
  * All operations are pure functions: data -> data'
  */
-export type Operation = TransformOp | RenameOp | DeleteOp | AddOp;
+export type Operation = TransformOp | RenameOp | DeleteOp | AddOp | SetTransformsOp | UpdateOp;
 
 /**
  * Transform operation: applies a registered transform function
+ * @deprecated Use SetTransformsOp instead for complete transform state
  */
 export interface TransformOp {
   type: 'transform';
   path: Path;
   transformName: string;
   params: any[];
+}
+
+/**
+ * Set transforms operation: sets the complete list of transforms for a node
+ * This replaces all previous transforms at this path
+ */
+export interface SetTransformsOp {
+  type: 'setTransforms';
+  path: Path;
+  transforms: Array<{
+    name: string;
+    params: any[];
+  }>;
 }
 
 /**
@@ -58,6 +72,16 @@ export interface AddOp {
   path: Path; // Path to the parent
   key: string; // Key of the new element
   value: any; // Initial value
+}
+
+/**
+ * Update operation: updates the value of an existing node
+ * Used for primitive values (string, number, boolean)
+ */
+export interface UpdateOp {
+  type: 'update';
+  path: Path; // Path to the node to update
+  value: any; // New value
 }
 
 /**

@@ -39,7 +39,7 @@ export function createNodeOperationsMethods(context: NodeOperationsContext) {
       const desk = context.deskRef?.();
       if (desk?.recorder && node.parent) {
         const path = computePathFromNode(node);
-        
+
         if (!wasDeleted && node.deleted) {
           // Node was visible, now deleted → record delete
           desk.recorder.recordDelete(path);

@@ -14,7 +14,7 @@ import {
   ObjectTransformerDeskKey,
 } from '.';
 import { Separator } from './components/ui/separator';
-import { formatValue } from '.';
+import { formatValue, computeFinalTransformedValue } from '.';
 import { cn } from './lib/utils';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
@@ -67,6 +67,20 @@ onClickOutside(inputElement, () => {
 // Utilities from desk
 const getChildKey = (child: ObjectNodeData, index: number) =>
   deskWithContext.generateChildKey(child, index);
+
+// Check if children should be displayed
+// Hide children if transforms change the type to a primitive
+const shouldShowChildren = computed(() => {
+  if (!tree.value.children?.length) return false;
+  if (!tree.value.transforms?.length) return true;
+
+  // If node has transforms, check if final type is still object/array
+  const finalValue = computeFinalTransformedValue(tree.value);
+  const finalType = typeof finalValue;
+
+  // Show children only if final value is still an object or array
+  return finalType === 'object' && (Array.isArray(finalValue) || finalValue !== null);
+});
 </script>
 
 <template>
@@ -135,7 +149,7 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
     </div>
 
     <!-- Recursive children -->
-    <div v-if="tree.children?.length && isOpen" class="object-node-indent">
+    <div v-if="shouldShowChildren && isOpen" class="object-node-indent">
       <ObjectNode
         v-for="(child, index) in tree.children"
         :id="child.id"
@@ -143,10 +157,7 @@ const getChildKey = (child: ObjectNodeData, index: number) =>
       />
     </div>
 
-    <Separator
-      v-if="tree.children?.length && tree.transforms.length"
-      class="object-node-separator"
-    />
+    <Separator v-if="shouldShowChildren && tree.transforms.length" class="object-node-separator" />
   </div>
 </template>
 

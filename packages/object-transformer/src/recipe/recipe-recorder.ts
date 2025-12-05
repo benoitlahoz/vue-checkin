@@ -20,8 +20,15 @@ export interface RecipeRecorder {
 
   /**
    * Record a transform operation
+   * @deprecated Use recordSetTransforms instead
    */
   recordTransform(path: Path, transformName: string, params: any[]): void;
+
+  /**
+   * Record the complete transform state for a node
+   * This replaces any previous transforms at this path
+   */
+  recordSetTransforms(path: Path, transforms: Array<{ name: string; params: any[] }>): void;
 
   /**
    * Record a rename operation
@@ -37,6 +44,11 @@ export interface RecipeRecorder {
    * Record an add operation
    */
   recordAdd(parentPath: Path, key: string, value: any): void;
+
+  /**
+   * Record an update operation (value change)
+   */
+  recordUpdate(path: Path, value: any): void;
 
   /**
    * Clear all recorded operations
@@ -78,6 +90,8 @@ export const createRecipeRecorder = (
     operations.value.forEach((op) => {
       if (op.type === 'transform') {
         transforms.add(op.transformName);
+      } else if (op.type === 'setTransforms') {
+        op.transforms.forEach((t) => transforms.add(t.name));
       }
     });
 
@@ -107,6 +121,25 @@ export const createRecipeRecorder = (
       });
     },
 
+    recordSetTransforms(path: Path, transforms: Array<{ name: string; params: any[] }>) {
+      // Remove any previous setTransforms operations for this path
+      const pathKey = path.join('.');
+      operations.value = operations.value.filter((op) => {
+        if (op.type !== 'setTransforms') return true;
+        return op.path.join('.') !== pathKey;
+      });
+
+      // Add new setTransforms operation
+      operations.value.push({
+        type: 'setTransforms',
+        path: [...path],
+        transforms: transforms.map((t) => ({
+          name: t.name,
+          params: [...t.params],
+        })),
+      });
+    },
+
     recordRename(parentPath: Path, from: string, to: string) {
       operations.value.push({
         type: 'rename',
@@ -128,6 +161,22 @@ export const createRecipeRecorder = (
         type: 'add',
         path: [...parentPath],
         key,
+        value,
+      });
+    },
+
+    recordUpdate(path: Path, value: any) {
+      // Remove any previous update operations for this exact path
+      const pathKey = path.join('.');
+      operations.value = operations.value.filter((op) => {
+        if (op.type !== 'update') return true;
+        return op.path.join('.') !== pathKey;
+      });
+
+      // Add new update operation
+      operations.value.push({
+        type: 'update',
+        path: [...path],
         value,
       });
     },
@@ -158,7 +207,7 @@ export const createRecipeRecorder = (
 
 /**
  * Helper: Compute path from tree node
- * 
+ *
  * Walks up the tree to build the full path from root to node
  */
 export const computePathFromNode = (node: any): Path => {
@@ -172,10 +221,13 @@ export const computePathFromNode = (node: any): Path => {
     }
 
     // Stop at root node (parent is Object/Array with no grandparent)
-    if (!current.parent.parent && (current.parent.key === 'Object' || current.parent.key === 'Array')) {
+    if (
+      !current.parent.parent &&
+      (current.parent.key === 'Object' || current.parent.key === 'Array')
+    ) {
       break;
     }
-    
+
     current = current.parent;
   }
 

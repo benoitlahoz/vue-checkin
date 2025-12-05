@@ -37,13 +37,10 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
   });
 
   // Compute root type from mode
-  const rootType = computed(() => context.mode.value === 'model' ? 'array' : 'object');
+  const rootType = computed(() => (context.mode.value === 'model' ? 'array' : 'object'));
 
   // Create recorder
-  const recorder: RecipeRecorder = createRecipeRecorder(
-    requiredTransforms,
-    rootType
-  );
+  const recorder: RecipeRecorder = createRecipeRecorder(requiredTransforms, rootType);
 
   return {
     // Expose recorder for direct access

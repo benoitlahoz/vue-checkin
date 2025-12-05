@@ -5,7 +5,7 @@
  * All operations use immutable updates via structural sharing.
  */
 
-import type { Operation, TransformOp, RenameOp, DeleteOp, AddOp, Path } from './types';
+import type { Operation, TransformOp, RenameOp, DeleteOp, AddOp, UpdateOp, Path } from './types';
 import type { Transform } from '../types';
 import { updateAt, deleteAt, renameAt, addAt, getAt } from './immutable-update';
 
@@ -235,6 +235,74 @@ export const applyAdd = (data: any, op: AddOp): any => {
 };
 
 /**
+ * Apply an update operation
+ *
+ * Updates the value at the specified path
+ */
+export const applyUpdate = (data: any, op: UpdateOp): any => {
+  return updateAt(data, op.path, () => op.value);
+};
+
+/**
+ * Apply a setTransforms operation
+ *
+ * Applies multiple transforms sequentially to the value at path
+ */
+export const applySetTransforms = (
+  data: any,
+  op: any, // SetTransformsOp
+  transforms: Map<string, Transform>
+): any => {
+  if (!op.transforms || op.transforms.length === 0) {
+    // Empty transforms list - return data unchanged
+    return data;
+  }
+
+  // Get the current value at path
+  const currentValue = getAt(data, op.path);
+  if (currentValue === undefined) {
+    return data;
+  }
+
+  // Apply all transforms sequentially
+  let transformedValue = currentValue;
+  for (const t of op.transforms) {
+    const transform = transforms.get(t.name);
+    if (!transform) {
+      if (import.meta.env.DEV) {
+        console.warn(`Transform "${t.name}" not found, skipping`);
+      }
+      continue;
+    }
+
+    try {
+      const result = transform.fn(transformedValue, ...t.params);
+
+      // Check if it's a structural transform
+      if (result && typeof result === 'object' && result.__structuralChange === true) {
+        // Apply structural transform
+        data = applyStructuralTransform(data, op.path, result);
+        // For structural transforms, get the new value at path for next iteration
+        transformedValue = getAt(data, op.path);
+      } else {
+        transformedValue = result;
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error(`Error applying transform "${t.name}":`, error);
+      }
+    }
+  }
+
+  // If no structural transforms were applied, update the value at path
+  if (transformedValue !== currentValue) {
+    return updateAt(data, op.path, () => transformedValue);
+  }
+
+  return data;
+};
+
+/**
  * Apply a single operation to data
  *
  * Dispatcher that routes to the appropriate operation handler
@@ -247,12 +315,16 @@ export const applyOperation = (
   switch (operation.type) {
     case 'transform':
       return applyTransform(data, operation, transforms);
+    case 'setTransforms':
+      return applySetTransforms(data, operation, transforms);
     case 'rename':
       return applyRename(data, operation);
     case 'delete':
       return applyDelete(data, operation);
     case 'add':
       return applyAdd(data, operation);
+    case 'update':
+      return applyUpdate(data, operation);
     default:
       // Unknown operation type, return unchanged
       return data;

@@ -79,7 +79,7 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // Restore this node to original key
           node.key = newKey;
           const nodeMetadata = getKeyMetadata(node);
-          
+
           // We're back to original, so not modified anymore
           // But keep the original value stored for future renames
           nodeMetadata.modified = false;
@@ -125,7 +125,7 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
 
           // Get or initialize metadata
           const nodeMetadata = getKeyMetadata(node);
-          
+
           // Store original key BEFORE any rename (if not already stored)
           // This is the key from the source data, before user modifications
           if (!nodeMetadata.original) {
