@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useVirtualList } from '@vueuse/core';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey } from '.';
 import { Button } from './components/ui/button';
-import { Copy, Check, Loader2, Play } from 'lucide-vue-next';
+import { Copy, Check } from 'lucide-vue-next';
 
 interface Props {
   class?: string;
@@ -24,6 +25,7 @@ const itemsProcessed = ref(0);
 const totalItems = ref(0);
 const previewCache = ref<any>(null);
 const needsRegeneration = ref(true);
+const VIRTUAL_SCROLL_THRESHOLD = 5000; // Activer virtual scroll au-delà de 5000 lignes
 
 // Watch for changes that require preview regeneration
 watch(
@@ -108,6 +110,7 @@ async function generateLargePreview(data: any[], recipe: any) {
   totalItems.value = data.length;
   itemsProcessed.value = 0;
 
+  // Keep old preview visible, build new one progressively
   const result: any[] = [];
   const chunkSize = 100;
 
@@ -116,6 +119,9 @@ async function generateLargePreview(data: any[], recipe: any) {
     const transformed = chunk.map((item) => desk!.applyRecipe(item, recipe));
     result.push(...transformed);
 
+    // Update cache progressively so the preview updates in real-time
+    previewCache.value = [...result];
+
     itemsProcessed.value = Math.min(i + chunkSize, data.length);
     progress.value = (itemsProcessed.value / totalItems.value) * 100;
 
@@ -123,19 +129,10 @@ async function generateLargePreview(data: any[], recipe: any) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
+  // Final update
   previewCache.value = result;
   isGenerating.value = false;
   needsRegeneration.value = false;
-}
-
-// Manual generation trigger
-async function generatePreview() {
-  if (!desk || !Array.isArray(desk.originalData.value)) return;
-
-  const data = desk.originalData.value;
-  const recipe = desk.recipe.value;
-
-  await generateLargePreview(data, recipe);
 }
 
 const finalObject = computed(() => {
@@ -149,20 +146,27 @@ const finalObject = computed(() => {
 
   // En mode model avec lazy generation
   if (desk.mode.value === 'model' && Array.isArray(desk.originalData.value)) {
+    const data = desk.originalData.value;
+    const recipe = desk.recipe.value;
+
     // Return cached preview if available
     if (previewCache.value && !needsRegeneration.value) {
       return previewCache.value;
     }
 
     // For small datasets (< 500 items), generate synchronously
-    const data = desk.originalData.value;
     if (data.length < 500) {
-      const recipe = desk.recipe.value;
       return data.map((item) => desk.applyRecipe(item, recipe));
     }
 
-    // For large datasets, return empty until manual generation
-    return null;
+    // For large datasets, auto-generate if needed
+    if (needsRegeneration.value) {
+      // Trigger async generation
+      generateLargePreview(data, recipe);
+    }
+
+    // Return cached or empty while generating
+    return previewCache.value;
   }
 
   // En mode object, construire récursivement depuis l'arbre
@@ -186,13 +190,28 @@ const formattedJson = computed(() => {
   }
 });
 
-const showGenerateButton = computed(() => {
-  return (
-    desk?.mode.value === 'model' &&
-    Array.isArray(desk?.originalData.value) &&
-    desk.originalData.value.length >= 500 &&
-    (!previewCache.value || needsRegeneration.value)
-  );
+// Compute lines separately for virtual scrolling
+const computedJsonLines = computed(() => {
+  if (!formattedJson.value) return [];
+  return formattedJson.value.split('\n');
+});
+
+// Virtual scrolling pour les grands JSONs
+const shouldUseVirtualScroll = computed(
+  () => computedJsonLines.value.length > VIRTUAL_SCROLL_THRESHOLD
+);
+
+const {
+  list: virtualList,
+  containerProps,
+  wrapperProps,
+} = useVirtualList(computedJsonLines, {
+  itemHeight: 18, // Hauteur approximative d'une ligne avec text-xs
+  overscan: 10, // Nombre de lignes à rendre en plus pour un scroll fluide
+});
+
+const shouldShowPreview = computed(() => {
+  return finalObject.value !== null && finalObject.value !== undefined;
 });
 
 const copyToClipboard = async () => {
@@ -211,15 +230,20 @@ const copyToClipboard = async () => {
 <template>
   <div
     data-slot="object-transformer-preview"
-    class="relative group flex-1 min-h-0"
+    class="relative group h-full overflow-hidden"
     :class="props.class"
   >
+    <!-- Progress bar - very thin, at the very top -->
+    <div v-if="isGenerating" class="preview-progress-bar-top">
+      <div class="preview-progress-fill-top" :style="{ width: `${progress}%` }" />
+    </div>
+
     <!-- Copy button -->
     <Button
-      v-if="!showGenerateButton"
+      v-if="shouldShowPreview"
       size="icon"
       variant="ghost"
-      class="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+      class="preview-copy-button h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
       :class="{ 'opacity-100!': isCopied }"
       @click="copyToClipboard"
     >
@@ -227,136 +251,54 @@ const copyToClipboard = async () => {
       <Copy v-else class="h-3.5 w-3.5" />
     </Button>
 
-    <!-- Generate button for large datasets -->
-    <div v-if="showGenerateButton" class="preview-generate-placeholder">
-      <div class="preview-generate-content">
-        <Play class="preview-generate-icon" />
-        <h3 class="preview-generate-title">Large Dataset Preview</h3>
-        <p class="preview-generate-text">
-          {{ desk?.originalData.value?.length.toLocaleString() }} items detected
-        </p>
-        <Button @click="generatePreview" class="preview-generate-button"> Generate Preview </Button>
+    <!-- Preview content - Virtual scrolling for large JSONs -->
+    <div
+      v-if="shouldShowPreview && shouldUseVirtualScroll"
+      v-bind="containerProps"
+      class="text-xs bg-muted p-3 rounded overflow-auto max-h-[500px] font-mono"
+    >
+      <div v-bind="wrapperProps">
+        <div
+          v-for="{ data: line, index } in virtualList"
+          :key="index"
+          style="height: 18px; line-height: 18px; white-space: pre"
+          v-text="line"
+        />
       </div>
     </div>
 
-    <!-- Loading overlay -->
-    <div v-if="isGenerating" class="preview-loading-overlay">
-      <div class="preview-loading-content">
-        <Loader2 class="preview-loading-spinner" />
-        <div class="preview-loading-text">
-          Generating preview... {{ itemsProcessed.toLocaleString() }} /
-          {{ totalItems.toLocaleString() }}
-        </div>
-        <!-- Custom progress bar -->
-        <div class="preview-progress-bar">
-          <div class="preview-progress-fill" :style="{ width: `${progress}%` }" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview content -->
+    <!-- Preview content - Standard for small JSONs -->
     <pre
-      v-show="!showGenerateButton"
-      class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto h-full whitespace-pre-wrap wrap-break-word"
+      v-else-if="shouldShowPreview"
+      class="text-xs bg-muted p-3 rounded overflow-auto max-h-[500px] whitespace-pre-wrap wrap-break-word font-mono"
     ><code>{{ formattedJson }}</code></pre>
   </div>
 </template>
 
 <style scoped>
-.preview-generate-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background: var(--color-muted);
-  border-radius: 0.375rem;
-}
-
-.preview-generate-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 2rem;
-  text-align: center;
-}
-
-.preview-generate-icon {
-  width: 3rem;
-  height: 3rem;
-  color: var(--color-primary);
-  opacity: 0.8;
-}
-
-.preview-generate-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.preview-generate-text {
-  font-size: 0.875rem;
-  color: var(--color-muted-foreground);
-  margin: 0;
-}
-
-.preview-generate-button {
-  margin-top: 0.5rem;
-}
-
-.preview-loading-overlay {
+/* Progress bar - very thin at the very top */
+.preview-progress-bar-top {
   position: absolute;
-  inset: 0;
-  background: rgba(var(--color-background-rgb, 255, 255, 255), 0.95);
-  backdrop-filter: blur(4px);
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.preview-loading-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 2rem;
-}
-
-.preview-loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  color: var(--color-primary);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.preview-loading-text {
-  font-size: 0.875rem;
-  color: var(--color-foreground);
-}
-
-.preview-progress-bar {
-  width: 16rem;
-  height: 0.5rem;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: var(--color-muted);
-  border-radius: 9999px;
+  z-index: 30;
   overflow: hidden;
-  position: relative;
 }
 
-.preview-progress-fill {
+.preview-progress-fill-top {
   height: 100%;
   background: var(--color-primary);
-  border-radius: 9999px;
   transition: width 0.3s ease-out;
+}
+
+/* Copy button - top right */
+.preview-copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 20;
 }
 </style>

@@ -31,20 +31,127 @@ const stats = computed(() => {
   const recipe = desk.buildRecipe();
 
   // Count operations by type in Recipe v2
-  const transformations = recipe.operations.filter((op: any) => op.type === 'transform').length;
-  const deletions = recipe.operations.filter((op: any) => op.type === 'delete').length;
-  const renames = recipe.operations.filter((op: any) => op.type === 'rename').length;
+  const transformations = recipe.operations.length;
 
   return {
     version: recipe.version,
     transformations,
-    deletions,
-    renames,
   };
 });
 
-// Array of user objects for model mode demonstration
-const data = [
+// Generate large dataset for performance testing
+function generateLargeDataset(count: number) {
+  const firstNames = [
+    'john',
+    'jane',
+    'bob',
+    'alice',
+    'charlie',
+    'diana',
+    'eve',
+    'frank',
+    'grace',
+    'henry',
+  ];
+  const lastNames = [
+    'doe',
+    'smith',
+    'wilson',
+    'brown',
+    'jones',
+    'garcia',
+    'miller',
+    'davis',
+    'rodriguez',
+    'martinez',
+  ];
+  const cities = [
+    'marseille',
+    'paris',
+    'lyon',
+    'toulouse',
+    'nice',
+    'nantes',
+    'strasbourg',
+    'montpellier',
+    'bordeaux',
+    'lille',
+  ];
+  const streets = [
+    'main st',
+    'elm st',
+    'oak ave',
+    'maple dr',
+    'pine rd',
+    'cedar ln',
+    'birch way',
+    'ash ct',
+  ];
+  const hobbiesList = [
+    ['reading', 'traveling', 'swimming'],
+    ['cooking', 'painting', 'dancing'],
+    ['gaming', 'hiking', 'photography'],
+    ['music', 'sports', 'gardening'],
+    ['yoga', 'cycling', 'fishing'],
+  ];
+  const tags = ['tag1', 'tag2', 'tag3', 'tag4', 'tag5'];
+
+  const result = [];
+
+  for (let i = 0; i < count; i++) {
+    const firstName = firstNames[i % firstNames.length];
+    const lastName = lastNames[(i * 7) % lastNames.length];
+    const age = 20 + (i % 50);
+    const city = cities[i % cities.length];
+    const street = `${100 + (i % 900)} ${streets[i % streets.length]}`;
+    const zip = `${10000 + (i % 90000)}`;
+
+    const obj: any = {
+      name: `${firstName} ${lastName}`,
+      age,
+      active: i % 3 !== 0, // ~67% active
+      city,
+      address: {
+        street,
+        zip,
+      },
+      hobbies: hobbiesList[i % hobbiesList.length],
+    };
+
+    // Add dob to ~60% of items
+    if (i % 5 !== 0) {
+      const year = 1950 + (i % 55);
+      const month = i % 12;
+      const day = 1 + (i % 28);
+      obj.dob = new Date(year, month, day);
+    }
+
+    // Add custom nested object to ~40% of items
+    if (i % 5 < 2) {
+      obj.address.custom = {
+        info: `custom info ${i}`,
+        tags: tags.slice(0, 1 + (i % 3)),
+      };
+    }
+
+    // Add email to ~70% of items
+    if (i % 10 < 7) {
+      obj.email = `${firstName}.${lastName}${i}@example.com`;
+    }
+
+    // Add phone to ~50% of items
+    if (i % 2 === 0) {
+      obj.phone = `+33 ${1 + (i % 9)} ${10 + (i % 90)} ${10 + (i % 90)} ${10 + (i % 90)} ${10 + (i % 90)}`;
+    }
+
+    result.push(obj);
+  }
+
+  return result;
+}
+
+// Small dataset for quick demo
+const smallData = [
   {
     name: 'john doe',
     age: 30,
@@ -87,15 +194,21 @@ const data = [
     },
   },
 ];
+
+// Toggle between small and large dataset - change to test performance
+const USE_LARGE_DATASET = true;
+const LARGE_DATASET_SIZE = 1000;
+
+const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smallData;
 </script>
 
 <template>
-  <div class="space-y-4 max-h-196 overflow-auto">
+  <div class="h-164 overflow-hidden flex flex-col">
     <ObjectTransformer
       ref="transformerRef"
       v-slot="{ desk }"
       :data="data"
-      class="flex md:flex-row w-full"
+      class="flex md:flex-row w-full h-full gap-4"
     >
       <TransformString />
       <TransformNumber />
@@ -104,28 +217,30 @@ const data = [
       <TransformObject />
       <TransformArray />
 
-      <div class="flex-1 flex flex-col gap-2">
-        <ModeToggle :desk="desk" />
-        <ObjectNode />
+      <div class="flex-1 flex flex-col gap-2 min-h-0">
+        <ModeToggle :desk="desk" class="shrink-0" />
+        <ObjectNode class="flex-1 min-h-0 overflow-auto" />
       </div>
 
-      <div class="flex-1 flex flex-col gap-2 h-full">
+      <div class="flex-1 flex flex-col gap-2 min-h-0">
         <Accordion
           type="single"
           collapsible
           default-value="preview"
-          class="border rounded-lg p-4 bg-card flex-1 flex flex-col"
+          class="border rounded-lg p-4 bg-card"
         >
-          <AccordionItem value="preview" class="border-none flex-1 flex flex-col">
-            <AccordionTrigger class="py-2">
+          <AccordionItem value="preview" class="border-none">
+            <AccordionTrigger class="py-2 shrink-0">
               <h3 class="text-sm font-semibold">Final Object Preview</h3>
             </AccordionTrigger>
-            <AccordionContent class="flex-1 min-h-0 flex flex-col pt-3">
-              <ObjectPreview />
+            <AccordionContent class="pb-0">
+              <div class="max-h-[500px]">
+                <ObjectPreview class="h-full" />
+              </div>
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="recipe" class="border-none flex-1 flex flex-col">
-            <AccordionTrigger class="py-2">
+          <AccordionItem value="recipe" class="border-none">
+            <AccordionTrigger class="py-2 shrink-0">
               <div class="flex flex-col items-start gap-2">
                 <h3 class="text-sm font-semibold">Transform Recipe</h3>
                 <div v-if="stats" class="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -135,17 +250,13 @@ const data = [
                       stats.transformations !== 1 ? 's' : ''
                     }}</span
                   >
-                  <span v-if="stats.deletions"
-                    >{{ stats.deletions }} deletion{{ stats.deletions !== 1 ? 's' : '' }}</span
-                  >
-                  <span v-if="stats.renames"
-                    >{{ stats.renames }} rename{{ stats.renames !== 1 ? 's' : '' }}</span
-                  >
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent class="flex-1 min-h-0 flex flex-col pt-3">
-              <RecipePreview />
+            <AccordionContent class="pb-0">
+              <div class="max-h-[500px]">
+                <RecipePreview class="h-full" />
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

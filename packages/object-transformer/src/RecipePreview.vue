@@ -85,8 +85,8 @@ const handleFileUpload = async (event: Event) => {
 </script>
 
 <template>
-  <div data-slot="recipe-preview" class="flex-1 flex flex-col min-h-0 gap-3" :class="props.class">
-    <div class="flex gap-2">
+  <div data-slot="recipe-preview" class="h-full flex flex-col gap-3" :class="props.class">
+    <div class="flex gap-2 shrink-0">
       <Button size="sm" variant="outline" @click="downloadRecipe">
         <Download class="h-3.5 w-3.5 mr-1.5" />
         Export
@@ -104,7 +104,7 @@ const handleFileUpload = async (event: Event) => {
       />
     </div>
 
-    <div class="relative group flex-1 min-h-0">
+    <div class="relative group flex-1 min-h-0 overflow-hidden">
       <Button
         size="icon"
         variant="ghost"
@@ -116,7 +116,7 @@ const handleFileUpload = async (event: Event) => {
         <Copy v-else class="h-3.5 w-3.5" />
       </Button>
       <pre
-        class="text-xs bg-muted p-3 rounded overflow-x-auto overflow-y-auto h-full whitespace-pre-wrap wrap-break-word"
+        class="text-xs bg-muted p-3 rounded overflow-auto max-h-[500px] whitespace-pre-wrap wrap-break-word"
       ><code>{{ formattedRecipe }}</code></pre>
     </div>
   </div>
