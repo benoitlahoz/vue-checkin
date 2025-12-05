@@ -86,7 +86,7 @@ const finalObject = computed(() => {
 
   // En mode model, appliquer la recipe à tous les objets de l'array
   if (desk.mode.value === 'model' && Array.isArray(desk.originalData.value)) {
-    const recipe = desk.buildRecipe();
+    const recipe = desk.recipe.value;
     return desk.originalData.value.map((item) => desk.applyRecipe(item, recipe));
   }
 

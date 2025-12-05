@@ -19,11 +19,8 @@ const { desk } = checkIn(ObjectTransformerDeskKey);
 
 const isCopied = ref(false);
 
-// Build recipe from current tree state
-const recipe = computed(() => {
-  if (!desk) return null;
-  return desk.buildRecipe();
-});
+// Recipe is already a computed ref from the recorder
+const recipe = desk?.recipe ?? computed(() => null);
 
 // Format recipe as JSON
 const formattedRecipe = computed(() => {

@@ -1,0 +1,183 @@
+/**
+ * Recipe Recorder - Delta-based operation recording
+ *
+ * Like Quill Delta, Excel Macros, or Git: we record operations AS THEY HAPPEN.
+ * This is the ONLY reliable way to capture user intent.
+ *
+ * The tree is the source of truth for CURRENT STATE.
+ * The recorder is the source of truth for HISTORY/CHANGES.
+ */
+
+import { ref, computed, type Ref, type ComputedRef } from 'vue';
+import type { Operation, Recipe, RecipeMetadata, Path } from './types';
+import { RECIPE_VERSION } from './types';
+
+export interface RecipeRecorder {
+  /**
+   * Current list of recorded operations (reactive)
+   */
+  operations: Ref<Operation[]>;
+
+  /**
+   * Record a transform operation
+   */
+  recordTransform(path: Path, transformName: string, params: any[]): void;
+
+  /**
+   * Record a rename operation
+   */
+  recordRename(parentPath: Path, from: string, to: string): void;
+
+  /**
+   * Record a delete operation
+   */
+  recordDelete(path: Path): void;
+
+  /**
+   * Record an add operation
+   */
+  recordAdd(parentPath: Path, key: string, value: any): void;
+
+  /**
+   * Clear all recorded operations
+   */
+  clear(): void;
+
+  /**
+   * Build a recipe from recorded operations
+   */
+  build(requiredTransforms: string[], rootType: 'object' | 'array'): Recipe;
+
+  /**
+   * Get recipe as reactive computed
+   */
+  recipe: ComputedRef<Recipe>;
+
+  /**
+   * Get current operation count
+   */
+  count(): number;
+}
+
+/**
+ * Create a recipe recorder
+ *
+ * This is the PRIMARY way to build recipes.
+ * It records operations as they happen, ensuring perfect accuracy.
+ */
+export const createRecipeRecorder = (
+  requiredTransforms: Ref<string[]>,
+  rootType: Ref<'object' | 'array'>
+): RecipeRecorder => {
+  const operations = ref<Operation[]>([]);
+
+  // Reactive recipe that updates when operations change
+  const recipe = computed<Recipe>(() => {
+    // Compute required transforms from actual recorded operations
+    const transforms = new Set<string>();
+    operations.value.forEach((op) => {
+      if (op.type === 'transform') {
+        transforms.add(op.transformName);
+      }
+    });
+
+    const metadata: RecipeMetadata = {
+      createdAt: new Date().toISOString(),
+      requiredTransforms: Array.from(transforms),
+      rootType: rootType.value,
+    };
+
+    return {
+      version: RECIPE_VERSION,
+      operations: [...operations.value],
+      metadata,
+    };
+  });
+
+  return {
+    operations,
+    recipe,
+
+    recordTransform(path: Path, transformName: string, params: any[]) {
+      operations.value.push({
+        type: 'transform',
+        path: [...path],
+        transformName,
+        params: [...params],
+      });
+    },
+
+    recordRename(parentPath: Path, from: string, to: string) {
+      operations.value.push({
+        type: 'rename',
+        path: [...parentPath],
+        from,
+        to,
+      });
+    },
+
+    recordDelete(path: Path) {
+      operations.value.push({
+        type: 'delete',
+        path: [...path],
+      });
+    },
+
+    recordAdd(parentPath: Path, key: string, value: any) {
+      operations.value.push({
+        type: 'add',
+        path: [...parentPath],
+        key,
+        value,
+      });
+    },
+
+    clear() {
+      operations.value = [];
+    },
+
+    build(requiredTransforms: string[], rootType: 'object' | 'array'): Recipe {
+      const metadata: RecipeMetadata = {
+        createdAt: new Date().toISOString(),
+        requiredTransforms,
+        rootType,
+      };
+
+      return {
+        version: RECIPE_VERSION,
+        operations: [...operations.value],
+        metadata,
+      };
+    },
+
+    count() {
+      return operations.value.length;
+    },
+  };
+};
+
+/**
+ * Helper: Compute path from tree node
+ * 
+ * Walks up the tree to build the full path from root to node
+ */
+export const computePathFromNode = (node: any): Path => {
+  const path: string[] = [];
+  let current = node;
+
+  while (current && current.parent) {
+    // Add current key to path (unless it's a numeric index in template mode)
+    if (current.key && !/^\d+$/.test(current.key)) {
+      path.unshift(current.key);
+    }
+
+    // Stop at root node (parent is Object/Array with no grandparent)
+    if (!current.parent.parent && (current.parent.key === 'Object' || current.parent.key === 'Array')) {
+      break;
+    }
+    
+    current = current.parent;
+  }
+
+  return path;
+};

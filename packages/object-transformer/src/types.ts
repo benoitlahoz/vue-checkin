@@ -1,8 +1,6 @@
 // Public types for @vue-airport/object-transformer
 import type { ComputedRef, InjectionKey, Ref } from 'vue';
 
-export const CURRENT_RECIPE_VERSION = '1.0.0';
-
 export type TransformerMode = 'object' | 'model';
 
 export type ObjectNodeType =
@@ -32,29 +30,6 @@ export interface Transform {
   if: (node: ObjectNodeData) => boolean;
   fn: (value: any, ...params: any[]) => any | StructuralTransformResult;
   params?: any[];
-  structural?: boolean;
-}
-
-export interface TransformRecipe {
-  version: string;
-  rootType: ObjectNodeType;
-  steps: TransformStep[];
-  deletedPaths: string[][];
-  renamedKeys: Array<{
-    path: string[];
-    oldKey: string;
-    newKey: string;
-    isStructuralResult?: boolean;
-  }>;
-  requiredTransforms: string[]; // List of transform names required for this recipe
-  createdAt?: string; // ISO timestamp of recipe creation
-}
-
-export interface TransformStep {
-  path: string[];
-  originalType: ObjectNodeType;
-  transformName: string;
-  params: any[];
   structural?: boolean;
 }
 
@@ -137,10 +112,10 @@ export interface ObjectTransformerContext {
   getParamConfig: (transformName: string, paramIndex: number) => any;
   formatStepValue: (node: ObjectNodeData, index: number) => string;
   isStructuralTransform: (node: ObjectNodeData, transformIndex: number) => boolean;
-  // Recipe management
-  recipe: ComputedRef<TransformRecipe>;
-  buildRecipe: () => TransformRecipe;
-  applyRecipe: (data: any, recipe: TransformRecipe) => any;
+  // Recipe management (v2)
+  recipe: ComputedRef<any>; // Recipe from recipe/types.ts
+  buildRecipe: () => any;
+  applyRecipe: (data: any, recipe: any) => any;
   exportRecipe: () => string;
   importRecipe: (recipeJson: string) => void;
   // Model mode

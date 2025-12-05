@@ -65,9 +65,7 @@ const transforms: Transform[] = [
         return {
           __structuralChange: true,
           action: 'arrayToProperties',
-          object: {
-            object: obj,
-          },
+          object: obj,
           removeSource: false,
         };
       }
@@ -76,9 +74,7 @@ const transforms: Transform[] = [
       return {
         __structuralChange: true,
         action: 'toObject' as const,
-        object: {
-          object: { value: v },
-        },
+        object: { value: v },
         removeSource: false,
       };
     },

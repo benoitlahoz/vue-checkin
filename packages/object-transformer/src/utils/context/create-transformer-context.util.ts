@@ -69,6 +69,7 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
     tempKey,
     propagateTransform: (node: ObjectNodeData) => transformOps.propagateTransform(node),
     triggerTreeUpdate: () => nodeOps.triggerTreeUpdate(),
+    deskRef: () => deskRef,
   });
 
   const transformOps = createTransformOperationsMethods({

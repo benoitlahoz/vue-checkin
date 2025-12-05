@@ -8,12 +8,14 @@ import {
   getKeyMetadata,
   isKeyModified,
 } from '../node/node-key-metadata.util';
+import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 export interface KeyEditingContext {
   editingNode: Ref<ObjectNodeData | null>;
   tempKey: Ref<string | null>;
   propagateTransform: (node: ObjectNodeData) => void;
   triggerTreeUpdate: () => void;
+  deskRef?: () => any; // Access to desk for recorder
 }
 
 export function createKeyEditingMethods(context: KeyEditingContext) {
@@ -77,8 +79,10 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // Restore this node to original key
           node.key = newKey;
           const nodeMetadata = getKeyMetadata(node);
-          nodeMetadata.modified = false; // No longer modified since we're back to original
-          nodeMetadata.original = undefined; // Clear original key
+          
+          // We're back to original, so not modified anymore
+          // But keep the original value stored for future renames
+          nodeMetadata.modified = false;
 
           // Propagate both nodes to update recipe
           if (conflictingNode.transforms && conflictingNode.transforms.length > 0) {
@@ -119,14 +123,24 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           // Use the recalculated conflict check instead of the original conflictingNode
           const finalKey = stillConflicting ? autoRenameKey(parent, newKey) : newKey;
 
-          // Store original key before renaming (only if not already stored)
+          // Get or initialize metadata
           const nodeMetadata = getKeyMetadata(node);
-          if (!nodeMetadata.original && oldKey !== finalKey) {
+          
+          // Store original key BEFORE any rename (if not already stored)
+          // This is the key from the source data, before user modifications
+          if (!nodeMetadata.original) {
             nodeMetadata.original = oldKey;
           }
 
           node.key = finalKey;
           markKeyAsModified(node);
+
+          // 🟢 RECORD THE RENAME OPERATION
+          const desk = context.deskRef?.();
+          if (desk?.recorder && nodeMetadata.original && nodeMetadata.original !== finalKey) {
+            const parentPath = node.parent ? computePathFromNode(node.parent) : [];
+            desk.recorder.recordRename(parentPath, nodeMetadata.original, finalKey);
+          }
 
           // IMPORTANT: When renaming a node with children (like name_object -> name),
           // we need to update the originalKey of all descendants so the recipe

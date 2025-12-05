@@ -1,4 +1,5 @@
 import type { ObjectNodeData, Transform, ObjectTransformerDesk } from '../../types';
+import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 /**
  * Transform filtering - Pure functions
@@ -52,6 +53,20 @@ export const applyNodeTransform = (
     node.transforms = [entry];
   }
 
+  // 🟢 RECORD THE OPERATION (Delta-based recording)
+  // In model mode, don't record operations on the template root (path=[])
+  // because they modify the template structure, not the data transformation
+  const path = computePathFromNode(node);
+  if ((desk as any).recorder) {
+    const isModelMode = desk.mode?.value === 'model';
+    const isTemplateRoot = path.length === 0;
+    
+    // Skip recording template root operations in model mode
+    if (!isModelMode || !isTemplateRoot) {
+      (desk as any).recorder.recordTransform(path, entry.name, entry.params || []);
+    }
+  }
+
   desk.propagateTransform(node);
   if (node.parent) desk.propagateTransform(node.parent);
   desk.triggerTreeUpdate(); // Trigger reactivity
@@ -97,6 +112,12 @@ export const applyStepTransform = (
     } else {
       // Add new transform
       node.transforms.push(entry);
+    }
+
+    // 🟢 RECORD THE OPERATION
+    const path = computePathFromNode(node);
+    if ((desk as any).recorder) {
+      (desk as any).recorder.recordTransform(path, entry.name, entry.params || []);
     }
   }
 
