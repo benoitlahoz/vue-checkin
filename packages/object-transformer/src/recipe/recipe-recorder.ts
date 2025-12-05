@@ -157,21 +157,22 @@ export const createRecipeRecorder = (
       });
     },
 
-  recordDelete(path: Path) {
-    operations.value.push({
-      type: 'delete',
-      path: [...path],
-    });
-  },
+    recordDelete(path: Path) {
+      operations.value.push({
+        type: 'delete',
+        path: [...path],
+      });
+    },
 
-  removeDelete(path: Path) {
-    // Remove the delete operation for this path when restoring a soft deleted node
-    const pathKey = path.join('.');
-    operations.value = operations.value.filter((op) => {
-      if (op.type !== 'delete') return true;
-      return op.path.join('.') !== pathKey;
-    });
-  },    recordAdd(parentPath: Path, key: string, value: any) {
+    removeDelete(path: Path) {
+      // Remove the delete operation for this path when restoring a soft deleted node
+      const pathKey = path.join('.');
+      operations.value = operations.value.filter((op) => {
+        if (op.type !== 'delete') return true;
+        return op.path.join('.') !== pathKey;
+      });
+    },
+    recordAdd(parentPath: Path, key: string, value: any) {
       operations.value.push({
         type: 'add',
         path: [...parentPath],

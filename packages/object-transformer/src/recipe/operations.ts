@@ -254,12 +254,12 @@ export const applySetTransforms = (
   transforms: Map<string, Transform>
 ): any => {
   if (!op.transforms || op.transforms.length === 0) {
-    // Empty transforms list - return data unchanged
     return data;
   }
 
   // Get the current value at path
   const currentValue = getAt(data, op.path);
+
   if (currentValue === undefined) {
     return data;
   }

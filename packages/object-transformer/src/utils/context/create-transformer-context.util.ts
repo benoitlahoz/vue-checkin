@@ -42,6 +42,7 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
   const tree = ref<ObjectNodeData>(
     buildNodeTree(initialData, Array.isArray(initialData) ? 'Array' : 'Object')
   );
+  const treeKey = ref<number>(0); // Key to force complete remount of tree
   const mode = ref<'object' | 'model'>(initialMode);
   const templateIndex = ref<number>(initialTemplateIndex);
   const originalDataRef = ref(originalData);
@@ -88,7 +89,9 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
     tree,
     originalData: originalDataRef,
     mode,
+    templateIndex,
     transforms,
+    treeKey,
     deskRef: () => deskRef,
   });
 
@@ -103,6 +106,7 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
   const context = {
     // Tree
     tree,
+    treeKey,
     ...nodeOps,
 
     // Original data

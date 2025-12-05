@@ -61,6 +61,7 @@ export interface ObjectNodeData {
 export interface ObjectTransformerContext {
   // Tree
   tree: Ref<ObjectNodeData>;
+  treeKey: Ref<number>; // Key to force complete remount of tree
   triggerTreeUpdate: () => void;
   originalData: Ref<any>;
   getNode: (id: string) => ObjectNodeData | null;

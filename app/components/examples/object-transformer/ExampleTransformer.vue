@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, unref } from 'vue';
 import {
   ObjectTransformer,
   ObjectPreview,
@@ -23,6 +23,9 @@ import {
 
 // Reference to ObjectTransformer component instance
 const transformerRef = ref<InstanceType<typeof ObjectTransformer>>();
+
+// Get treeKey for forcing tree remount
+const treeKey = computed(() => unref(transformerRef.value?.treeKey) ?? 0);
 
 // Recipe stats for display - access desk through component ref
 const stats = computed(() => {
@@ -219,7 +222,7 @@ const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smal
 
       <div class="flex-1 flex flex-col gap-2 min-h-0">
         <ModeToggle :desk="desk" class="shrink-0" />
-        <ObjectNode class="flex-1 min-h-0 overflow-auto" />
+        <ObjectNode :key="treeKey" class="flex-1 min-h-0 overflow-auto" />
       </div>
 
       <div class="flex-1 flex flex-col gap-2 min-h-0">

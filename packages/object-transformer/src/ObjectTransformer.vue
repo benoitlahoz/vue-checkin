@@ -81,6 +81,7 @@ createDataWatcher({
 // Expose desk for parent components to access via template ref
 defineExpose({
   desk,
+  treeKey: context.treeKey,
 });
 </script>
 
