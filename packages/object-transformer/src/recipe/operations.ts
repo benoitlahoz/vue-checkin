@@ -8,6 +8,7 @@
 import type { Operation, TransformOp, RenameOp, DeleteOp, AddOp, UpdateOp, Path } from './types';
 import type { Transform } from '../types';
 import { updateAt, deleteAt, renameAt, addAt, getAt } from './immutable-update';
+import { logger } from '../utils/logger.util';
 
 /**
  * Apply a transform operation
@@ -23,9 +24,7 @@ export const applyTransform = (
   const transform = transforms.get(op.transformName);
   if (!transform) {
     // Transform not found, skip silently
-    if (import.meta.env.DEV) {
-      console.warn(`Transform "${op.transformName}" not found, skipping operation`);
-    }
+    logger.warn(`Transform "${op.transformName}" not found, skipping operation`);
     return data;
   }
 
@@ -48,12 +47,10 @@ export const applyTransform = (
     // Regular transform: update value at path
     return updateAt(data, op.path, () => result);
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error(
-        `Error applying transform "${op.transformName}" at path ${op.path.join('.')}:`,
-        error
-      );
-    }
+    logger.error(
+      `Error applying transform "${op.transformName}" at path ${op.path.join('.')}:`,
+      error
+    );
     return data;
   }
 };
@@ -76,9 +73,7 @@ const applyStructuralTransform = (data: any, path: Path, result: any): any => {
     case 'conditionalBranch':
       return applyConditionalBranch(data, path, result);
     default:
-      if (import.meta.env.DEV) {
-        console.warn(`Unknown structural transform action: ${action}`);
-      }
+      logger.warn(`Unknown structural transform action: ${action}`);
       return data;
   }
 };
@@ -323,7 +318,7 @@ export const applySetTransforms = (
     const transform = transforms.get(t.name);
     if (!transform) {
       if (import.meta.env.DEV) {
-        console.warn(`Transform "${t.name}" not found, skipping`);
+        logger.warn(`Transform "${t.name}" not found, skipping`);
       }
       continue;
     }
@@ -369,7 +364,7 @@ export const applySetTransforms = (
       }
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error(`Error applying transform "${t.name}":`, error);
+        logger.error(`Error applying transform "${t.name}":`, error);
       }
     }
   }
@@ -420,7 +415,7 @@ export const applyConditions = (
     const predicate = transforms.get(cond.predicate.name);
     if (!predicate || !predicate.condition) {
       if (import.meta.env.DEV) {
-        console.warn(`Condition "${cond.predicate.name}" not found or not a condition`);
+        logger.warn(`Condition "${cond.predicate.name}" not found or not a condition`);
       }
       continue;
     }
@@ -442,7 +437,7 @@ export const applyConditions = (
     const transform = transforms.get(t.name);
     if (!transform) {
       if (import.meta.env.DEV) {
-        console.warn(`Transform "${t.name}" not found, skipping`);
+        logger.warn(`Transform "${t.name}" not found, skipping`);
       }
       continue;
     }
@@ -460,7 +455,7 @@ export const applyConditions = (
       }
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error(`Error applying transform "${t.name}":`, error);
+        logger.error(`Error applying transform "${t.name}":`, error);
       }
     }
   }

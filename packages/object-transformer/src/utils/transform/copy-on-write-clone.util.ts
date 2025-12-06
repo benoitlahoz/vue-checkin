@@ -52,7 +52,7 @@ export const buildModifiedPaths = (
 /**
  * Shallow clone with Date preservation (reserved for future use)
  */
-const _shallowClone = (value: any): any => {
+const _shallowClone = (value: unknown): unknown => {
   if (value instanceof Date) return new Date(value.getTime());
   if (Array.isArray(value)) return [...value];
   if (value && typeof value === 'object') return { ...value };
@@ -62,7 +62,7 @@ const _shallowClone = (value: any): any => {
 /**
  * Parse ISO date strings into Date objects
  */
-const parseISODate = (value: any): any => {
+const parseISODate = (value: unknown): unknown => {
   if (typeof value === 'string') {
     const isoDateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/;
     if (isoDateRegex.test(value)) {
@@ -84,10 +84,10 @@ const parseISODate = (value: any): any => {
  * @returns Cloned object (shallow clone for unmodified branches, deep clone for modified)
  */
 export const copyOnWriteClone = (
-  obj: any,
+  obj: unknown,
   modifiedPaths: Set<string>,
   currentPath: string[] = []
-): any => {
+): unknown => {
   // Primitives and null - no cloning needed
   if (obj === null || typeof obj !== 'object') {
     return parseISODate(obj);
@@ -118,11 +118,12 @@ export const copyOnWriteClone = (
   }
 
   // Object - shallow clone and recursively handle properties
-  const cloned: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+  const cloned: Record<string, unknown> = {};
+  const objRecord = obj as Record<string, unknown>;
+  for (const key in objRecord) {
+    if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
       const propPath = [...currentPath, key];
-      cloned[key] = copyOnWriteClone(obj[key], modifiedPaths, propPath);
+      cloned[key] = copyOnWriteClone(objRecord[key], modifiedPaths, propPath);
     }
   }
   return cloned;
@@ -132,17 +133,18 @@ export const copyOnWriteClone = (
  * Fallback: Deep clone (used when copy-on-write optimization can't be applied)
  * Preserves Date objects and parses ISO date strings
  */
-export const deepClone = (obj: any): any => {
+export const deepClone = (obj: unknown): unknown => {
   if (obj === null || typeof obj !== 'object') {
     return parseISODate(obj);
   }
   if (obj instanceof Date) return new Date(obj.getTime());
   if (Array.isArray(obj)) return obj.map(deepClone);
 
-  const cloned: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key]);
+  const cloned: Record<string, unknown> = {};
+  const objRecord = obj as Record<string, unknown>;
+  for (const key in objRecord) {
+    if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
+      cloned[key] = deepClone(objRecord[key]);
     }
   }
   return cloned;

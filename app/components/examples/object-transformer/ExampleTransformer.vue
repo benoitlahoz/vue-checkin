@@ -16,7 +16,6 @@ import {
 } from '@vue-airport/object-transformer';
 import ModeToggle from './ModeToggle.vue';
 import ModelInsights from './ModelInsights.vue';
-import ConditionsInfo from './ConditionsInfo.vue';
 import {
   Accordion,
   AccordionContent,
@@ -230,7 +229,6 @@ const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smal
       <div class="flex-1 flex flex-col gap-2 min-h-0">
         <ModeToggle :desk="desk" class="shrink-0" />
         <ModelInsights :desk="desk" class="shrink-0" />
-        <ConditionsInfo :desk="desk as any" class="shrink-0" />
         <ObjectNode :key="treeKey" class="flex-1 min-h-0 overflow-auto" />
       </div>
 

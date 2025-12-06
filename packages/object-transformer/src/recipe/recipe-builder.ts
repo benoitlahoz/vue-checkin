@@ -8,6 +8,7 @@
 import type { ObjectNodeData } from '../types';
 import type { Recipe, Operation, RecipeMetadata, Path } from './types';
 import { RECIPE_VERSION } from './types';
+import { logger } from '../utils/logger.util';
 
 /**
  * Get the original key of a node (before any renames)
@@ -108,7 +109,7 @@ export const buildRecipe = (tree: ObjectNodeData): Recipe => {
     if (isKeyModified(node) && !shouldSkip && node.key) {
       const originalKey = getOriginalKey(node);
       if (originalKey !== node.key) {
-        console.log('[buildRecipe] 🔄 Collecting RENAME:', {
+        logger.debug('[buildRecipe] 🔄 Collecting RENAME:', {
           nodeKey: node.key,
           originalKey,
           path,
@@ -122,7 +123,7 @@ export const buildRecipe = (tree: ObjectNodeData): Recipe => {
           to: node.key,
         });
       } else {
-        console.log('[buildRecipe] ⚠️ Key modified but originalKey === key:', {
+        logger.debug('[buildRecipe] ⚠️ Key modified but originalKey === key:', {
           nodeKey: node.key,
           originalKey,
           keyMetadata: node.keyMetadata,
@@ -131,7 +132,7 @@ export const buildRecipe = (tree: ObjectNodeData): Recipe => {
     } else if (!isKeyModified(node) && !shouldSkip && node.key) {
       const originalKey = getOriginalKey(node);
       if (originalKey !== node.key) {
-        console.log('[buildRecipe] ⚠️ Key changed but NOT marked as modified:', {
+        logger.debug('[buildRecipe] ⚠️ Key changed but NOT marked as modified:', {
           nodeKey: node.key,
           originalKey,
           keyMetadata: node.keyMetadata,
@@ -203,10 +204,12 @@ export const importRecipe = (json: string): Recipe => {
     // Check version
     if (recipe.version !== RECIPE_VERSION) {
       // TODO: Implement version migration if needed
-      console.warn(
-        `Recipe version mismatch: expected ${RECIPE_VERSION}, got ${recipe.version}. ` +
-          `Some features may not work correctly.`
-      );
+      if (import.meta.env.DEV) {
+        logger.warn(
+          `Recipe version mismatch: expected ${RECIPE_VERSION}, got ${recipe.version}. ` +
+            `Some features may not work correctly.`
+        );
+      }
     }
 
     return recipe;

@@ -1,12 +1,18 @@
-import type { ObjectNodeData, Transform, ObjectTransformerContext } from '../../types';
+import type {
+  ObjectNodeData,
+  Transform,
+  ObjectTransformerContext,
+  StructuralTransformResult,
+} from '../../types';
 import { getStructuralTransformHandler } from '../transform/structural-transform-handlers.util';
+import { logger } from '../logger.util';
 import { mergeWithTemplate } from './model-mode.util';
 import { getOriginalKey, isKeyModified } from '../node/node-key-metadata.util';
 
 export interface ModelRule {
   path: string[];
   originalType: string;
-  transformations: Array<{ name: string; params: any[] }>;
+  transformations: Array<{ name: string; params: unknown[] }>;
   deleted?: boolean;
   renamed?: { from: string; to: string };
 }
@@ -48,33 +54,34 @@ export const extractModelRules = (node: ObjectNodeData, path: string[] = []): Mo
   return rules;
 };
 
-const deepClone = (obj: any): any => {
+const deepClone = (obj: unknown): unknown => {
   if (obj === null || typeof obj !== 'object') return obj;
   if (obj instanceof Date) return new Date(obj.getTime());
   if (Array.isArray(obj)) return obj.map(deepClone);
 
-  const cloned: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key]);
+  const cloned: Record<string, unknown> = {};
+  const objRecord = obj as Record<string, unknown>;
+  for (const key in objRecord) {
+    if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
+      cloned[key] = deepClone(objRecord[key]);
     }
   }
   return cloned;
 };
 
 export const applyRuleToObject = (
-  obj: any,
+  obj: unknown,
   rule: ModelRule,
   availableTransforms: Transform[],
   desk?: ObjectTransformerContext
-): any => {
-  const result = deepClone(obj);
-  let current: any = result;
+): unknown => {
+  const result = deepClone(obj) as Record<string, unknown>;
+  let current: Record<string, unknown> = result;
   for (let i = 0; i < rule.path.length - 1; i++) {
     const segment = rule.path[i];
     if (!segment) continue;
     if (current[segment] === undefined) current[segment] = {};
-    current = current[segment];
+    current = current[segment] as Record<string, unknown>;
   }
 
   const key = rule.path[rule.path.length - 1];
@@ -86,7 +93,7 @@ export const applyRuleToObject = (
     else current[key] = undefined;
   }
 
-  let value = current[key];
+  let value: unknown = current[key];
   let wasStructural = false;
   let wasTransformed = false;
 
@@ -97,15 +104,25 @@ export const applyRuleToObject = (
         value = transformFn.fn(value, ...transform.params);
         wasTransformed = true;
 
-        if (value?.__structuralChange) {
+        // Type guard pour StructuralTransformResult
+        if (
+          value !== null &&
+          typeof value === 'object' &&
+          '__structuralChange' in value &&
+          value.__structuralChange === true &&
+          'action' in value &&
+          typeof value.action === 'string'
+        ) {
           const handler = getStructuralTransformHandler(value.action, desk);
           if (handler) {
-            if (rule.deleted) value.removeSource = true;
-            handler(current, key, value);
+            if (rule.deleted) {
+              (value as StructuralTransformResult).removeSource = true;
+            }
+            handler(current, key, value as StructuralTransformResult);
             wasStructural = true;
             break;
           } else {
-            console.warn(`Structural transform action "${value.action}" not registered.`);
+            logger.warn(`Structural transform action "${value.action}" not registered.`);
           }
         }
       }
@@ -134,24 +151,24 @@ export const applyRuleToObject = (
 };
 
 export const applyModelRulesToObject = (
-  obj: any,
+  obj: unknown,
   rules: ModelRule[],
   availableTransforms: Transform[],
   desk?: ObjectTransformerContext
-): any => {
+): unknown => {
   let result = obj;
   for (const rule of rules) result = applyRuleToObject(result, rule, availableTransforms, desk);
   return result;
 };
 
 export const applyModelRulesToArray = (
-  items: any[],
+  items: unknown[],
   rules: ModelRule[],
   availableTransforms: Transform[],
   templateIndex: number,
   includeTemplate = false,
   desk?: ObjectTransformerContext
-): any[] => {
+): unknown[] => {
   if (!Array.isArray(items) || items.length === 0) return items;
   const template = items[templateIndex];
   const result = items.map((item, index) => {

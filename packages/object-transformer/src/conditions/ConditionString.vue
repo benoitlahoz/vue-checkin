@@ -12,7 +12,7 @@ const { desk } = checkIn(ObjectTransformerDeskKey, {
   autoCheckIn: true,
 });
 
-// Conditions are now NON-structural transforms that just store conditionMet
+// Conditions are NON-structural transforms that just store conditionMet
 // They return the original value unchanged but set conditionMet metadata
 // All conditions support 'not' parameter to invert the result
 const transforms: Transform[] = [

@@ -1,22 +1,28 @@
 /**
  * Count nested properties in an object (recursive)
  */
-const countNestedProperties = (obj: any): number => {
+
+import type { PropertyVariation } from '../../types';
+
+const countNestedProperties = (obj: unknown): number => {
   if (obj === null || obj === undefined) return 0;
   if (typeof obj !== 'object') return 1;
   if (Array.isArray(obj)) {
     return obj.reduce((sum, item) => sum + countNestedProperties(item), 0);
   }
-  return Object.keys(obj).reduce((sum, key) => sum + 1 + countNestedProperties(obj[key]), 0);
+  return Object.keys(obj).reduce(
+    (sum, key) => sum + 1 + countNestedProperties(obj[key as keyof typeof obj]),
+    0
+  );
 };
 
 /**
  * Find the most complete object in an array (object with most properties)
  */
-export const findMostCompleteObject = (items: any[]): number => {
+export const findMostCompleteObject = (items: unknown[]): number => {
   if (!Array.isArray(items) || items.length === 0) return 0;
 
-  return items.reduce((maxIndex, item, index) => {
+  return items.reduce<number>((maxIndex, item, index) => {
     const currentCount = countNestedProperties(item);
     const maxCount = countNestedProperties(items[maxIndex]);
     return currentCount > maxCount ? index : maxIndex;
@@ -26,7 +32,7 @@ export const findMostCompleteObject = (items: any[]): number => {
 /**
  * Detect if data suggests model mode (array of objects with similar structure)
  */
-export const suggestModelMode = (data: any): boolean => {
+export const suggestModelMode = (data: unknown): boolean => {
   if (!Array.isArray(data) || data.length === 0) return false;
 
   // Check if all items are objects
@@ -40,7 +46,11 @@ export const suggestModelMode = (data: any): boolean => {
 /**
  * Get the object at template index, or the full array in object mode
  */
-export const getDataForMode = (data: any, mode: 'object' | 'model', templateIndex: number): any => {
+export const getDataForMode = (
+  data: unknown,
+  mode: 'object' | 'model',
+  templateIndex: number
+): unknown => {
   if (mode === 'object') {
     return data; // Full data (array or object)
   }
@@ -55,7 +65,7 @@ export const getDataForMode = (data: any, mode: 'object' | 'model', templateInde
 /**
  * Merge an object with missing properties from template (creates undefined props)
  */
-export const mergeWithTemplate = (target: any, template: any): any => {
+export const mergeWithTemplate = (target: unknown, template: unknown): unknown => {
   // If template is not an object, return target as-is
   if (typeof template !== 'object' || template === null) return target;
 
@@ -93,10 +103,11 @@ export const mergeWithTemplate = (target: any, template: any): any => {
     return undefined; // Can't convert to Date
   }
 
-  const merged = { ...target };
+  const merged: Record<string, unknown> = { ...(target as Record<string, unknown>) };
+  const templateObj = template as Record<string, unknown>;
 
-  Object.keys(template).forEach((key) => {
-    const templateValue = template[key];
+  Object.keys(templateObj).forEach((key) => {
+    const templateValue = templateObj[key];
 
     if (!(key in merged)) {
       // Property missing in target - create appropriate default value based on type
@@ -127,7 +138,7 @@ export const mergeWithTemplate = (target: any, template: any): any => {
 /**
  * Ensure all objects in array have the same structure as template
  */
-export const normalizeArrayWithTemplate = (items: any[], templateIndex: number): any[] => {
+export const normalizeArrayWithTemplate = (items: unknown[], templateIndex: number): unknown[] => {
   if (!Array.isArray(items) || items.length === 0) return items;
 
   const template = items[templateIndex];
@@ -143,40 +154,41 @@ export const normalizeArrayWithTemplate = (items: any[], templateIndex: number):
  * Analyze differences between objects in an array
  * Returns a summary of property variations
  */
-export interface PropertyVariation {
-  property: string;
-  presentIn: number; // Number of objects that have this property
-  missingIn: number; // Number of objects missing this property
-  totalObjects: number;
-  coverage: number; // Percentage (0-100)
-}
 
 /**
  * Extract transformed data from a tree node (like ObjectPreview does)
  */
-const buildValueFromNode = (node: any): any => {
+interface NodeLike {
+  deleted?: boolean;
+  children?: NodeLike[];
+  type?: string;
+  key?: string;
+  value?: unknown;
+}
+
+const buildValueFromNode = (node: NodeLike): unknown => {
   if (node.deleted) return undefined;
 
   // If node has children (from structural transforms), build from children
   if (node.children && node.children.length > 0) {
-    const activeChildren = node.children.filter((child: any) => !child.deleted);
+    const activeChildren = node.children.filter((child) => !child.deleted);
 
     // Build array if type is 'array'
     if (node.type === 'array') {
-      return activeChildren.map(buildValueFromNode).filter((v: any) => v !== undefined);
+      return activeChildren.map(buildValueFromNode).filter((v) => v !== undefined);
     }
 
     // Build object (for 'object' type or structural transforms)
-    if (node.type === 'object' || activeChildren.some((c: any) => c.key)) {
+    if (node.type === 'object' || activeChildren.some((c) => c.key)) {
       return activeChildren.reduce(
-        (acc: any, child: any) => {
+        (acc, child) => {
           const value = buildValueFromNode(child);
           if (value !== undefined && child.key) {
             acc[child.key] = value;
           }
           return acc;
         },
-        {} as Record<string, any>
+        {} as Record<string, unknown>
       );
     }
   }
@@ -188,32 +200,34 @@ const buildValueFromNode = (node: any): any => {
 /**
  * Build transformed data array from tree (for analyzing actual transformed structure)
  */
-export const buildTransformedDataFromTree = (tree: any): any[] => {
+export const buildTransformedDataFromTree = (tree: NodeLike): unknown[] => {
   if (!tree || tree.type !== 'array' || !tree.children) return [];
 
   return tree.children
-    .filter((child: any) => !child.deleted)
+    .filter((child) => !child.deleted)
     .map(buildValueFromNode)
-    .filter((v: any) => v !== undefined);
+    .filter((v) => v !== undefined);
 };
 
-export const analyzeArrayDifferences = (items: any[]): PropertyVariation[] => {
+export const analyzeArrayDifferences = (items: unknown[]): PropertyVariation[] => {
   if (!Array.isArray(items) || items.length === 0) return [];
 
   const propertyCount = new Map<string, number>();
   const totalObjects = items.length;
 
   // Count occurrences of each property across all objects
-  const countProperties = (obj: any, prefix: string = '') => {
+  const countProperties = (obj: unknown, prefix: string = '') => {
     if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return;
 
-    Object.keys(obj).forEach((key) => {
+    const objRecord = obj as Record<string, unknown>;
+    Object.keys(objRecord).forEach((key) => {
       const fullKey = prefix ? `${prefix}.${key}` : key;
       propertyCount.set(fullKey, (propertyCount.get(fullKey) || 0) + 1);
 
       // Recursively count nested properties
-      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-        countProperties(obj[key], fullKey);
+      const value = objRecord[key];
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        countProperties(value, fullKey);
       }
     });
   };

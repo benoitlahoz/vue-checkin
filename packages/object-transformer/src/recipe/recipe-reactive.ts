@@ -11,6 +11,7 @@ import type { Recipe } from './types';
 import { buildRecipe, exportRecipe, importRecipe } from './recipe-builder';
 import { applyRecipe as applyRecipeUtil, validateRecipe } from './recipe-applier';
 import { buildNodeTree } from '../utils/node/node-builder.util';
+import { logger } from '../utils/logger.util';
 
 /**
  * Create a reactive recipe system
@@ -76,8 +77,8 @@ export function createReactiveRecipe(
     }
 
     // Show warnings if any
-    if (validation.warnings.length > 0 && import.meta.env.DEV) {
-      console.warn('Recipe warnings:', validation.warnings);
+    if (validation.warnings.length > 0) {
+      logger.warn('Recipe warnings:', validation.warnings);
     }
 
     // Apply recipe to original data

@@ -4,12 +4,17 @@
  * The registry is now stored in the desk context to avoid module duplication issues
  */
 
-import type { ObjectTransformerContext } from '../../types';
+import type { ObjectTransformerContext, StructuralTransformResult } from '../../types';
+import { logger } from '../logger.util';
 
 /**
  * Structural transform handler type
  */
-export type StructuralTransformHandler = (current: any, lastKey: string, result: any) => void;
+export type StructuralTransformHandler = (
+  current: Record<string, unknown>,
+  lastKey: string,
+  result: StructuralTransformResult
+) => void;
 
 /**
  * Get the handlers registry from desk context
@@ -19,7 +24,7 @@ const getHandlersRegistry = (
   desk?: ObjectTransformerContext
 ): Record<string, StructuralTransformHandler> => {
   if (!desk) {
-    console.warn('[ObjectTransformer] No desk context available for structural handlers');
+    logger.warn('No desk context available for structural handlers');
     return {};
   }
   return desk.structuralTransformHandlers;

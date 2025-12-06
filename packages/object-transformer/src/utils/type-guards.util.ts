@@ -33,7 +33,7 @@ export const isPrimitive = (type: ObjectNodeType): boolean =>
   ].includes(type);
 
 export const isStructuralResult = (result: any): boolean =>
-  result && typeof result === 'object' && result.__structuralChange === true;
+  Boolean(result && typeof result === 'object' && result.__structuralChange === true);
 
 /**
  * Type Mapping - Pure function for type detection
