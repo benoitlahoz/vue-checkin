@@ -90,7 +90,7 @@ const cancelEdit = () => {
 <template>
   <div
     v-if="node"
-    data-slot="node-key-editor"
+    data-slot="ot-key-editor"
     :class="
       cn(
         'node-key-editor',
@@ -106,7 +106,7 @@ const cancelEdit = () => {
       ref="inputRef"
       :value="tempKey || ''"
       :style="{ width: inputWidth }"
-      class="node-key-input"
+      class="ot-key-input"
       @input="(e) => updateTempKey((e.target as HTMLInputElement).value)"
       @keyup.enter="confirmEdit()"
       @keyup.esc="cancelEdit()"
@@ -116,39 +116,3 @@ const cancelEdit = () => {
   </div>
 </template>
 
-<style>
-/* NodeKeyEditor styles - can be overridden by users via class prop or CSS */
-.node-key-editor {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.node-key-editor-editable {
-  cursor: pointer;
-}
-
-.node-key-editor-readonly {
-  cursor: default;
-}
-
-.node-key-input {
-  height: 1.5rem;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  border: 1px solid var(--object-node-input-border);
-  border-radius: 0.375rem;
-  background-color: var(--object-node-input-bg);
-  color: inherit;
-  outline: none;
-  transition-property: border-color, box-shadow;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-.node-key-input:focus {
-  border-color: var(--object-node-input-ring);
-  box-shadow: 0 0 0 3px oklch(from var(--object-node-input-ring) l c h / 0.1);
-}
-</style>

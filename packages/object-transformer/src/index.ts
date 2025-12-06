@@ -21,8 +21,12 @@ export * from './recipe';
 // Vue components (SFC)
 export { default as ObjectTransformer } from './ObjectTransformer.vue';
 export { default as ObjectPreview } from './ObjectPreview.vue';
+export { default as DefaultPreviewLayout } from './DefaultPreviewLayout.vue';
 export { default as RecipePreview } from './RecipePreview.vue';
+export { default as DefaultRecipeLayout } from './DefaultRecipeLayout.vue';
 export { default as ObjectNode } from './ObjectNode.vue';
+export { default as DefaultNodeLayout } from './DefaultNodeLayout.vue';
+export { default as NodeValue } from './NodeValue.vue';
 export { default as TransformSelect } from './TransformSelect.vue';
 export { default as TransformParam } from './TransformParam.vue';
 export { default as NodeKeyEditor } from './NodeKeyEditor.vue';
