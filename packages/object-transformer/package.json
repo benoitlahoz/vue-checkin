@@ -33,6 +33,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "bench": "vitest bench --reporter=default --reporter=./benchmarks/markdown-reporter.ts",
     "prepublishOnly": "cp ../../README.md ."
   },
   "keywords": [
