@@ -27,14 +27,8 @@ const transforms: Transform[] = [
       if (typeof v !== 'string') return false;
       // If search is empty or not a string, condition is false
       if (!search || typeof search !== 'string') return false;
-      if (import.meta.env.DEV) {
-        console.log(`[Contains condition] v="${v}", not=${not}, search="${search}"`);
-      }
       const result = v.includes(search);
       const finalResult = not ? !result : result;
-      if (import.meta.env.DEV) {
-        console.log(`[Contains condition] result=${result}, finalResult=${finalResult}`);
-      }
       return finalResult;
     },
     fn: (v: string) => v, // Passthrough - condition is evaluated separately

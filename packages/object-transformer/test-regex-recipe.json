@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "operations": [
+    {
+      "type": "applyConditions",
+      "path": ["name"],
+      "conditions": [
+        {
+          "predicate": {
+            "name": "Contains",
+            "params": [false, "  "]
+          },
+          "transforms": [
+            {
+              "name": "Replace Regex",
+              "params": ["\\s+", "g", " "]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "applyConditions",
+      "path": ["name"],
+      "conditions": [
+        {
+          "predicate": {
+            "name": "Matches Regex",
+            "params": [false, "\\b(de|van)\\b", "i"]
+          },
+          "transforms": [
+            {
+              "name": "Split Regex",
+              "params": ["\\s+", "", 0]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "applyConditions",
+      "path": ["city"],
+      "conditions": [
+        {
+          "transforms": [
+            {
+              "name": "Capitalized",
+              "params": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "createdAt": "2025-12-06T00:00:00.000Z",
+    "description": "Demo regex: normalize spaces, split names with particles (de/van) using regex, capitalize cities",
+    "requiredTransforms": [
+      "Replace Regex",
+      "Split Regex",
+      "Contains",
+      "Matches Regex",
+      "Capitalized"
+    ],
+    "rootType": "array"
+  }
+}

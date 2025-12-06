@@ -224,7 +224,7 @@ const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smal
       <TransformObject />
       <TransformArray />
 
-      <!-- Condition Components (now structural transforms) -->
+      <!-- Condition Components -->
       <ConditionString />
 
       <div class="flex-1 flex flex-col gap-2 min-h-0">
@@ -258,7 +258,7 @@ const data = USE_LARGE_DATASET ? generateLargeDataset(LARGE_DATASET_SIZE) : smal
                 <div v-if="stats" class="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span>v{{ stats.version }}</span>
                   <span
-                    >{{ stats.transformations }} transform{{
+                    >{{ stats.transformations }} operation{{
                       stats.transformations !== 1 ? 's' : ''
                     }}</span
                   >

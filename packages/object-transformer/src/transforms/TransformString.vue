@@ -164,6 +164,97 @@ const transforms: Transform[] = [
       };
     },
   },
+
+  // 🔥 REGEX TRANSFORMS
+  {
+    name: 'Replace Regex',
+    applicableTo: ['string'],
+    params: [
+      { key: 'pattern', label: 'Regex pattern', type: 'text', default: '' },
+      { key: 'flags', label: 'Flags (g,i,m,s,u)', type: 'text', default: 'g' },
+      { key: 'replacement', label: 'Replacement', type: 'text', default: '' },
+    ],
+    fn: (v: string, pattern: string, flags: string = 'g', replacement: string = '') => {
+      if (typeof v !== 'string') return v;
+      if (!pattern) return v;
+
+      try {
+        const regex = new RegExp(pattern, flags);
+        return v.replace(regex, replacement);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[Replace Regex] Invalid pattern:', { pattern, flags, error });
+        }
+        return v; // Fallback: return unchanged
+      }
+    },
+  },
+
+  {
+    name: 'Extract Regex',
+    applicableTo: ['string'],
+    params: [
+      { key: 'pattern', label: 'Regex pattern (with groups)', type: 'text', default: '' },
+      { key: 'flags', label: 'Flags', type: 'text', default: '' },
+      { key: 'groupIndex', label: 'Group index (0=full match)', type: 'number', default: 0 },
+    ],
+    fn: (v: string, pattern: string, flags: string = '', groupIndex: number = 0) => {
+      if (typeof v !== 'string') return null;
+      if (!pattern) return null;
+
+      try {
+        const regex = new RegExp(pattern, flags);
+        const match = v.match(regex);
+
+        if (!match) return null;
+
+        const index = typeof groupIndex === 'number' ? groupIndex : 0;
+        return match[index] !== undefined ? match[index] : null;
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[Extract Regex] Invalid pattern:', { pattern, flags, error });
+        }
+        return null;
+      }
+    },
+  },
+
+  {
+    name: 'Split Regex',
+    applicableTo: ['string'],
+    structural: true,
+    params: [
+      { key: 'pattern', label: 'Regex pattern', type: 'text', default: '\\s+' },
+      { key: 'flags', label: 'Flags', type: 'text', default: '' },
+      { key: 'limit', label: 'Limit (0=no limit)', type: 'number', default: 0 },
+    ],
+    fn: (v: string, pattern: string = '\\s+', flags: string = '', limit: number = 0) => {
+      if (typeof v !== 'string') {
+        return { __structuralChange: true };
+      }
+
+      if (!pattern) {
+        return { __structuralChange: true };
+      }
+
+      try {
+        const regex = new RegExp(pattern, flags);
+        const parts = limit > 0 ? v.split(regex, limit) : v.split(regex);
+
+        return {
+          __structuralChange: true,
+          action: 'split' as const,
+          parts: parts,
+          removeSource: false,
+        };
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[Split Regex] Invalid pattern:', { pattern, flags, error });
+        }
+        return { __structuralChange: true };
+      }
+    },
+  },
 ];
 
 onMounted(() => {
