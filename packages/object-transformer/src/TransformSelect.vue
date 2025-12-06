@@ -179,16 +179,16 @@ const handleTransformChange = (event: Event) => {
 
 <template>
   <div
-    data-slot="transform-select"
+    data-slot="ot-select"
     :class="cn('transform-select-container', props.class)"
     :style="props.style"
   >
-    <div class="transform-select-wrapper">
+    <div class="ot-select-wrapper">
       <select
         v-if="node"
         :value="currentSelection || ''"
         :disabled="node.deleted"
-        class="transform-select"
+        class="ot-select"
         @change="handleTransformChange"
       >
         <option value="" disabled hidden>{{ placeholder }}</option>
@@ -211,95 +211,7 @@ const handleTransformChange = (event: Event) => {
           </option>
         </optgroup>
       </select>
-      <ChevronDown class="transform-select-icon" />
+      <ChevronDown class="ot-select-icon" />
     </div>
   </div>
 </template>
-
-<style>
-/* TransformSelect styles - cohérent avec ObjectNode et NodeKeyEditor */
-.transform-select-container {
-  display: flex;
-  align-items: center;
-}
-
-.transform-select-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.transform-select {
-  height: 1.5rem;
-  width: 120px;
-  padding: 0.125rem 1.75rem 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--object-node-input-border);
-  border-radius: 0.375rem;
-  background-color: var(--object-node-input-bg);
-  color: inherit;
-  outline: none;
-  cursor: pointer;
-  transition-property: border-color, box-shadow;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* When showing placeholder (empty value), use muted color */
-.transform-select[value=''] {
-  color: var(--object-node-muted-foreground);
-}
-
-.transform-select option[value=''][disabled] {
-  color: var(--object-node-muted-foreground);
-}
-
-.transform-select option {
-  color: initial;
-}
-
-.transform-select:hover:not(:disabled) {
-  border-color: var(--object-node-input-ring);
-}
-
-.transform-select:focus {
-  border-color: var(--object-node-input-ring);
-  box-shadow: 0 0 0 3px oklch(from var(--object-node-input-ring) l c h / 0.1);
-}
-
-.transform-select:not(:focus) {
-  box-shadow: none;
-}
-
-.transform-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.transform-select-icon {
-  position: absolute;
-  right: 0.375rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1rem;
-  height: 1rem;
-  pointer-events: none;
-  color: var(--object-node-muted-foreground);
-}
-
-@media (max-width: 768px) {
-  .transform-select {
-    width: auto;
-    min-width: 80px;
-  }
-}
-</style>

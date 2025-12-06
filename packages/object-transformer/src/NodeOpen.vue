@@ -38,25 +38,8 @@ const toggleOpen = () => {
 
 <template>
   <div v-if="hasChildren" data-slot="node-open">
-    <ChevronRight v-if="!isOpen" class="node-open-icon" @click="toggleOpen" />
-    <ChevronDown v-else-if="isOpen" class="node-open-icon" @click="toggleOpen" />
+    <ChevronRight v-if="!isOpen" class="ot-open-icon" @click="toggleOpen" />
+    <ChevronDown v-else-if="isOpen" class="ot-open-icon" @click="toggleOpen" />
   </div>
 </template>
 
-<style>
-/* NodeOpen styles - using ObjectNode variables */
-.node-open-icon {
-  width: 0.75rem;
-  height: 0.75rem;
-  color: var(--object-node-muted-foreground);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition-property: color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-.node-open-icon:hover {
-  color: var(--object-node-primary);
-}
-</style>
