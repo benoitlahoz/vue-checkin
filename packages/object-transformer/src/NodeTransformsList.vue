@@ -90,7 +90,7 @@ const handleParamChange = () => {
               {{ getParamConfig(t.name, pi)?.label || `Param ${pi + 1}` }}
             </label>
             <TransformerParamInput
-              v-model="t.params[pi]"
+              v-model="t.params![pi]"
               :config="getParamConfig(t.name, pi)"
               @change="handleParamChange()"
             />

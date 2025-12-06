@@ -93,39 +93,3 @@ export const updateOriginalKey = (node: ObjectNodeData, newOriginal: string): vo
 /**
  * MIGRATION HELPERS: Support old property names during transition
  */
-
-/**
- * Get originalKey with backward compatibility
- */
-export const getOriginalKeyCompat = (node: ObjectNodeData): string | undefined => {
-  // Try new metadata first
-  if (node.keyMetadata?.original) {
-    return node.keyMetadata.original;
-  }
-  // Fallback to old properties (for migration)
-  return (node as any).originalKey || (node as any).firstKey || node.key;
-};
-
-/**
- * Get firstKey with backward compatibility
- */
-export const getFirstKeyCompat = (node: ObjectNodeData): string | undefined => {
-  // New: original is the first key
-  if (node.keyMetadata?.original) {
-    return node.keyMetadata.original;
-  }
-  // Fallback to old property
-  return (node as any).firstKey || node.key;
-};
-
-/**
- * Check if key was modified with backward compatibility
- */
-export const isKeyModifiedCompat = (node: ObjectNodeData): boolean => {
-  // Try new metadata first
-  if (node.keyMetadata) {
-    return node.keyMetadata.modified || false;
-  }
-  // Fallback to old property
-  return (node as any).keyModified || false;
-};

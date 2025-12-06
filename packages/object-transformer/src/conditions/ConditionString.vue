@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectTransformerContext, Transform } from '..';
 import { ObjectTransformerDeskKey } from '..';
+import { logger } from '../utils/logger.util';
 
 type DeskWithContext = typeof desk & ObjectTransformerContext;
 
@@ -166,12 +167,10 @@ onMounted(() => {
 
   d.addTransforms(...transforms);
 
-  if (import.meta.env.DEV) {
-    console.log(
-      `[ConditionString] Registered ${transforms.length} conditional transforms:`,
-      transforms.map((t) => t.name)
-    );
-  }
+  logger.debug(
+    `[ConditionString] Registered ${transforms.length} conditional transforms:`,
+    transforms.map((t) => t.name)
+  );
 });
 </script>
 

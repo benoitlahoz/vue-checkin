@@ -13,7 +13,6 @@ import {
   type ObjectTransformerContext,
   ObjectTransformerDeskKey,
 } from '.';
-import { Separator } from './components/ui/separator';
 import { formatValue, computeFinalTransformedValue } from '.';
 import { cn } from './lib/utils';
 
@@ -164,8 +163,6 @@ const displayValue = computed(() => {
         :key="getChildKey(child, index)"
       />
     </div>
-
-    <Separator v-if="shouldShowChildren && tree.transforms.length" class="object-node-separator" />
   </div>
 </template>
 
@@ -370,17 +367,5 @@ const displayValue = computed(() => {
 /* Transform select positioning */
 .object-node-transform {
   flex-shrink: 0;
-}
-
-/* Separator */
-.object-node-separator {
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-@media (min-width: 768md) {
-  .object-node-separator {
-    display: none;
-  }
 }
 </style>

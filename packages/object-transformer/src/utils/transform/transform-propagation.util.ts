@@ -3,7 +3,7 @@ import { isStructuralResult } from '../type-guards.util';
 import { buildNodeTree } from '../node/node-builder.util';
 import { pipe, not } from 'vue-airport';
 import { isMultiPartAction } from './structural-transform-handlers.util';
-import { initKeyMetadata, isKeyModifiedCompat } from '../node/node-key-metadata.util';
+import { initKeyMetadata, isKeyModified } from '../node/node-key-metadata.util';
 import { logger } from '../logger.util';
 
 /**
@@ -337,8 +337,8 @@ const createSplitNodes = (
 
       // IMPORTANT: Only update key if NOT manually renamed
       // This preserves "firstname", "lastname" etc.
-      if (!isKeyModifiedCompat(existing)) {
-        existing.key = key;
+      if (!isKeyModified(existing)) {
+        existing.key = newKey;
       }
 
       // Keep the same id, transforms, splitSourceId, splitIndex, etc.

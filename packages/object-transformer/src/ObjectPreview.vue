@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, type HTMLAttributes, ref, watch } from 'vue';
 import { useVirtualList } from '@vueuse/core';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
@@ -8,7 +8,7 @@ import { Button } from './components/ui/button';
 import { Copy, Check } from 'lucide-vue-next';
 
 interface Props {
-  class?: string;
+  class?: HTMLAttributes['class'];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -228,14 +228,10 @@ const copyToClipboard = async () => {
 </script>
 
 <template>
-  <div
-    data-slot="object-transformer-preview"
-    class="relative group h-full overflow-hidden"
-    :class="props.class"
-  >
+  <div data-slot="object-transformer-preview" class="object-preview-container" :class="props.class">
     <!-- Progress bar - very thin, at the very top -->
-    <div v-if="isGenerating" class="preview-progress-bar-top">
-      <div class="preview-progress-fill-top" :style="{ width: `${progress}%` }" />
+    <div v-if="isGenerating" class="preview-progress-bar">
+      <div class="preview-progress-fill" :style="{ width: `${progress}%` }" />
     </div>
 
     <!-- Copy button -->
@@ -243,25 +239,25 @@ const copyToClipboard = async () => {
       v-if="shouldShowPreview"
       size="icon"
       variant="ghost"
-      class="preview-copy-button h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-      :class="{ 'opacity-100!': isCopied }"
+      class="preview-copy-button"
+      :class="{ 'preview-copy-button-visible': isCopied }"
       @click="copyToClipboard"
     >
-      <Check v-if="isCopied" class="h-3.5 w-3.5 text-primary" />
-      <Copy v-else class="h-3.5 w-3.5" />
+      <Check v-if="isCopied" class="preview-icon preview-icon-primary" />
+      <Copy v-else class="preview-icon" />
     </Button>
 
     <!-- Preview content - Virtual scrolling for large JSONs -->
     <div
       v-if="shouldShowPreview && shouldUseVirtualScroll"
       v-bind="containerProps"
-      class="text-xs bg-muted p-3 rounded overflow-auto max-h-[500px] font-mono"
+      class="preview-content"
     >
       <div v-bind="wrapperProps">
         <div
           v-for="{ data: line, index } in virtualList"
           :key="index"
-          style="height: 18px; line-height: 18px; white-space: pre"
+          class="preview-line"
           v-text="line"
         />
       </div>
@@ -270,27 +266,47 @@ const copyToClipboard = async () => {
     <!-- Preview content - Standard for small JSONs -->
     <pre
       v-else-if="shouldShowPreview"
-      class="text-xs bg-muted p-3 rounded overflow-auto max-h-[500px] whitespace-pre-wrap wrap-break-word font-mono"
+      class="preview-content"
     ><code>{{ formattedJson }}</code></pre>
   </div>
 </template>
 
 <style scoped>
+/* CSS custom properties */
+:root {
+  --preview-bg: oklch(0.9647 0.0078 247.8581);
+  --preview-primary: oklch(0.6723 0.1606 244.9955);
+  --preview-muted: oklch(0.8422 0.0039 247.8581);
+}
+
+:root.dark {
+  --preview-bg: oklch(0.2392 0.0166 250.8453);
+  --preview-primary: oklch(0.6692 0.1607 245.011);
+  --preview-muted: oklch(0.3628 0.0138 256.8435);
+}
+
+/* Main container */
+.object-preview-container {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Progress bar - very thin at the very top */
-.preview-progress-bar-top {
+.preview-progress-bar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--color-muted);
+  background: var(--preview-muted);
   z-index: 30;
   overflow: hidden;
 }
 
-.preview-progress-fill-top {
+.preview-progress-fill {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--preview-primary);
   transition: width 0.3s ease-out;
 }
 
@@ -300,5 +316,49 @@ const copyToClipboard = async () => {
   top: 0.5rem;
   right: 0.5rem;
   z-index: 20;
+  height: 1.75rem;
+  width: 1.75rem;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.object-preview-container:hover .preview-copy-button {
+  opacity: 1;
+}
+
+.preview-copy-button-visible {
+  opacity: 1 !important;
+}
+
+.preview-icon {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.preview-icon-primary {
+  color: var(--preview-primary);
+}
+
+/* Preview content */
+.preview-content {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  background: var(--preview-bg);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  overflow: auto;
+  max-height: 500px;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Virtual scroll line */
+.preview-line {
+  height: 18px;
+  line-height: 18px;
+  white-space: pre;
 }
 </style>
