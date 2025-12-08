@@ -37,6 +37,8 @@ export interface InsertOp {
   createdBy?: {
     transformName: string;
     params: any[];
+    /** For structural transforms: which part of the result to use (key or index) */
+    resultKey?: string | number;
   };
   /** Optional: metadata for debugging */
   metadata?: {

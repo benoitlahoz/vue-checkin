@@ -387,7 +387,8 @@ export const handleStructuralSplit = (
   removeSource: boolean,
   desk: ObjectTransformerDesk,
   keys?: string[],
-  conditionMet?: boolean
+  conditionMet?: boolean,
+  transform?: any // ← The transform that created this split
 ): void => {
   if (!node.parent) return;
 
@@ -452,28 +453,26 @@ export const handleStructuralSplit = (
     node.parent.children = insertNodes(node.parent.children!, newNodes, node, removeSource);
 
     // 🟢 RECORD INSERT for each created node
-    // IMPORTANT: Record BEFORE buildNodeTree modifies the structure
+    // IMPORTANT: For model mode, don't record VALUES, record the TRANSFORM
     if ((desk as any).recorder) {
       console.log('[handleStructuralSplit] Recording inserts:');
-      console.log('  normalizedParts:', normalizedParts);
-      console.log(
-        '  newNodes:',
-        newNodes.map((n) => ({ key: n.key, value: n.value, type: n.type }))
-      );
+      console.log('  keys:', keys);
+      console.log('  transform:', transform);
 
       newNodes.forEach((newNode, idx) => {
         if (newNode.key) {
-          // Use the original value from normalizedParts, not newNode.value
-          // (buildNodeTree sets value to undefined for objects)
-          const originalValue = normalizedParts[idx];
+          // 🔥 KEY INSIGHT: Don't record the template value!
+          // Record undefined value - applyInsert will reconstruct by applying the transform
+          const keyInResult = keys ? keys[idx] : idx;
 
-          console.log(`[Recording] ${newNode.key} =`, originalValue);
+          console.log(`[Recording] ${newNode.key} with keyInResult=${keyInResult}`);
 
-          (desk as any).recorder.recordInsert(newNode.key, originalValue, {
+          (desk as any).recorder.recordInsert(newNode.key, undefined, {
             sourceKey: node.key,
             createdBy: {
-              transformName: keys ? 'To Object' : 'Split',
-              params: [],
+              transformName: transform?.name || (keys ? 'To Object' : 'Split'),
+              params: transform?.params || [],
+              resultKey: keyInResult, // ← Which part of the result to use
             },
             description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
           });
@@ -573,7 +572,8 @@ export const createPropagateTransform =
             lastResult.removeSource,
             desk,
             keys,
-            lastConditionMet
+            lastConditionMet,
+            lastTransform // ← Pass the transform
           );
         } else if (lastResult.parts) {
           handleStructuralSplit(
@@ -582,7 +582,8 @@ export const createPropagateTransform =
             lastResult.removeSource,
             desk,
             undefined,
-            lastConditionMet
+            lastConditionMet,
+            lastTransform // ← Pass the transform
           );
         }
         return;

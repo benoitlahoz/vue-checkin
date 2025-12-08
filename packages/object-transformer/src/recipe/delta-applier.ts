@@ -105,7 +105,7 @@ const applyDelta = (
     case 'retain':
       return applyRetain(data, delta);
     case 'insert':
-      return applyInsert(data, delta, sourceData);
+      return applyInsert(data, delta, sourceData, transforms);
     case 'delete':
       return applyDelete(data, delta);
     case 'transform':
@@ -130,7 +130,12 @@ const applyRetain = (data: any, _delta: RetainOp): any => {
 /**
  * Apply insert operation - add a new property
  */
-const applyInsert = (data: any, delta: InsertOp, sourceData?: any): any => {
+const applyInsert = (
+  data: any,
+  delta: InsertOp,
+  sourceData?: any,
+  transforms?: Map<string, Transform>
+): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot insert into non-object data');
     return data;
@@ -139,9 +144,63 @@ const applyInsert = (data: any, delta: InsertOp, sourceData?: any): any => {
   // Determine the value to insert
   let value = delta.value;
 
+  // If created by a structural transform, reconstruct the value
+  if (delta.createdBy && delta.sourceKey && sourceData && typeof sourceData === 'object') {
+    const sourceValue = sourceData[delta.sourceKey];
+    const { transformName, params, resultKey } = delta.createdBy;
+
+    console.log('[applyInsert] Structural transform:', {
+      transformName,
+      params,
+      resultKey,
+      sourceValue,
+      hasTransforms: !!transforms,
+      transformsSize: transforms?.size,
+    });
+
+    // Find the transform function
+    const transformFn = transforms?.get(transformName);
+
+    console.log('[applyInsert] Transform found:', !!transformFn);
+
+    if (transformFn) {
+      // Apply the transform to get the structural result
+      const result = transformFn.fn(sourceValue, ...(params || []));
+
+      console.log('[applyInsert] Transform result:', result);
+
+      // Extract the value using resultKey
+      if (result && typeof result === 'object' && result.__structuralChange) {
+        if (result.object && resultKey !== undefined) {
+          // For toObject: result.object = { key1: value1, key2: value2 }
+          // resultKey is the KEY (string), not an index
+          console.log('[applyInsert] result.object:', result.object);
+          console.log('[applyInsert] resultKey:', resultKey, 'type:', typeof resultKey);
+
+          if (typeof resultKey === 'string') {
+            // Extract by key name
+            value = result.object[resultKey];
+          } else {
+            // Extract by index (for compatibility)
+            const entries = Object.entries(result.object);
+            const entry = entries[resultKey as number];
+            if (entry) {
+              value = entry[1];
+            }
+          }
+
+          console.log('[applyInsert] Extracted value:', value);
+        } else if (result.parts && typeof resultKey === 'number') {
+          // For split: result.parts = [part1, part2, ...]
+          value = result.parts[resultKey];
+        }
+      }
+    } else {
+      logger.warn(`Transform ${transformName} not found for structural insert`);
+    }
+  }
   // For restore operations (NOT created by transforms), try to get value from sourceData
-  // If createdBy exists, this is a structural transform creation, use delta.value
-  if (!delta.createdBy && delta.sourceKey && sourceData && typeof sourceData === 'object') {
+  else if (!delta.createdBy && delta.sourceKey && sourceData && typeof sourceData === 'object') {
     const sourceValue = sourceData[delta.sourceKey];
     if (sourceValue !== undefined) {
       value = sourceValue;
