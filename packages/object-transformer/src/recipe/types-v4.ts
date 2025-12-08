@@ -78,6 +78,11 @@ export interface TransformOp {
   params: any[];
   /** If this is a conditional transform */
   isCondition?: boolean;
+  /** Stack of conditions that must all be true for this transform to apply */
+  conditionStack?: Array<{
+    conditionName: string;
+    conditionParams: any[];
+  }>;
   /** Optional: metadata */
   metadata?: {
     description?: string;

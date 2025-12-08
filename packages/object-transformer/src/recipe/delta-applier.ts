@@ -250,6 +250,35 @@ const applyTransform = (
     return data;
   }
 
+  // 🔥 Evaluate condition stack - ALL conditions must be true
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    // Use sourceData for condition evaluation to get original values
+    const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
+
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition "${condition.conditionName}" not found, skipping transform`);
+        return data; // Skip this transform if condition is missing
+      }
+
+      const currentValue = evaluationData[delta.key];
+      const conditionResult = conditionFn.fn(currentValue, ...condition.conditionParams);
+
+      // If any condition is false, skip this transform
+      if (!conditionResult) {
+        console.log(
+          `[applyTransform] Condition "${condition.conditionName}" failed for key "${delta.key}", skipping transform "${delta.transformName}"`
+        );
+        return data;
+      }
+    }
+
+    console.log(
+      `[applyTransform] All ${delta.conditionStack.length} conditions passed for transform "${delta.transformName}"`
+    );
+  }
+
   // Get current value
   let currentValue = data[delta.key];
 

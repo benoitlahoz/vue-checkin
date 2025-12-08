@@ -101,9 +101,27 @@ export const applyNodeTransform = (
       const isStructural = structuralTransformNames.includes(transformName);
 
       if (!isStructural) {
+        // Build condition stack: all conditions that precede this transform in the chain
+        const conditionStack: Array<{ conditionName: string; conditionParams: any[] }> = [];
+
+        for (const t of node.transforms) {
+          if (t === entry) {
+            // We've reached the transform we're recording, stop
+            break;
+          }
+          if (t.condition) {
+            // This is a condition that precedes our transform
+            conditionStack.push({
+              conditionName: t.name,
+              conditionParams: t.params || [],
+            });
+          }
+        }
+
         // Record only the new transform (not all transforms in the array)
         (desk as any).recorder.recordTransform(key, entry.name, entry.params || [], {
           isCondition: !!entry.condition,
+          conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
         });
       }
       // Structural transforms will be handled by model-rules.util.ts recordInsert
