@@ -3,7 +3,7 @@ import type { File, Task } from 'vitest';
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { scenarios, transforms } from './scenarios';
-import { applyRecipe } from '../src/recipe/recipe-applier';
+import { applyRecipe } from '../src/recipe/delta-applier';
 
 export default class MarkdownReporter implements Reporter {
   async onFinished(files: File[]) {

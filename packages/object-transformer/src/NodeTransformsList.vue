@@ -4,7 +4,6 @@ import { useCheckIn } from 'vue-airport';
 import TransformerParamInput from './TransformParam.vue';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey, TransformSelect, filterTransformsByType, getNodeType } from '.';
-import { computePathFromNode } from './recipe/recipe-recorder';
 
 interface Props {
   nodeId: string;
@@ -46,19 +45,24 @@ const hasParams = (transformName: string) => {
 const handleParamChange = () => {
   if (!node.value) return;
 
-  // 🟢 RECORD THE PARAMETER CHANGE
-  // When params change, record the complete transform state
-  const path = computePathFromNode(node.value, desk!.mode?.value);
-  if ((desk as any).recorder) {
+  // 🟢 RECORD THE PARAMETER CHANGE (v4.0 Delta)
+  // Record each transform with updated params
+  const key = node.value.key;
+  if ((desk as any).recorder && key) {
     const isModelMode = desk!.mode?.value === 'model';
-    const isTemplateRoot = path.length === 0;
+    const isTemplateRoot = !node.value.parent;
 
     if (!isModelMode || !isTemplateRoot) {
-      const transforms = node.value.transforms.map((t) => ({
-        name: t.name,
-        params: t.params || [],
-      }));
-      (desk as any).recorder.recordSetTransforms(path, transforms);
+      // Structural transforms are handled elsewhere, skip them
+      const structuralTransformNames = ['To Object', 'Split', 'Split Regex', 'Array to Properties'];
+
+      for (const transform of node.value.transforms) {
+        if (structuralTransformNames.includes(transform.name)) continue;
+
+        (desk as any).recorder.recordTransform(key, transform.name, transform.params || [], {
+          isCondition: !!transform.condition,
+        });
+      }
     }
   }
 

@@ -54,7 +54,15 @@ const transforms: Transform[] = [
     name: 'To Object',
     structural: true,
     applicableTo: ['boolean'],
-    fn: (v: any) => {
+    params: [
+      {
+        key: 'removeSource',
+        label: 'Remove source',
+        type: 'boolean',
+        default: true,
+      },
+    ],
+    fn: (v: any, removeSource: boolean = true) => {
       // Accept any value type after intermediate transformations
       // Wrap any value in an object structure
       return {
@@ -63,7 +71,7 @@ const transforms: Transform[] = [
         object: {
           object: { value: v },
         },
-        removeSource: false,
+        removeSource,
       };
     },
   },

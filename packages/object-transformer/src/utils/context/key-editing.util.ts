@@ -8,7 +8,6 @@ import {
   getKeyMetadata,
   isKeyModified,
 } from '../node/node-key-metadata.util';
-import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 export interface KeyEditingContext {
   editingNode: Ref<ObjectNodeData | null>;
@@ -138,16 +137,13 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           node.key = finalKey;
           markKeyAsModified(node);
 
-          // 🟢 RECORD THE RENAME OPERATION
-          // IMPORTANT: Use oldKey (current key before rename) as source, NOT original
-          // This allows capturing rename chains: a -> b, then b -> c
-          // If we always used 'original', the second rename would record a -> c instead of b -> c
+          // 🟢 RECORD THE RENAME OPERATION (v4.0 Delta)
           const desk = context.deskRef?.();
+
           if (desk?.recorder && oldKey && oldKey !== finalKey) {
-            const parentPath = node.parent
-              ? computePathFromNode(node.parent, desk.mode?.value)
-              : [];
-            desk.recorder.recordRename(parentPath, oldKey, finalKey);
+            desk.recorder.recordRename(oldKey, finalKey, {
+              description: `Rename ${oldKey} to ${finalKey}`,
+            });
           }
 
           // IMPORTANT: When renaming a node with children (like name_object -> name),

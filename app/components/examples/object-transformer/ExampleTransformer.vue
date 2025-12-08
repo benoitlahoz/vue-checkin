@@ -61,7 +61,7 @@ const stats = computed(() => {
   const recipe = transformerDesk.value.buildRecipe();
 
   // Count operations by type in Recipe v2
-  const transformations = recipe.operations.length;
+  const transformations = recipe.deltas.length;
 
   return {
     version: recipe.version,

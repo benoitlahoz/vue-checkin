@@ -7,9 +7,9 @@
 
 import { computed, type ComputedRef, type Ref, readonly } from 'vue';
 import type { ObjectNodeData, Transform } from '../types';
-import type { Recipe } from './types';
-import { buildRecipe, exportRecipe, importRecipe } from './recipe-builder';
-import { applyRecipe as applyRecipeUtil, validateRecipe } from './recipe-applier';
+import type { Recipe } from './types-v4';
+import { applyRecipe as applyRecipeUtil } from './delta-applier';
+import { validateRecipe } from './types-v4';
 import { buildNodeTree } from '../utils/node/node-builder.util';
 import { logger } from '../utils/logger.util';
 

@@ -1,59 +1,12 @@
 import { ref, computed, nextTick, type Ref } from 'vue';
-import type { ObjectNodeData, Transform, TransformerMode, TransformerError } from '../../types';
-import { applyRecipe as applyRecipeUtil } from '../../recipe/recipe-applier';
+import type { ObjectNodeData, Transform, TransformerError } from '../../types';
+import { applyRecipe as applyRecipeUtil } from '../../recipe/delta-applier';
 import { buildNodeTree, destroyNodeTree } from '../node/node-builder.util';
 import { getDataForMode } from '../model/model-mode.util';
 
-// 🟢 Use delta-based recording (like Quill Delta / Excel Macros)
-import { createRecipeRecorder } from '../../recipe/recipe-recorder';
-import type { RecipeRecorder } from '../../recipe/recipe-recorder';
-
-/**
- * Find all nodes in the tree that match the given path
- * In model mode, this finds ALL nodes with matching keys at each path level
- */
-function findNodesAtPath(
-  root: ObjectNodeData,
-  path: string[],
-  mode: TransformerMode
-): ObjectNodeData[] {
-  if (path.length === 0) return [];
-
-  const [firstKey, ...restPath] = path;
-  let currentLevelNodes: ObjectNodeData[] = [];
-
-  // Start from root's children
-  if (root.children) {
-    if (mode === 'model' && root.type === 'array') {
-      // In model mode with array root, search in ALL objects
-      for (const child of root.children) {
-        if (child.type === 'object' && child.children) {
-          const matchingChild = child.children.find((c) => c.key === firstKey);
-          if (matchingChild) {
-            currentLevelNodes.push(matchingChild);
-          }
-        }
-      }
-    } else {
-      // In object mode or non-array root, search normally
-      const matchingChild = root.children.find((c) => c.key === firstKey);
-      if (matchingChild) {
-        currentLevelNodes.push(matchingChild);
-      }
-    }
-  }
-
-  // If there are more path segments, recurse
-  if (restPath.length > 0) {
-    const results: ObjectNodeData[] = [];
-    for (const node of currentLevelNodes) {
-      results.push(...findNodesAtPath(node, restPath, mode));
-    }
-    return results;
-  }
-
-  return currentLevelNodes;
-}
+// 🟢 Use delta-based recording v4.0 (inspired by Quill Delta)
+import { createRecorder, type DeltaRecorder } from '../../recipe/delta-recorder';
+import type { Recipe } from '../../recipe/types-v4';
 
 export interface RecipeOperationsContext {
   tree: Ref<ObjectNodeData>;
@@ -69,33 +22,18 @@ export interface RecipeOperationsContext {
 /**
  * Create recipe operations methods
  *
- * Uses delta-based recording: operations are captured as they happen.
+ * Uses delta-based recording v4.0: sequential operations like Quill Delta.
  * This is the ONLY reliable way - trying to reconstruct from tree state is unreliable.
  */
 export function createRecipeOperationsMethods(context: RecipeOperationsContext) {
-  // Compute required transforms from tree
-  const requiredTransforms = computed(() => {
-    const transforms = new Set<string>();
-    const collectTransforms = (node: ObjectNodeData) => {
-      if (node.transforms) {
-        node.transforms.forEach((t) => transforms.add(t.name));
-      }
-      if (node.children) {
-        node.children.forEach(collectTransforms);
-      }
-    };
-    collectTransforms(context.tree.value);
-    return Array.from(transforms);
-  });
-
   // Compute root type from mode
   const rootType = computed(() => (context.mode.value === 'model' ? 'array' : 'object'));
 
   // Create recorder
-  const recorder: RecipeRecorder = createRecipeRecorder(requiredTransforms, rootType);
+  const recorder: DeltaRecorder = createRecorder(rootType.value);
 
   // Store imported recipe separately (when recipe is imported, recorder is cleared)
-  const importedRecipe = ref<any>(null);
+  const importedRecipe = ref<Recipe | null>(null);
 
   return {
     // Expose recorder for direct access
@@ -105,17 +43,22 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
     importedRecipe,
 
     // Expose recipe (reactive)
-    recipe: recorder.recipe,
+    recipe: computed(() => recorder.getRecipe()),
 
-    // Build recipe (for compatibility)
+    // Build recipe (for compatibility - just returns current recipe)
     buildRecipe() {
-      return recorder.recipe.value;
+      return recorder.getRecipe();
     },
 
     // Apply recipe (uses recipe-applier)
-    applyRecipe(data: any, recipeToApply: any) {
+    applyRecipe(data: any, recipeToApply: any, sourceData?: any) {
       try {
-        return applyRecipeUtil(data, recipeToApply, context.transforms.value);
+        return applyRecipeUtil(
+          data,
+          recipeToApply,
+          context.transforms.value,
+          sourceData ?? context.originalData.value
+        );
       } catch (error) {
         context.notify({
           code: 'RECIPE_APPLY_ERROR',
@@ -129,16 +72,17 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
 
     // Export recipe
     exportRecipe() {
-      return JSON.stringify(recorder.recipe.value, null, 2);
+      return recorder.exportRecipe();
     },
 
     // Import recipe
     async importRecipe(recipeJson: string) {
       try {
-        const recipe = JSON.parse(recipeJson);
+        // Import into recorder
+        recorder.importRecipe(recipeJson);
 
         // Store the imported recipe for later use (e.g., propertyVariations)
-        importedRecipe.value = recipe;
+        importedRecipe.value = recorder.getRecipe();
 
         // 🟢 DESTRUCTIVE IMPORT PROCESS:
         // 1. Apply recipe to original input data
@@ -151,8 +95,9 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
 
         const transformedData = applyRecipeUtil(
           context.originalData.value,
-          recipe,
-          context.transforms.value
+          importedRecipe.value!,
+          context.transforms.value,
+          context.originalData.value
         );
 
         // Destroy old tree first - this breaks all circular references
@@ -173,29 +118,6 @@ export function createRecipeOperationsMethods(context: RecipeOperationsContext) 
           dataForTree,
           Array.isArray(dataForTree) ? 'Array' : 'Object'
         );
-
-        // 🔥 CRITICAL: Apply transforms from recipe to tree nodes
-        // This ensures each node has its own transform instances with independent conditionMet
-        if (recipe.operations && Array.isArray(recipe.operations)) {
-          for (const op of recipe.operations) {
-            if (op.type === 'setTransforms' && op.path && op.transforms) {
-              // Find all nodes matching this path in model mode
-              const matchingNodes = findNodesAtPath(context.tree.value, op.path, currentMode);
-
-              for (const node of matchingNodes) {
-                // Create fresh transform instances for this node (NOT shared!)
-                node.transforms = op.transforms.map((t: any) => {
-                  return (
-                    context.deskRef?.().createTransformEntry(t.name, node) || {
-                      name: t.name,
-                      params: t.params || [],
-                    }
-                  );
-                });
-              }
-            }
-          }
-        }
 
         // Increment treeKey to force Vue to completely remount the tree
         // This ensures old ObjectNode components are destroyed before new ones mount

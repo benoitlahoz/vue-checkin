@@ -6,8 +6,8 @@
  */
 
 import type { ObjectNodeData } from '../types';
-import type { Recipe, Operation, RecipeMetadata, Path } from './types';
-import { RECIPE_VERSION } from './types';
+import type { Recipe, RecipeMetadata } from './types-v4';
+import { createRecipe } from './types-v4';
 import { logger } from '../utils/logger.util';
 
 /**

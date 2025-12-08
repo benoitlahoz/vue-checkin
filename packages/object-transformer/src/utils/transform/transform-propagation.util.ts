@@ -353,6 +353,7 @@ const createSplitNodes = (
 
     // 🟡 OPTIMIZATION: Use new metadata structure
     initKeyMetadata(node, key);
+
     // Track the source node and index for reliable matching
     if (sourceNodeId !== undefined) {
       node.splitSourceId = sourceNodeId;
@@ -449,6 +450,48 @@ export const handleStructuralSplit = (
       node.id
     );
     node.parent.children = insertNodes(node.parent.children!, newNodes, node, removeSource);
+
+    // 🟢 RECORD INSERT for each created node
+    // IMPORTANT: Record BEFORE buildNodeTree modifies the structure
+    if ((desk as any).recorder) {
+      console.log('[handleStructuralSplit] Recording inserts:');
+      console.log('  normalizedParts:', normalizedParts);
+      console.log(
+        '  newNodes:',
+        newNodes.map((n) => ({ key: n.key, value: n.value, type: n.type }))
+      );
+
+      newNodes.forEach((newNode, idx) => {
+        if (newNode.key) {
+          // Use the original value from normalizedParts, not newNode.value
+          // (buildNodeTree sets value to undefined for objects)
+          const originalValue = normalizedParts[idx];
+
+          console.log(`[Recording] ${newNode.key} =`, originalValue);
+
+          (desk as any).recorder.recordInsert(newNode.key, originalValue, {
+            sourceKey: node.key,
+            createdBy: {
+              transformName: keys ? 'To Object' : 'Split',
+              params: [],
+            },
+            description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
+          });
+        }
+      });
+
+      console.log(
+        '[Recipe after inserts]:',
+        JSON.stringify((desk as any).recorder.getRecipe(), null, 2)
+      );
+    }
+
+    // 🟢 RECORD DELETE for source if removed
+    if (removeSource && (desk as any).recorder && node.key) {
+      (desk as any).recorder.recordDelete(node.key, {
+        description: `Removed by structural transformation`,
+      });
+    }
   }
 
   desk.propagateTransform(node.parent);

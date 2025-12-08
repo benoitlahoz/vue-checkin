@@ -116,7 +116,10 @@ async function generateLargePreview(data: any[], recipe: any) {
 
   for (let i = 0; i < data.length; i += chunkSize) {
     const chunk = data.slice(i, i + chunkSize);
-    const transformed = chunk.map((item) => desk!.applyRecipe(item, recipe));
+    const sourceChunk = Array.isArray(desk!.originalData.value)
+      ? desk!.originalData.value.slice(i, i + chunkSize)
+      : [];
+    const transformed = chunk.map((item, idx) => desk!.applyRecipe(item, recipe, sourceChunk[idx]));
     result.push(...transformed);
 
     // Update cache progressively so the preview updates in real-time
@@ -156,7 +159,10 @@ const finalObject = computed(() => {
 
     // For small datasets (< 500 items), generate synchronously
     if (data.length < 500) {
-      return data.map((item) => desk.applyRecipe(item, recipe));
+      const sourceData = desk.originalData.value;
+      return data.map((item, index) =>
+        desk.applyRecipe(item, recipe, Array.isArray(sourceData) ? sourceData[index] : undefined)
+      );
     }
 
     // For large datasets, auto-generate if needed
@@ -269,4 +275,3 @@ const copyToClipboard = async () => {
     </slot>
   </div>
 </template>
-

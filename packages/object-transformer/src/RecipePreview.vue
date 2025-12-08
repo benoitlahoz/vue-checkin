@@ -78,10 +78,10 @@ const validateRecipe = (data: unknown): boolean => {
 
   // Check for required recipe properties
   if (!recipe.version || typeof recipe.version !== 'string') return false;
-  if (!recipe.operations || !Array.isArray(recipe.operations)) return false;
+  if (!recipe.deltas || !Array.isArray(recipe.deltas)) return false;
 
-  // Validate operations array
-  for (const op of recipe.operations) {
+  // Validate deltas array
+  for (const op of recipe.deltas) {
     if (!op || typeof op !== 'object') return false;
     const operation = op as Record<string, unknown>;
 
@@ -151,7 +151,7 @@ const handleFileUpload = async (event: Event) => {
     }
 
     importProgress.value = 80;
-    importMessage.value = `Applying ${recipe.operations?.length || 0} operations...`;
+    importMessage.value = `Applying ${recipe.deltas?.length || 0} operations...`;
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Import recipe
@@ -159,7 +159,7 @@ const handleFileUpload = async (event: Event) => {
 
     importProgress.value = 100;
     importStatus.value = 'success';
-    importMessage.value = `Recipe imported successfully! (${recipe.operations?.length || 0} operations)`;
+    importMessage.value = `Recipe imported successfully! (${recipe.deltas?.length || 0} operations)`;
 
     // Reset input immediately so same file can be re-imported
     input.value = '';

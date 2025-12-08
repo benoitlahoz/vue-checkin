@@ -1,5 +1,5 @@
 import { bench, describe } from 'vitest';
-import { applyRecipe } from '../src/recipe/recipe-applier';
+import { applyRecipe } from '../src/recipe/delta-applier';
 import { scenarios, transforms } from './scenarios';
 
 // Generate datasets

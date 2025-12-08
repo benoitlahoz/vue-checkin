@@ -1,6 +1,5 @@
 import { maybe } from 'vue-airport';
 import type { ObjectNodeData, Transform, ObjectTransformerDesk } from '../../types';
-import { computePathFromNode } from '../../recipe/recipe-recorder';
 
 /**
  * Transform filtering - Pure functions
@@ -34,16 +33,9 @@ export const applyNodeTransform = (
   if (!transformName || transformName === 'None') {
     node.transforms = [];
 
-    // 🟢 RECORD THE REMOVAL (empty transforms list)
-    const path = computePathFromNode(node, desk.mode?.value);
-    if ((desk as any).recorder) {
-      const isModelMode = desk.mode?.value === 'model';
-      const isTemplateRoot = path.length === 0;
-
-      if (!isModelMode || !isTemplateRoot) {
-        (desk as any).recorder.recordSetTransforms(path, []);
-      }
-    }
+    // 🟢 RECORD THE REMOVAL (v4.0: no recording needed for clearing transforms)
+    // Transforms are now recorded individually, so clearing just means no more transform ops
+    // The delta sequence will simply not have transform operations for this key
 
     // Cleanup split nodes when removing transform
     if (node.parent) {
@@ -79,22 +71,26 @@ export const applyNodeTransform = (
   }
 
   // 🟢 RECORD THE OPERATION (Delta-based recording)
-  // Record the COMPLETE transform state, not just the last addition
-  // This allows for reversibility: removing/changing transforms updates the recipe
-  const path = computePathFromNode(node, desk.mode?.value);
+  // Record only the NEW transform that was just added
+  const key = node.key;
 
-  if ((desk as any).recorder) {
+  if ((desk as any).recorder && key) {
     const isModelMode = desk.mode?.value === 'model';
-    const isTemplateRoot = path.length === 0;
+    const isTemplateRoot = !node.parent;
 
     // Skip recording template root operations in model mode
     if (!isModelMode || !isTemplateRoot) {
-      const transforms = node.transforms.map((t) => ({
-        name: t.name,
-        params: t.params || [],
-        isCondition: !!t.condition, // 🆕 Mark if this is a conditional transform
-      }));
-      (desk as any).recorder.recordSetTransforms(path, transforms);
+      // Detect structural transforms - they should record as insert operations
+      const structuralTransformNames = ['To Object', 'Split', 'Split Regex', 'Array to Properties'];
+      const isStructural = structuralTransformNames.includes(transformName);
+
+      if (!isStructural) {
+        // Record only the new transform (not all transforms in the array)
+        (desk as any).recorder.recordTransform(key, entry.name, entry.params || [], {
+          isCondition: !!entry.condition,
+        });
+      }
+      // Structural transforms will be handled by model-rules.util.ts recordInsert
     }
   }
 
@@ -126,21 +122,9 @@ export const applyStepTransform = (
       cleanupSplitNodes(node, node.parent);
     }
 
-    // 🟢 RECORD THE REMOVAL (update complete transform state)
-    const path = computePathFromNode(node, desk.mode?.value);
-    if ((desk as any).recorder) {
-      const isModelMode = desk.mode?.value === 'model';
-      const isTemplateRoot = path.length === 0;
-
-      if (!isModelMode || !isTemplateRoot) {
-        const transforms = node.transforms.map((t) => ({
-          name: t.name,
-          params: t.params || [],
-          isCondition: !!t.condition, // 🆕 Mark if this is a conditional transform
-        }));
-        (desk as any).recorder.recordSetTransforms(path, transforms);
-      }
-    }
+    // 🟢 RECORD THE REMOVAL
+    // When removing transforms, we don't record anything - the recipe just won't have those transform ops
+    // The delta sequence represents what TO DO, not what NOT to do
   } else {
     // Check if there's already a transform at nextIndex (we're replacing)
     const isReplacing = nextIndex < node.transforms.length;
@@ -161,24 +145,34 @@ export const applyStepTransform = (
       node.transforms.push(entry);
     }
 
-    // 🟢 RECORD THE OPERATION (use setTransforms for consistency)
-    const path = computePathFromNode(node, desk.mode?.value);
-    if ((desk as any).recorder) {
+    // 🟢 RECORD THE OPERATION
+    // Record only the NEW transform that was just added/replaced
+    const key = node.key;
+    if ((desk as any).recorder && key) {
       const isModelMode = desk.mode?.value === 'model';
-      const isTemplateRoot = path.length === 0;
+      const isTemplateRoot = !node.parent;
 
       if (!isModelMode || !isTemplateRoot) {
-        const transforms = node.transforms.map((t) => ({
-          name: t.name,
-          params: t.params || [],
-          isCondition: !!t.condition, // 🆕 Mark if this is a conditional transform
-        }));
-        (desk as any).recorder.recordSetTransforms(path, transforms);
+        const structuralTransformNames = [
+          'To Object',
+          'Split',
+          'Split Regex',
+          'Array to Properties',
+        ];
+        const isStructural = structuralTransformNames.includes(entry.name);
+
+        if (!isStructural) {
+          // Record only the new transform (not all transforms in the array)
+          (desk as any).recorder.recordTransform(key, entry.name, entry.params || [], {
+            isCondition: !!entry.condition,
+          });
+        }
+        // Structural transforms will be handled by model-rules.util.ts recordInsert
       }
     }
   }
 
-  desk.propagateTransform(node);
+  // Apply the transforms
   if (node.parent) desk.propagateTransform(node.parent);
   desk.triggerTreeUpdate(); // Trigger reactivity
 };

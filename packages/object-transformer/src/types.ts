@@ -158,7 +158,7 @@ export interface ObjectTransformerContext {
   // Recipe management (v2)
   recipe: ComputedRef<any>; // Recipe from recipe/types.ts
   buildRecipe: () => any;
-  applyRecipe: (data: any, recipe: any) => any;
+  applyRecipe: (data: any, recipe: any, sourceData?: any) => any;
   exportRecipe: () => string;
   importRecipe: (recipeJson: string) => void;
   // Model mode

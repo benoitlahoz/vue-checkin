@@ -45,7 +45,6 @@ const transforms: Transform[] = [
         __structuralChange: true,
         action: 'split' as const,
         parts: parts,
-        removeSource: false,
       };
     },
   },
@@ -160,7 +159,6 @@ const transforms: Transform[] = [
         object: {
           object: { value: v },
         },
-        removeSource: false,
       };
     },
   },
@@ -245,7 +243,6 @@ const transforms: Transform[] = [
           __structuralChange: true,
           action: 'split' as const,
           parts: parts,
-          removeSource: false,
         };
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -272,12 +269,6 @@ onMounted(() => {
         const newKey = `${lastKey}_${index}`;
         current[newKey] = part;
       });
-
-      // Remove source if specified
-      if (result.removeSource) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete current[lastKey];
-      }
     },
     d
   );
