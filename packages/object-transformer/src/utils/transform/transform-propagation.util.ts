@@ -237,15 +237,18 @@ const _findMaxPartsInModelMode = (
   if (node.parent.parent?.type === 'array') {
     // Array context: get siblings from array children
     siblingObjects =
-      node.parent.parent.children?.filter((child: ObjectNodeData) => child.type === 'object' && !child.deleted) ||
-      [];
+      node.parent.parent.children?.filter(
+        (child: ObjectNodeData) => child.type === 'object' && !child.deleted
+      ) || [];
   } else if (desk.tree?.value) {
     // Root context: get siblings from root tree
     const rootNode = desk.tree.value;
     if (rootNode.type === 'array') {
       // Root is an array - get its object children
       siblingObjects =
-        rootNode.children?.filter((child: ObjectNodeData) => child.type === 'object' && !child.deleted) || [];
+        rootNode.children?.filter(
+          (child: ObjectNodeData) => child.type === 'object' && !child.deleted
+        ) || [];
       logger.debug(`[findMaxParts] Root array case - found ${siblingObjects.length} siblings`);
     } else {
       // Root is not an array - can't normalize

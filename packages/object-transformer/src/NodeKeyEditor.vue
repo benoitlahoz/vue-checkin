@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type HTMLAttributes } from 'vue';
+import { computed, watch, nextTick, type HTMLAttributes } from 'vue';
 import { useCheckIn } from 'vue-airport';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey, shouldStartEdit, canConfirmEdit } from '.';
@@ -39,6 +39,15 @@ const displayKey = computed(() => {
 });
 
 const inputRef = defineModel<HTMLInputElement | null>('inputRef');
+
+// Auto-focus input when editing starts
+watch(isEditing, async (editing) => {
+  if (editing) {
+    await nextTick();
+    inputRef.value?.focus();
+    inputRef.value?.select();
+  }
+});
 
 // Calculate input width based on content
 const inputWidth = computed(() => {
@@ -85,6 +94,16 @@ const cancelEdit = () => {
   desk.cancelEditKey(node.value);
   inputRef.value?.blur();
 };
+
+const handleBlur = () => {
+  if (!node.value || !isEditing.value) return;
+  // Validate on blur
+  if (canConfirmEdit(tempKey.value, node.value.key)) {
+    desk.confirmEditKey(node.value);
+  } else {
+    desk.cancelEditKey(node.value);
+  }
+};
 </script>
 
 <template>
@@ -104,6 +123,7 @@ const cancelEdit = () => {
       @input="(e) => updateTempKey((e.target as HTMLInputElement).value)"
       @keyup.enter="confirmEdit()"
       @keyup.esc="cancelEdit()"
+      @blur="handleBlur()"
       @click.stop
     />
     <span v-else :class="keyClasses">{{ displayKey }}</span>
