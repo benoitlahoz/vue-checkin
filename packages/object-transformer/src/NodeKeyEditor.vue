@@ -91,13 +91,7 @@ const cancelEdit = () => {
   <div
     v-if="node"
     data-slot="ot-key-editor"
-    :class="
-      cn(
-        'node-key-editor',
-        canEdit ? 'node-key-editor-editable' : 'node-key-editor-readonly',
-        props.class
-      )
-    "
+    :class="cn('ot-key-editor', canEdit ? 'ot-key-editable' : 'ot-key-readonly', props.class)"
     :style="props.style"
     @click="canEdit && !isEditing && startEdit()"
   >
@@ -115,4 +109,3 @@ const cancelEdit = () => {
     <span v-else :class="keyClasses">{{ displayKey }}</span>
   </div>
 </template>
-
