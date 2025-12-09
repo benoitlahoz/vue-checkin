@@ -83,6 +83,9 @@ export const applyDeltas = (
   // Track opId → current key mapping for resolving nested operations
   const opIdToKey = new Map<string, string>();
 
+  // Cache for condition evaluations to avoid re-computation
+  const conditionCache = new Map<string, boolean>();
+
   // Keep the original sourceData for reference
   const originalSourceData = sourceData;
 
@@ -102,7 +105,7 @@ export const applyDeltas = (
     // But fallback to original sourceData if result doesn't have the data yet
     const currentSourceData = result || originalSourceData;
 
-    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas);
+    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas, conditionCache);
 
     // Track opId → key mapping for Insert and Rename operations
     if ('opId' in delta && delta.opId) {
@@ -126,17 +129,18 @@ const applyDelta = (
   transforms: Map<string, Transform>,
   sourceData?: any,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  conditionCache?: Map<string, boolean>
 ): any => {
   switch (delta.op) {
     case 'retain':
       return applyRetain(data, delta);
     case 'insert':
-      return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList);
+      return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList, conditionCache);
     case 'delete':
-      return applyDelete(data, delta, opIdToKey, deltaList, transforms, sourceData);
+      return applyDelete(data, delta, opIdToKey, deltaList, transforms, sourceData, conditionCache);
     case 'transform':
-      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList);
+      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList, conditionCache);
     case 'rename':
       return applyRename(data, delta, opIdToKey, deltaList);
     case 'updateParams':
@@ -228,7 +232,8 @@ const applyInsert = (
   sourceData?: any,
   transforms?: Map<string, Transform>,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[] // Full list of deltas to resolve parent chains
+  deltaList?: DeltaOp[], // Full list of deltas to resolve parent chains
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot insert into non-object data');
@@ -280,7 +285,17 @@ const applyInsert = (
         return data;
       }
 
-      const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${valueToCheck}:${condition.conditionParams?.join(',') || ''}`;
+      let result: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        result = conditionCache.get(cacheKey)!;
+      } else {
+        result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
+        conditionCache?.set(cacheKey, result);
+      }
 
       // If any condition is false, skip silently (no warnings about missing parents)
       if (!result) {
@@ -335,7 +350,8 @@ const applyInsert = (
       nestedSourceData,
       transforms,
       opIdToKey,
-      deltaList
+      deltaList,
+      conditionCache
     );
 
     // Reconstruct the data with the updated parent at the correct path
@@ -440,7 +456,8 @@ const applyDelete = (
   opIdToKey?: Map<string, string>,
   deltaList?: DeltaOp[],
   transforms?: Map<string, Transform>,
-  sourceData?: any
+  sourceData?: any,
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot delete from non-object data');
@@ -467,7 +484,18 @@ const applyDelete = (
       }
 
       const currentValue = evaluationData[delta.key];
-      const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+      
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
+      let conditionResult: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        conditionResult = conditionCache.get(cacheKey)!;
+      } else {
+        conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+        conditionCache?.set(cacheKey, conditionResult);
+      }
 
       // If any condition is false, skip this delete silently
       if (!conditionResult) {
@@ -509,7 +537,8 @@ const applyTransform = (
   transforms: Map<string, Transform>,
   sourceData?: any,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot transform non-object data');
@@ -542,7 +571,18 @@ const applyTransform = (
       }
 
       const currentValue = evaluationData[delta.key];
-      const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+      
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
+      let conditionResult: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        conditionResult = conditionCache.get(cacheKey)!;
+      } else {
+        conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+        conditionCache?.set(cacheKey, conditionResult);
+      }
 
       // If any condition is false, skip this transform silently
       if (!conditionResult) {
@@ -572,7 +612,8 @@ const applyTransform = (
       transforms,
       nestedSourceData,
       opIdToKey,
-      deltaList
+      deltaList,
+      conditionCache
     );
 
     // Update data with modified parent
@@ -628,15 +669,9 @@ const applyRename = (
       return data;
     }
 
-    // Create new parent object with renamed property
-    const newParent: any = {};
-    for (const key in parent) {
-      if (key === delta.from) {
-        newParent[delta.to] = parent[key];
-      } else {
-        newParent[key] = parent[key];
-      }
-    }
+    // Create new parent object with renamed property using spread operator (O(1) vs O(n) loop)
+    const { [delta.from]: value, ...rest } = parent;
+    const newParent = { ...rest, [delta.to]: value };
 
     // Update data with modified parent
     return updateNestedObject(data, parentPath, newParent);
@@ -648,17 +683,9 @@ const applyRename = (
     return data;
   }
 
-  // Create new object with renamed property
-  const result: any = {};
-  for (const key in data) {
-    if (key === delta.from) {
-      result[delta.to] = data[key];
-    } else {
-      result[key] = data[key];
-    }
-  }
-
-  return result;
+  // Create new object with renamed property using spread operator (O(1) vs O(n) loop)
+  const { [delta.from]: value, ...rest } = data;
+  return { ...rest, [delta.to]: value };
 };
 
 /**
