@@ -19,6 +19,28 @@ import type { Transform } from '../types';
 import { logger } from '../utils/logger.util';
 
 /**
+ * Cache for transforms map to avoid recreating it on every applyRecipe call
+ */
+let transformsCache: WeakMap<Transform[], Map<string, Transform>> | null = null;
+
+/**
+ * Get or create transforms map from cache
+ */
+const getTransformsMap = (transforms: Transform[]): Map<string, Transform> => {
+  if (!transformsCache) {
+    transformsCache = new WeakMap();
+  }
+  
+  let map = transformsCache.get(transforms);
+  if (!map) {
+    map = new Map(transforms.map((t) => [t.name, t]));
+    transformsCache.set(transforms, map);
+  }
+  
+  return map;
+};
+
+/**
  * Apply a recipe to data
  *
  * For array data with object recipe (template mode), applies recipe to each element.
@@ -35,7 +57,7 @@ export const applyRecipe = (
   transforms: Transform[],
   sourceData?: any
 ): any => {
-  const transformsMap = new Map(transforms.map((t) => [t.name, t]));
+  const transformsMap = getTransformsMap(transforms);
 
   // Handle template mode: array data with object recipe
   // OR array recipe (built on template) applied to array data
