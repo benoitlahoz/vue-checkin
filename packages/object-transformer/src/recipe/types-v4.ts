@@ -27,10 +27,14 @@ export interface RetainOp {
  */
 export interface InsertOp {
   op: 'insert';
+  /** Unique operation ID */
+  opId?: string;
   /** Property key to insert */
   key: string;
-  /** Optional: parent key if inserting into a nested object (e.g., 'name_object' for 'name_object.value') */
+  /** Optional: parent key if inserting into a nested object (for backward compatibility) */
   parentKey?: string;
+  /** Optional: ID of parent operation if inserting into a nested object (preferred over parentKey) */
+  parentOpId?: string;
   /** Initial value (can be primitive or object) */
   value: any;
   /** Optional: source key for restore operations (maps to original sourceData key) */
@@ -60,6 +64,8 @@ export interface InsertOp {
  */
 export interface DeleteOp {
   op: 'delete';
+  /** Unique operation ID */
+  opId?: string;
   /** Property key to delete */
   key: string;
   /** Optional: store deleted value for potential undo */
@@ -77,10 +83,14 @@ export interface DeleteOp {
  */
 export interface TransformOp {
   op: 'transform';
+  /** Unique operation ID */
+  opId?: string;
   /** Property key to transform */
   key: string;
-  /** Optional: parent key if transforming a nested property (e.g., 'name_object' for 'name_object.foo') */
+  /** Optional: parent key if transforming a nested property (for backward compatibility) */
   parentKey?: string;
+  /** Optional: ID of parent operation if transforming a nested property (preferred over parentKey) */
+  parentOpId?: string;
   /** Transform name */
   transformName: string;
   /** Transform parameters */
@@ -104,12 +114,16 @@ export interface TransformOp {
  */
 export interface RenameOp {
   op: 'rename';
+  /** Unique operation ID */
+  opId?: string;
   /** Current key */
   from: string;
   /** New key */
   to: string;
-  /** Optional: parent key if renaming a nested property (e.g., 'name_object' for 'name_object.value') */
+  /** Optional: parent key if renaming a nested property (for backward compatibility) */
   parentKey?: string;
+  /** Optional: ID of parent operation if renaming a nested property (preferred over parentKey) */
+  parentOpId?: string;
   /** Optional: if this was an auto-rename to avoid conflicts */
   autoRenamed?: boolean;
   /** Optional: metadata */
@@ -125,6 +139,8 @@ export interface RenameOp {
  */
 export interface UpdateParamsOp {
   op: 'updateParams';
+  /** Unique operation ID */
+  opId?: string;
   /** Property key where the transform is applied */
   key: string;
   /** Index of the transform in the node's transforms array */

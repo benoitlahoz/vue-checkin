@@ -14,13 +14,38 @@ import { logger } from '../utils/logger.util';
  * Delta Recorder
  *
  * Records delta operations for building a recipe.
- * Each method returns the operation ID (index) for tracking.
+ * Generates unique opIds for tracking operations across renames and nesting.
  */
 export class DeltaRecorder {
   recipe: Ref<Recipe>;
+  private opIdCounter: number = 0;
+  /** Map node IDs to their operation IDs for tracking nested operations */
+  private nodeIdToOpId: Map<string, string> = new Map();
 
   constructor(rootType: 'object' | 'array' = 'object') {
     this.recipe = ref(createRecipe(rootType));
+  }
+
+  /**
+   * Generate a unique operation ID
+   */
+  private generateOpId(): string {
+    return `op_${++this.opIdCounter}`;
+  }
+
+  /**
+   * Register a node ID with its operation ID
+   * Used to track which operation created which node for nested operations
+   */
+  registerNodeOperation(nodeId: string, opId: string): void {
+    this.nodeIdToOpId.set(nodeId, opId);
+  }
+
+  /**
+   * Get operation ID for a node ID
+   */
+  getOpIdForNode(nodeId: string): string | undefined {
+    return this.nodeIdToOpId.get(nodeId);
   }
 
   /**
@@ -47,23 +72,28 @@ export class DeltaRecorder {
    * @param key - Property key to insert
    * @param value - Initial value
    * @param options - Optional metadata
-   * @returns Operation ID
+   * @returns Operation ID string
    */
   recordInsert(
     key: string,
     value: any,
     options?: {
       parentKey?: string;
+      parentOpId?: string;
       sourceKey?: string;
       createdBy?: { transformName: string; params: any[]; resultKey?: string | number };
       conditionStack?: Array<{ conditionName: string; conditionParams: any[] }>;
       description?: string;
     }
-  ): number {
+  ): string {
+    const opId = this.generateOpId();
+
     const delta: InsertOp = {
       op: 'insert',
+      opId,
       key,
       parentKey: options?.parentKey,
+      parentOpId: options?.parentOpId,
       value,
       sourceKey: options?.sourceKey,
       createdBy: options?.createdBy,
@@ -77,8 +107,8 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Insert: ${key}`, delta);
-    return this.recipe.value.deltas.length - 1;
+    logger.debug(`[DeltaRecorder] Insert: ${key} (opId: ${opId})`, delta);
+    return opId;
   }
 
   /**
@@ -87,7 +117,7 @@ export class DeltaRecorder {
    *
    * @param key - Property key to delete
    * @param options - Optional metadata
-   * @returns Operation ID
+   * @returns Operation ID string
    */
   recordDelete(
     key: string,
@@ -95,9 +125,12 @@ export class DeltaRecorder {
       deletedValue?: any;
       description?: string;
     }
-  ): number {
+  ): string {
+    const opId = this.generateOpId();
+
     const delta: DeleteOp = {
       op: 'delete',
+      opId,
       key,
       deletedValue: options?.deletedValue,
       metadata: {
@@ -109,8 +142,8 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Delete: ${key}`, delta);
-    return this.recipe.value.deltas.length - 1;
+    logger.debug(`[DeltaRecorder] Delete: ${key} (opId: ${opId})`, delta);
+    return opId;
   }
 
   /**
@@ -121,7 +154,7 @@ export class DeltaRecorder {
    * @param transformName - Transform name
    * @param params - Transform parameters
    * @param options - Optional metadata
-   * @returns Operation ID
+   * @returns Operation ID string
    */
   recordTransform(
     key: string,
@@ -129,15 +162,20 @@ export class DeltaRecorder {
     params: any[] = [],
     options?: {
       parentKey?: string;
+      parentOpId?: string;
       isCondition?: boolean;
       conditionStack?: Array<{ conditionName: string; conditionParams: any[] }>;
       description?: string;
     }
-  ): number {
+  ): string {
+    const opId = this.generateOpId();
+
     const delta: TransformOp = {
       op: 'transform',
+      opId,
       key,
       parentKey: options?.parentKey,
+      parentOpId: options?.parentOpId,
       transformName,
       params,
       isCondition: options?.isCondition,
@@ -151,8 +189,8 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Transform: ${key} -> ${transformName}`, delta);
-    return this.recipe.value.deltas.length - 1;
+    logger.debug(`[DeltaRecorder] Transform: ${key} -> ${transformName} (opId: ${opId})`, delta);
+    return opId;
   }
 
   /**
@@ -161,22 +199,27 @@ export class DeltaRecorder {
    * @param from - Current key
    * @param to - New key
    * @param options - Optional metadata
-   * @returns Operation ID
+   * @returns Operation ID string
    */
   recordRename(
     from: string,
     to: string,
     options?: {
       parentKey?: string;
+      parentOpId?: string;
       autoRenamed?: boolean;
       description?: string;
     }
-  ): number {
+  ): string {
+    const opId = this.generateOpId();
+
     const delta: RenameOp = {
       op: 'rename',
+      opId,
       from,
       to,
       parentKey: options?.parentKey,
+      parentOpId: options?.parentOpId,
       autoRenamed: options?.autoRenamed,
       metadata: {
         description: options?.description,
@@ -187,8 +230,8 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Rename: ${from} -> ${to}`, delta);
-    return this.recipe.value.deltas.length - 1;
+    logger.debug(`[DeltaRecorder] Rename: ${from} -> ${to} (opId: ${opId})`, delta);
+    return opId;
   }
 
   /**
@@ -204,7 +247,7 @@ export class DeltaRecorder {
    * @param transformIndex - Index of the transform in the node's transforms array
    * @param params - New parameters to apply
    * @param options - Optional metadata
-   * @returns Operation ID
+   * @returns Operation ID string
    */
   recordUpdateParams(
     key: string,
@@ -213,7 +256,7 @@ export class DeltaRecorder {
     options?: {
       description?: string;
     }
-  ): number {
+  ): string {
     // Find the corresponding TransformOp in deltas
     // We need to match by key and transform index
     let transformCount = 0;
@@ -242,9 +285,12 @@ export class DeltaRecorder {
       );
     }
 
+    const opId = this.generateOpId();
+
     // Record the UpdateParamsOp for tracking/history
     const delta: UpdateParamsOp = {
       op: 'updateParams',
+      opId,
       key,
       transformIndex,
       params,
@@ -257,8 +303,11 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] UpdateParams recorded: ${key}[${transformIndex}]`, delta);
-    return this.recipe.value.deltas.length - 1;
+    logger.debug(
+      `[DeltaRecorder] UpdateParams recorded: ${key}[${transformIndex}] (opId: ${opId})`,
+      delta
+    );
+    return opId;
   }
 
   /**
@@ -337,7 +386,7 @@ export class DeltaRecorder {
       params?: any[];
       isCondition?: boolean;
     }>
-  ): number[] {
+  ): string[] {
     return transforms.map((t) =>
       this.recordTransform(key, t.name, t.params || [], {
         isCondition: t.isCondition,

@@ -80,18 +80,38 @@ export const applyDeltas = (
   // Track which structural inserts we've already applied
   const appliedStructuralInserts = new Set<string>();
 
+  // Track opId → current key mapping for resolving nested operations
+  const opIdToKey = new Map<string, string>();
+
+  // Keep the original sourceData for reference
+  const originalSourceData = sourceData;
+
   // Apply each delta sequentially
   for (const delta of deltas) {
-    // Skip structural InsertOp if we've already applied it for this source
-    if (delta.op === 'insert' && delta.createdBy && delta.sourceKey) {
-      const insertKey = `${delta.sourceKey}:${delta.createdBy.transformName}`;
+    // Skip structural InsertOp if we've already applied it for this exact operation
+    // Use opId to ensure we only skip true duplicates, not chained transformations
+    if (delta.op === 'insert' && delta.createdBy && delta.sourceKey && 'opId' in delta) {
+      const insertKey = delta.opId || `${delta.sourceKey}:${delta.createdBy.transformName}`;
       if (appliedStructuralInserts.has(insertKey)) {
         continue; // Skip this insert, already applied
       }
       appliedStructuralInserts.add(insertKey);
     }
 
-    result = applyDelta(result, delta, transforms, sourceData);
+    // Use result as sourceData so nested operations can access previously created values
+    // But fallback to original sourceData if result doesn't have the data yet
+    const currentSourceData = result || originalSourceData;
+
+    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas);
+
+    // Track opId → key mapping for Insert and Rename operations
+    if ('opId' in delta && delta.opId) {
+      if (delta.op === 'insert') {
+        opIdToKey.set(delta.opId, delta.key);
+      } else if (delta.op === 'rename') {
+        opIdToKey.set(delta.opId, delta.to);
+      }
+    }
   }
 
   return result;
@@ -104,19 +124,21 @@ const applyDelta = (
   data: any,
   delta: DeltaOp,
   transforms: Map<string, Transform>,
-  sourceData?: any
+  sourceData?: any,
+  opIdToKey?: Map<string, string>,
+  deltaList?: DeltaOp[]
 ): any => {
   switch (delta.op) {
     case 'retain':
       return applyRetain(data, delta);
     case 'insert':
-      return applyInsert(data, delta, sourceData, transforms);
+      return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList);
     case 'delete':
       return applyDelete(data, delta);
     case 'transform':
-      return applyTransform(data, delta, transforms, sourceData);
+      return applyTransform(data, delta, transforms, sourceData, opIdToKey);
     case 'rename':
-      return applyRename(data, delta);
+      return applyRename(data, delta, opIdToKey);
     case 'updateParams':
       return applyUpdateParams(data, delta);
     default:
@@ -141,44 +163,98 @@ const applyInsert = (
   data: any,
   delta: InsertOp,
   sourceData?: any,
-  transforms?: Map<string, Transform>
+  transforms?: Map<string, Transform>,
+  opIdToKey?: Map<string, string>,
+  deltaList?: DeltaOp[] // Full list of deltas to resolve parent chains
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot insert into non-object data');
     return data;
   }
 
-  // If parentKey is specified, insert within the nested object
-  if (delta.parentKey) {
-    if (!(delta.parentKey in data)) {
-      logger.warn(`Cannot insert: parent property "${delta.parentKey}" not found`);
-      return data;
+  // Resolve the full parent path by following the parentOpId chain
+  const resolveParentPath = (opId: string): string[] => {
+    const path: string[] = [];
+    let currentOpId: string | undefined = opId;
+
+    while (currentOpId && opIdToKey) {
+      const key = opIdToKey.get(currentOpId);
+      if (!key) break;
+
+      path.unshift(key); // Add to beginning to build path from root
+
+      // Find the delta that created this key to get its parent
+      const parentDelta = deltaList?.find((d) => 'opId' in d && d.opId === currentOpId);
+      if (parentDelta && 'parentOpId' in parentDelta) {
+        currentOpId = parentDelta.parentOpId;
+      } else {
+        break;
+      }
     }
 
-    const parent = data[delta.parentKey];
-    if (typeof parent !== 'object' || parent === null) {
-      logger.warn(`Cannot insert: parent "${delta.parentKey}" is not an object`);
-      return data;
+    return path;
+  };
+
+  // Resolve parentKey from parentOpId if provided
+  let parentPath: string[] = [];
+  if (delta.parentOpId && opIdToKey) {
+    parentPath = resolveParentPath(delta.parentOpId);
+    if (parentPath.length === 0) {
+      logger.warn(`Cannot resolve parentOpId "${delta.parentOpId}" to a path`);
+    }
+  } else if (delta.parentKey) {
+    parentPath = [delta.parentKey];
+  }
+
+  // If parentPath is specified, insert within the nested object
+  if (parentPath.length > 0) {
+    // Navigate to the parent object using the full path
+    let parent: any = data;
+    for (const key of parentPath) {
+      if (!(key in parent)) {
+        logger.warn(`Cannot insert: parent property "${key}" not found in path`);
+        return data;
+      }
+      parent = parent[key];
+      if (typeof parent !== 'object' || parent === null) {
+        logger.warn(`Cannot insert: parent "${key}" is not an object`);
+        return data;
+      }
     }
 
-    // For nested objects created by transforms (like To Object), the sourceData
-    // won't have this parent key. We need to use the CURRENT data as source.
-    // The parent object IS the source for transformations on its properties.
-    const nestedSourceData = parent;
+    // Navigate to the same parent in sourceData
+    let nestedSourceData = sourceData;
+    for (const key of parentPath) {
+      if (nestedSourceData && typeof nestedSourceData === 'object' && key in nestedSourceData) {
+        nestedSourceData = nestedSourceData[key];
+      } else {
+        // If path doesn't exist in sourceData, use current parent as source
+        nestedSourceData = parent;
+        break;
+      }
+    }
 
     // Apply insert to nested object
     const updatedParent = applyInsert(
       parent,
-      { ...delta, parentKey: undefined }, // Remove parentKey to avoid infinite recursion
+      { ...delta, parentKey: undefined, parentOpId: undefined }, // Remove parent refs to avoid infinite recursion
       nestedSourceData,
-      transforms
+      transforms,
+      opIdToKey,
+      deltaList
     );
 
-    // Return data with updated parent
-    return {
-      ...data,
-      [delta.parentKey]: updatedParent,
+    // Reconstruct the data with the updated parent at the correct path
+    const updateNestedObject = (obj: any, path: string[], value: any): any => {
+      if (path.length === 0) return value;
+      const [first, ...rest] = path;
+      return {
+        ...obj,
+        [first]: updateNestedObject(obj[first], rest, value),
+      };
     };
+
+    return updateNestedObject(data, parentPath, updatedParent);
   }
 
   // Evaluate conditionStack if present
@@ -245,21 +321,31 @@ const applyInsert = (
             ...data,
             ...allInserts,
           };
-        } else if (result.object && resultKey !== undefined) {
-          // For toObject: result.object = { key1: value1, key2: value2 }
-          // Insert ALL object properties dynamically
-          if (typeof result.object === 'object') {
-            const allInserts: Record<string, any> = {};
+        } else if (result.object !== undefined) {
+          // For toObject with parentOpId (nested): extract the specific part using resultKey
+          // For toObject without parentOpId (root level): expand all properties
+          if (delta.parentOpId) {
+            // Nested structural transform: extract the value using resultKey
+            if (resultKey !== undefined && typeof result.object === 'object') {
+              value = result.object[resultKey];
+            } else {
+              value = result.object;
+            }
+          } else {
+            // Root-level toObject: insert ALL object properties dynamically
+            if (typeof result.object === 'object') {
+              const allInserts: Record<string, any> = {};
 
-            Object.entries(result.object).forEach(([key, val]) => {
-              const partKey = delta.key.replace(/_[^_]+$/, `_${key}`);
-              allInserts[partKey] = val;
-            });
+              Object.entries(result.object).forEach(([key, val]) => {
+                const partKey = delta.key.replace(/_[^_]+$/, `_${key}`);
+                allInserts[partKey] = val;
+              });
 
-            return {
-              ...data,
-              ...allInserts,
-            };
+              return {
+                ...data,
+                ...allInserts,
+              };
+            }
           }
         }
       }
@@ -303,7 +389,8 @@ const applyTransform = (
   data: any,
   delta: TransformOp,
   transforms: Map<string, Transform>,
-  sourceData?: any
+  sourceData?: any,
+  opIdToKey?: Map<string, string>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot transform non-object data');
@@ -316,31 +403,41 @@ const applyTransform = (
     return data;
   }
 
+  // Resolve parentKey from parentOpId if provided
+  let parentKey = delta.parentKey;
+  if (delta.parentOpId && opIdToKey) {
+    const resolvedKey = opIdToKey.get(delta.parentOpId);
+    if (resolvedKey) {
+      parentKey = resolvedKey;
+    }
+  }
+
   // If parentKey is specified, transform within the nested object
-  if (delta.parentKey) {
-    if (!(delta.parentKey in data)) {
-      logger.warn(`Cannot transform: parent property "${delta.parentKey}" not found`);
+  if (parentKey) {
+    if (!(parentKey in data)) {
+      logger.warn(`Cannot transform: parent property "${parentKey}" not found`);
       return data;
     }
 
-    const parent = data[delta.parentKey];
+    const parent = data[parentKey];
     if (typeof parent !== 'object' || parent === null) {
-      logger.warn(`Cannot transform: parent "${delta.parentKey}" is not an object`);
+      logger.warn(`Cannot transform: parent "${parentKey}" is not an object`);
       return data;
     }
 
     // Apply transform to nested property
     const transformedParent = applyTransform(
       parent,
-      { ...delta, parentKey: undefined }, // Remove parentKey to avoid infinite recursion
+      { ...delta, parentKey: undefined, parentOpId: undefined },
       transforms,
-      sourceData?.[delta.parentKey]
+      sourceData?.[parentKey],
+      opIdToKey
     );
 
     // Return data with updated parent
     return {
       ...data,
-      [delta.parentKey]: transformedParent,
+      [parentKey]: transformedParent,
     };
   }
 
@@ -393,27 +490,36 @@ const applyTransform = (
 /**
  * Apply rename operation - change property key
  */
-const applyRename = (data: any, delta: RenameOp): any => {
+const applyRename = (data: any, delta: RenameOp, opIdToKey?: Map<string, string>): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot rename in non-object data');
     return data;
   }
 
+  // Resolve parentKey from parentOpId if provided
+  let parentKey = delta.parentKey;
+  if (delta.parentOpId && opIdToKey) {
+    const resolvedKey = opIdToKey.get(delta.parentOpId);
+    if (resolvedKey) {
+      parentKey = resolvedKey;
+    }
+  }
+
   // If parentKey is specified, rename within the nested object
-  if (delta.parentKey) {
-    if (!(delta.parentKey in data)) {
-      logger.warn(`Cannot rename: parent property "${delta.parentKey}" not found`);
+  if (parentKey) {
+    if (!(parentKey in data)) {
+      logger.warn(`Cannot rename: parent property "${parentKey}" not found`);
       return data;
     }
 
-    const parent = data[delta.parentKey];
+    const parent = data[parentKey];
     if (typeof parent !== 'object' || parent === null) {
-      logger.warn(`Cannot rename: parent "${delta.parentKey}" is not an object`);
+      logger.warn(`Cannot rename: parent "${parentKey}" is not an object`);
       return data;
     }
 
     if (!(delta.from in parent)) {
-      logger.warn(`Cannot rename: property "${delta.from}" not found in "${delta.parentKey}"`);
+      logger.warn(`Cannot rename: property "${delta.from}" not found in "${parentKey}"`);
       return data;
     }
 
@@ -430,7 +536,7 @@ const applyRename = (data: any, delta: RenameOp): any => {
     // Return data with updated parent
     return {
       ...data,
-      [delta.parentKey]: newParent,
+      [parentKey]: newParent,
     };
   }
 

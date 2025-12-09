@@ -11,7 +11,7 @@ import { logger } from '../logger.util';
  */
 
 // Until: apply transformations until predicate is true
-const until =
+const _until =
   <T>(predicate: (value: T) => boolean) =>
   (transforms: Transform[], initialValue: T): T => {
     let value = initialValue;
@@ -246,7 +246,7 @@ export const propagateObjectValue = (node: ObjectNodeData): void => {
 
 // Propagate array value
 export const propagateArrayValue = (node: ObjectNodeData): void => {
-  node.value = activeChildren(node).map(computeChildTransformedValue);
+  node.value = activeChildren(node).map((child) => computeChildTransformedValue(child));
 };
 
 /**
@@ -509,15 +509,15 @@ export const handleStructuralSplit = (
         if (newNode.key) {
           const keyInResult = keys ? keys[idx] : idx;
 
-          // Check if the source node is itself a child of a structural object
-          let parentKey: string | undefined;
+          // Check if the source node's parent has an opId (was created by a previous operation)
+          let parentOpId: string | undefined;
           if (node.parent && node.parent.splitSourceId !== undefined) {
-            // The source node is inside a structural object, so these splits are nested
-            parentKey = node.parent.key;
+            // The source node is inside a structural object - get parent's opId
+            parentOpId = (desk as any).recorder.getOpIdForNode(node.parent.id);
           }
 
-          (desk as any).recorder.recordInsert(newNode.key, undefined, {
-            parentKey,
+          const opId = (desk as any).recorder.recordInsert(newNode.key, undefined, {
+            parentOpId,
             sourceKey: node.key,
             createdBy: {
               transformName: transform?.name || (keys ? 'To Object' : 'Split'),
@@ -527,6 +527,9 @@ export const handleStructuralSplit = (
             conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
             description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
           });
+
+          // Register the node's opId for future nesting references
+          (desk as any).recorder.registerNodeOperation(newNode.id, opId);
         }
       });
     }
@@ -570,15 +573,15 @@ export const handleStructuralSplit = (
           // Record undefined value - applyInsert will reconstruct by applying the transform
           const keyInResult = keys ? keys[idx] : idx;
 
-          // Check if the source node is itself a child of a structural object
-          let parentKey: string | undefined;
+          // Check if the source node's parent has an opId (was created by a previous operation)
+          let parentOpId: string | undefined;
           if (node.parent && node.parent.splitSourceId !== undefined) {
-            // The source node is inside a structural object, so these splits are nested
-            parentKey = node.parent.key;
+            // The source node is inside a structural object - get parent's opId
+            parentOpId = (desk as any).recorder.getOpIdForNode(node.parent.id);
           }
 
-          (desk as any).recorder.recordInsert(newNode.key, undefined, {
-            parentKey,
+          const opId = (desk as any).recorder.recordInsert(newNode.key, undefined, {
+            parentOpId,
             sourceKey: node.key,
             createdBy: {
               transformName: transform?.name || (keys ? 'To Object' : 'Split'),
@@ -588,6 +591,9 @@ export const handleStructuralSplit = (
             conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
             description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
           });
+
+          // Register the node's opId for future nesting references
+          (desk as any).recorder.registerNodeOperation(newNode.id, opId);
         }
       });
     }
