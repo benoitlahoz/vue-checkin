@@ -532,6 +532,14 @@ export const handleStructuralSplit = (
           (desk as any).recorder.registerNodeOperation(newNode.id, opId);
         }
       });
+
+      // 🟢 RECORD DELETE for source if removed
+      if (removeSource && node.key) {
+        (desk as any).recorder.recordDelete(node.key, {
+          conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
+          description: `Removed by structural transformation`,
+        });
+      }
     }
   } else {
     // First time creating split nodes
@@ -596,13 +604,14 @@ export const handleStructuralSplit = (
           (desk as any).recorder.registerNodeOperation(newNode.id, opId);
         }
       });
-    }
 
-    // 🟢 RECORD DELETE for source if removed
-    if (removeSource && (desk as any).recorder && node.key) {
-      (desk as any).recorder.recordDelete(node.key, {
-        description: `Removed by structural transformation`,
-      });
+      // 🟢 RECORD DELETE for source if removed
+      if (removeSource && node.key) {
+        (desk as any).recorder.recordDelete(node.key, {
+          conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
+          description: `Removed by structural transformation`,
+        });
+      }
     }
   }
 

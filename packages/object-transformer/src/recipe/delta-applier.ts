@@ -19,28 +19,6 @@ import type { Transform } from '../types';
 import { logger } from '../utils/logger.util';
 
 /**
- * Cache for transforms map to avoid recreating it on every applyRecipe call
- */
-let transformsCache: WeakMap<Transform[], Map<string, Transform>> | null = null;
-
-/**
- * Get or create transforms map from cache
- */
-const getTransformsMap = (transforms: Transform[]): Map<string, Transform> => {
-  if (!transformsCache) {
-    transformsCache = new WeakMap();
-  }
-  
-  let map = transformsCache.get(transforms);
-  if (!map) {
-    map = new Map(transforms.map((t) => [t.name, t]));
-    transformsCache.set(transforms, map);
-  }
-  
-  return map;
-};
-
-/**
  * Apply a recipe to data
  *
  * For array data with object recipe (template mode), applies recipe to each element.
@@ -57,7 +35,7 @@ export const applyRecipe = (
   transforms: Transform[],
   sourceData?: any
 ): any => {
-  const transformsMap = getTransformsMap(transforms);
+  const transformsMap = new Map(transforms.map((t) => [t.name, t]));
 
   // Handle template mode: array data with object recipe
   // OR array recipe (built on template) applied to array data
@@ -156,7 +134,7 @@ const applyDelta = (
     case 'insert':
       return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList);
     case 'delete':
-      return applyDelete(data, delta, opIdToKey, deltaList);
+      return applyDelete(data, delta, opIdToKey, deltaList, transforms, sourceData);
     case 'transform':
       return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList);
     case 'rename':
@@ -458,7 +436,9 @@ const applyDelete = (
   data: any,
   delta: DeleteOp,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  transforms?: Map<string, Transform>,
+  sourceData?: any
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot delete from non-object data');
@@ -467,6 +447,40 @@ const applyDelete = (
 
   // Resolve parent path for nested deletes
   const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
+
+  // 🔥 Evaluate conditionStack if present - ALL conditions must be true
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    // Use sourceData for condition evaluation to get original values
+    const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
+
+    // For nested deletes, navigate to parent in sourceData
+    const evaluationSource =
+      parentPath.length > 0
+        ? getNestedObject(evaluationData, parentPath) || evaluationData
+        : evaluationData;
+
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms?.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition "${condition.conditionName}" not found, skipping delete`);
+        return data; // Skip delete if condition is missing
+      }
+
+      // ✅ Use the 'condition' function to evaluate conditions
+      if (!conditionFn.condition) {
+        logger.warn(`Transform "${condition.conditionName}" is not a condition, skipping delete`);
+        return data;
+      }
+
+      const currentValue = evaluationSource[delta.key];
+      const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+
+      // If any condition is false, skip this delete
+      if (!conditionResult) {
+        return data;
+      }
+    }
+  }
 
   if (parentPath.length > 0) {
     // Navigate to parent object
