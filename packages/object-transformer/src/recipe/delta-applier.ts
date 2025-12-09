@@ -105,7 +105,15 @@ export const applyDeltas = (
     // But fallback to original sourceData if result doesn't have the data yet
     const currentSourceData = result || originalSourceData;
 
-    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas, conditionCache);
+    result = applyDelta(
+      result,
+      delta,
+      transforms,
+      currentSourceData,
+      opIdToKey,
+      deltas,
+      conditionCache
+    );
 
     // Track opId → key mapping for Insert and Rename operations
     if ('opId' in delta && delta.opId) {
@@ -140,7 +148,15 @@ const applyDelta = (
     case 'delete':
       return applyDelete(data, delta, opIdToKey, deltaList, transforms, sourceData, conditionCache);
     case 'transform':
-      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList, conditionCache);
+      return applyTransform(
+        data,
+        delta,
+        transforms,
+        sourceData,
+        opIdToKey,
+        deltaList,
+        conditionCache
+      );
     case 'rename':
       return applyRename(data, delta, opIdToKey, deltaList);
     case 'updateParams':
@@ -289,7 +305,7 @@ const applyInsert = (
       // Use simple cache key without JSON.stringify for better performance
       const cacheKey = `${delta.key}:${condition.conditionName}:${valueToCheck}:${condition.conditionParams?.join(',') || ''}`;
       let result: boolean;
-      
+
       if (conditionCache?.has(cacheKey)) {
         result = conditionCache.get(cacheKey)!;
       } else {
@@ -484,12 +500,12 @@ const applyDelete = (
       }
 
       const currentValue = evaluationData[delta.key];
-      
+
       // Check cache first to avoid re-evaluation
       // Use simple cache key without JSON.stringify for better performance
       const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
       let conditionResult: boolean;
-      
+
       if (conditionCache?.has(cacheKey)) {
         conditionResult = conditionCache.get(cacheKey)!;
       } else {
@@ -571,12 +587,12 @@ const applyTransform = (
       }
 
       const currentValue = evaluationData[delta.key];
-      
+
       // Check cache first to avoid re-evaluation
       // Use simple cache key without JSON.stringify for better performance
       const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
       let conditionResult: boolean;
-      
+
       if (conditionCache?.has(cacheKey)) {
         conditionResult = conditionCache.get(cacheKey)!;
       } else {

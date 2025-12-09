@@ -88,10 +88,6 @@ export const computeChildTransformedValue = (
 ): unknown => {
   if (child.transforms.length === 0) return child.value;
 
-  logger.debug(
-    `[computeChildTransformedValue] Processing ${child.key}="${child.value}", transforms count=${child.transforms.length}, ignoreConditions=${ignoreConditions}`
-  );
-
   // 🔗 CONDITIONAL GROUPS: Process transforms with condition-based execution
   // - A condition starts a "group"
   // - All following non-condition transforms belong to that group
@@ -116,10 +112,6 @@ export const computeChildTransformedValue = (
         // Update group state: ALL conditions must be true
         activeConditionsMet = evaluatedConditions.every((c) => c);
       }
-
-      logger.debug(
-        `[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}, ignoring = ${ignoreConditions}`
-      );
     } else {
       // This is a regular transform
       // Only execute if ignoring conditions, or no conditions, or all conditions in the group are met
@@ -133,14 +125,6 @@ export const computeChildTransformedValue = (
         if (!isStructuralResult(result)) {
           value = result;
         }
-
-        logger.debug(
-          `[computeChildTransformedValue] Transform "${t.name}" executed, value = ${value}`
-        );
-      } else {
-        logger.debug(
-          `[computeChildTransformedValue] Transform "${t.name}" skipped (conditions not met)`
-        );
       }
 
       // After a regular transform, if we had conditions, reset for next group
@@ -260,22 +244,11 @@ const _findMaxPartsInModelMode = (
 ): number | null => {
   // Only in model mode
   if (desk.mode?.value !== 'model') {
-    logger.debug(`[findMaxParts] Mode is NOT model: ${desk.mode?.value}`);
     return null;
   }
 
-  logger.debug(`[findMaxParts] Mode IS model`, {
-    nodeKey: node.key,
-    nodeType: node.type,
-    hasParent: !!node.parent,
-    parentType: node.parent?.type,
-    hasGrandparent: !!node.parent?.parent,
-    grandparentType: node.parent?.parent?.type,
-  });
-
   // Node must be a property inside an object
   if (!node.parent || node.parent.type !== 'object') {
-    logger.debug(`[findMaxParts] Parent is not an object`);
     return null;
   }
 
@@ -299,19 +272,15 @@ const _findMaxPartsInModelMode = (
         rootNode.children?.filter(
           (child: ObjectNodeData) => child.type === 'object' && !child.deleted
         ) || [];
-      logger.debug(`[findMaxParts] Root array case - found ${siblingObjects.length} siblings`);
     } else {
       // Root is not an array - can't normalize
-      logger.debug(`[findMaxParts] Root is not array: ${rootNode.type}`);
       return null;
     }
   } else {
-    logger.debug(`[findMaxParts] No tree available`);
     return null;
   }
 
   if (siblingObjects.length <= 1) {
-    logger.debug(`[findMaxParts] Not enough siblings: ${siblingObjects.length}`);
     return null;
   }
 
@@ -676,10 +645,6 @@ export const createPropagateTransform =
       const isUIPreview = true; // Always show structural transforms in the tree for preview
       const shouldExecuteStructural = isUIPreview || allConditionsMet;
 
-      logger.debug(
-        `[createPropagateTransform] node.key=${node.key}, shouldExecuteStructural=${shouldExecuteStructural}, allConditionsMet=${allConditionsMet}, isUIPreview=${isUIPreview}`
-      );
-
       const intermediateValue = computeIntermediateValue(node);
       const lastResult = lastTransform.fn(intermediateValue, ...(lastTransform.params || []));
 
@@ -691,9 +656,6 @@ export const createPropagateTransform =
         node.parent &&
         shouldExecuteStructural // 🔥 Only execute if condition chain passed (always true in UI)
       ) {
-        logger.debug(
-          `[handleStructuralSplit] Executing split for node.key=${node.key}, node.value=${node.value}`
-        );
 
         // For toObject, extract keys and values separately
         if (lastResult.object) {
@@ -731,23 +693,11 @@ export const createPropagateTransform =
         !shouldExecuteStructural &&
         node.parent
       ) {
-        if (import.meta.env.DEV) {
-          logger.debug(
-            `[createPropagateTransform] Cleaning up splits for node.key=${node.key} (condition failed)`
-          );
-        }
         // Remove any existing split nodes
         if (node.parent.children) {
-          const childrenBefore = node.parent.children.length;
           node.parent.children = node.parent.children.filter(
             (child) => child.splitSourceId !== node.id
           );
-          const childrenAfter = node.parent.children.length;
-          if (import.meta.env.DEV && childrenBefore !== childrenAfter) {
-            logger.debug(
-              `[createPropagateTransform] Removed ${childrenBefore - childrenAfter} split nodes`
-            );
-          }
         }
       }
     }

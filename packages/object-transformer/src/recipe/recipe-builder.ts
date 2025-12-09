@@ -109,34 +109,11 @@ export const buildRecipe = (tree: ObjectNodeData): Recipe => {
     if (isKeyModified(node) && !shouldSkip && node.key) {
       const originalKey = getOriginalKey(node);
       if (originalKey !== node.key) {
-        logger.debug('[buildRecipe] 🔄 Collecting RENAME:', {
-          nodeKey: node.key,
-          originalKey,
-          path,
-          keyMetadata: node.keyMetadata,
-          isSplitNode: !!node.splitSourceId,
-        });
         operations.push({
           type: 'rename',
           path: path, // Parent path
           from: originalKey,
           to: node.key,
-        });
-      } else {
-        logger.debug('[buildRecipe] ⚠️ Key modified but originalKey === key:', {
-          nodeKey: node.key,
-          originalKey,
-          keyMetadata: node.keyMetadata,
-        });
-      }
-    } else if (!isKeyModified(node) && !shouldSkip && node.key) {
-      const originalKey = getOriginalKey(node);
-      if (originalKey !== node.key) {
-        logger.debug('[buildRecipe] ⚠️ Key changed but NOT marked as modified:', {
-          nodeKey: node.key,
-          originalKey,
-          keyMetadata: node.keyMetadata,
-          isSplitNode: !!node.splitSourceId,
         });
       }
     }

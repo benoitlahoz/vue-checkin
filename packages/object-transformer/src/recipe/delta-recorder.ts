@@ -350,10 +350,6 @@ export class DeltaRecorder {
         for (const condition of delta.conditionStack) {
           if (condition.conditionName === conditionName) {
             condition.conditionParams = newParams;
-            logger.debug(
-              `[DeltaRecorder] Updated condition params in ${delta.op}: ${delta.key}`,
-              condition
-            );
           }
         }
       }
@@ -405,9 +401,6 @@ export class DeltaRecorder {
         if (transformName && delta.createdBy.transformName !== transformName) {
           return true;
         }
-        logger.debug(
-          `[DeltaRecorder] Removing insert ${delta.key} created by ${delta.createdBy.transformName}`
-        );
         return false;
       }
 
@@ -434,7 +427,6 @@ export class DeltaRecorder {
         if (transformName && delta.transformName !== transformName) {
           return true;
         }
-        logger.debug(`[DeltaRecorder] Removing transform ${delta.transformName} on ${delta.key}`);
         return false;
       }
 

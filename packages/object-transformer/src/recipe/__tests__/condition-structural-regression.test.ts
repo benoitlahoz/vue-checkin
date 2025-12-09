@@ -57,10 +57,8 @@ describe('Condition + Structural Transform Regression', () => {
     recorder.recordDelete('name', { conditionStack });
 
     const recipe = recorder.getRecipe();
-    console.log('Recipe:', JSON.stringify(recipe, null, 2));
 
     const result = applyRecipe(sourceData, recipe, mockTransforms, sourceData);
-    console.log('Result:', result);
 
     // When condition is met, structural transform should be applied
     expect(result).toHaveProperty('name_0', 'john');
