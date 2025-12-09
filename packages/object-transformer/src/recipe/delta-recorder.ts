@@ -114,14 +114,17 @@ export class DeltaRecorder {
   /**
    * Record a delete operation
    * Soft delete - property can be restored
+   * Supports nested deletes via parentOpId
    *
    * @param key - Property key to delete
-   * @param options - Optional metadata
+   * @param options - Optional metadata including parent information
    * @returns Operation ID string
    */
   recordDelete(
     key: string,
     options?: {
+      parentKey?: string;
+      parentOpId?: string;
       deletedValue?: any;
       description?: string;
     }
@@ -132,6 +135,8 @@ export class DeltaRecorder {
       op: 'delete',
       opId,
       key,
+      parentKey: options?.parentKey,
+      parentOpId: options?.parentOpId,
       deletedValue: options?.deletedValue,
       metadata: {
         description: options?.description,

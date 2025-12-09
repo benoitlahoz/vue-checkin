@@ -35,12 +35,20 @@ export function createNodeOperationsMethods(context: NodeOperationsContext) {
       const wasDeleted = node.deleted;
       node.deleted = !node.deleted;
 
-      // 🟢 RECORD THE OPERATION (Delta-based recording v4.0)
+      // 🟢 RECORD THE OPERATION (Delta-based recording v4.0 with parent support)
       const desk = context.deskRef?.();
       if (desk?.recorder && node.key) {
+        // Check if this node is inside a structural object (created by To Object, Split, etc.)
+        let parentOpId: string | undefined;
+        if (node.parent && node.parent.splitSourceId !== undefined) {
+          // The parent was created by a structural transform - get its opId
+          parentOpId = desk.recorder.getOpIdForNode(node.parent.id);
+        }
+
         if (!wasDeleted && node.deleted) {
           // Node was visible, now deleted → record delete with current key
           desk.recorder.recordDelete(node.key, {
+            parentOpId,
             description: `Delete property ${node.key}`,
           });
         } else if (wasDeleted && !node.deleted) {
@@ -49,6 +57,7 @@ export function createNodeOperationsMethods(context: NodeOperationsContext) {
           const sourceKey = getOriginalKey(node);
 
           desk.recorder.recordInsert(node.key, node.value, {
+            parentOpId,
             sourceKey,
             description: `Restore property ${node.key} (originally ${sourceKey})`,
           });

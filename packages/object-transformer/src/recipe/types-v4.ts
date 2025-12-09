@@ -61,6 +61,7 @@ export interface InsertOp {
 /**
  * Delete operation - remove a property
  * Soft delete - property can be restored
+ * Supports nested deletes via parentOpId
  */
 export interface DeleteOp {
   op: 'delete';
@@ -68,6 +69,10 @@ export interface DeleteOp {
   opId?: string;
   /** Property key to delete */
   key: string;
+  /** Optional: parent property key (for nested objects) */
+  parentKey?: string;
+  /** Optional: parent operation ID (resolves to current key via opId mapping) */
+  parentOpId?: string;
   /** Optional: store deleted value for potential undo */
   deletedValue?: any;
   /** Optional: metadata */

@@ -134,11 +134,11 @@ const applyDelta = (
     case 'insert':
       return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList);
     case 'delete':
-      return applyDelete(data, delta);
+      return applyDelete(data, delta, opIdToKey, deltaList);
     case 'transform':
       return applyTransform(data, delta, transforms, sourceData, opIdToKey);
     case 'rename':
-      return applyRename(data, delta, opIdToKey);
+      return applyRename(data, delta, opIdToKey, deltaList);
     case 'updateParams':
       return applyUpdateParams(data, delta);
     default:
@@ -154,6 +154,69 @@ const applyRetain = (data: any, _delta: RetainOp): any => {
   // Retain is primarily for delta composition/transformation
   // When applying to final data, it's a no-op
   return data;
+};
+
+/**
+ * Resolve the full parent path by following the parentOpId chain
+ * This allows operations on deeply nested objects created by structural transforms
+ */
+const resolveParentPath = (
+  parentOpId: string | undefined,
+  parentKey: string | undefined,
+  opIdToKey: Map<string, string> | undefined,
+  deltaList: DeltaOp[] | undefined
+): string[] => {
+  if (!parentOpId && !parentKey) return [];
+
+  if (parentKey && !parentOpId) return [parentKey];
+
+  if (!parentOpId || !opIdToKey) return parentKey ? [parentKey] : [];
+
+  const path: string[] = [];
+  let currentOpId: string | undefined = parentOpId;
+
+  while (currentOpId && opIdToKey) {
+    const key = opIdToKey.get(currentOpId);
+    if (!key) break;
+
+    path.unshift(key); // Add to beginning to build path from root
+
+    // Find the delta that created this key to get its parent
+    const parentDelta = deltaList?.find((d) => 'opId' in d && d.opId === currentOpId);
+    if (parentDelta && 'parentOpId' in parentDelta) {
+      currentOpId = parentDelta.parentOpId;
+    } else {
+      break;
+    }
+  }
+
+  return path;
+};
+
+/**
+ * Navigate to a nested object using a path
+ */
+const getNestedObject = (data: any, path: string[]): any => {
+  let current = data;
+  for (const key of path) {
+    if (typeof current !== 'object' || current === null || !(key in current)) {
+      return undefined;
+    }
+    current = current[key];
+  }
+  return current;
+};
+
+/**
+ * Update a nested object immutably using a path
+ */
+const updateNestedObject = (obj: any, path: string[], value: any): any => {
+  if (path.length === 0) return value;
+  const [first, ...rest] = path;
+  return {
+    ...obj,
+    [first]: updateNestedObject(obj[first], rest, value),
+  };
 };
 
 /**
@@ -370,14 +433,38 @@ const applyInsert = (
 
 /**
  * Apply delete operation - remove a property
+ * Supports nested deletes via parentOpId
  */
-const applyDelete = (data: any, delta: DeleteOp): any => {
+const applyDelete = (
+  data: any,
+  delta: DeleteOp,
+  opIdToKey?: Map<string, string>,
+  deltaList?: DeltaOp[]
+): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot delete from non-object data');
     return data;
   }
 
-  // Remove the property using destructuring
+  // Resolve parent path for nested deletes
+  const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
+
+  if (parentPath.length > 0) {
+    // Navigate to parent object
+    const parent = getNestedObject(data, parentPath);
+    if (!parent || typeof parent !== 'object') {
+      logger.warn(`Cannot delete: parent not found at path [${parentPath.join(' → ')}]`);
+      return data;
+    }
+
+    // Delete from parent
+    const { [delta.key]: _removed, ...updatedParent } = parent;
+
+    // Update data with modified parent
+    return updateNestedObject(data, parentPath, updatedParent);
+  }
+
+  // Root level delete
   const { [delta.key]: _removed, ...result } = data;
   return result;
 };
@@ -489,37 +576,34 @@ const applyTransform = (
 
 /**
  * Apply rename operation - change property key
+ * Supports nested renames via parentOpId
  */
-const applyRename = (data: any, delta: RenameOp, opIdToKey?: Map<string, string>): any => {
+const applyRename = (
+  data: any,
+  delta: RenameOp,
+  opIdToKey?: Map<string, string>,
+  deltaList?: DeltaOp[]
+): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot rename in non-object data');
     return data;
   }
 
-  // Resolve parentKey from parentOpId if provided
-  let parentKey = delta.parentKey;
-  if (delta.parentOpId && opIdToKey) {
-    const resolvedKey = opIdToKey.get(delta.parentOpId);
-    if (resolvedKey) {
-      parentKey = resolvedKey;
-    }
-  }
+  // Resolve parent path for nested renames
+  const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
 
-  // If parentKey is specified, rename within the nested object
-  if (parentKey) {
-    if (!(parentKey in data)) {
-      logger.warn(`Cannot rename: parent property "${parentKey}" not found`);
-      return data;
-    }
-
-    const parent = data[parentKey];
-    if (typeof parent !== 'object' || parent === null) {
-      logger.warn(`Cannot rename: parent "${parentKey}" is not an object`);
+  if (parentPath.length > 0) {
+    // Navigate to parent object
+    const parent = getNestedObject(data, parentPath);
+    if (!parent || typeof parent !== 'object') {
+      logger.warn(`Cannot rename: parent not found at path [${parentPath.join(' → ')}]`);
       return data;
     }
 
     if (!(delta.from in parent)) {
-      logger.warn(`Cannot rename: property "${delta.from}" not found in "${parentKey}"`);
+      logger.warn(
+        `Cannot rename: property "${delta.from}" not found in parent at [${parentPath.join(' → ')}]`
+      );
       return data;
     }
 
@@ -533,14 +617,11 @@ const applyRename = (data: any, delta: RenameOp, opIdToKey?: Map<string, string>
       }
     }
 
-    // Return data with updated parent
-    return {
-      ...data,
-      [parentKey]: newParent,
-    };
+    // Update data with modified parent
+    return updateNestedObject(data, parentPath, newParent);
   }
 
-  // Standard rename at root level
+  // Root level rename
   if (!(delta.from in data)) {
     logger.warn(`Cannot rename: property "${delta.from}" not found`);
     return data;

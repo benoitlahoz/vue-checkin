@@ -137,22 +137,22 @@ export function createKeyEditingMethods(context: KeyEditingContext) {
           node.key = finalKey;
           markKeyAsModified(node);
 
-          // 🟢 RECORD THE RENAME OPERATION (v4.0 Delta)
+          // 🟢 RECORD THE RENAME OPERATION (v4.0 Delta with parentOpId support)
           const desk = context.deskRef?.();
 
           if (desk?.recorder && oldKey && oldKey !== finalKey) {
             // Check if this node is a child of a structural object (e.g., created by To Object)
-            // If so, we need to record the parentKey for nested rename
+            // Use parentOpId instead of parentKey for proper nesting support
             const parent = node.parent;
-            let parentKey: string | undefined;
+            let parentOpId: string | undefined;
 
             if (parent && parent.splitSourceId !== undefined) {
-              // This parent was created by a structural transform
-              parentKey = parent.key;
+              // This parent was created by a structural transform - get its opId
+              parentOpId = desk.recorder.getOpIdForNode(parent.id);
             }
 
             desk.recorder.recordRename(oldKey, finalKey, {
-              parentKey,
+              parentOpId,
               description: `Rename ${oldKey} to ${finalKey}`,
             });
           }
