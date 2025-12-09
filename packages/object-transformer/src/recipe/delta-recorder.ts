@@ -6,14 +6,7 @@
  */
 
 import { ref, type Ref } from 'vue';
-import type {
-  Recipe,
-  InsertOp,
-  DeleteOp,
-  TransformOp,
-  RenameOp,
-  UpdateParamsOp,
-} from './types-v4';
+import type { Recipe, InsertOp, DeleteOp, TransformOp, RenameOp, UpdateParamsOp } from './types-v4';
 import { createRecipe } from './types-v4';
 import { logger } from '../utils/logger.util';
 

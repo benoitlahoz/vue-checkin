@@ -85,6 +85,44 @@ export const applyDeltas = (
 };
 
 /**
+ * Apply updateParams operation - update parameters of an existing transform
+ */
+const applyUpdateParams = (data: any, delta: import('./types-v4').UpdateParamsOp): any => {
+  if (typeof data !== 'object' || data === null) {
+    logger.warn('Cannot update params in non-object data');
+    return data;
+  }
+
+  // Defensive: If no transforms array, nothing to update
+  if (!data._transforms || !Array.isArray(data._transforms)) {
+    logger.warn('No _transforms array found on data, cannot update params');
+    return data;
+  }
+
+  // Defensive: If index out of bounds, do nothing
+  if (delta.transformIndex < 0 || delta.transformIndex >= data._transforms.length) {
+    logger.warn(`Transform index ${delta.transformIndex} out of bounds`);
+    return data;
+  }
+
+  // Clone transforms array to avoid mutation
+  const newTransforms = data._transforms.map((t: any, idx: number) => {
+    if (idx === delta.transformIndex) {
+      return {
+        ...t,
+        params: delta.params,
+      };
+    }
+    return t;
+  });
+
+  return {
+    ...data,
+    _transforms: newTransforms,
+  };
+};
+
+/**
  * Apply a single delta operation
  */
 const applyDelta = (
@@ -104,6 +142,8 @@ const applyDelta = (
       return applyTransform(data, delta, transforms, sourceData);
     case 'rename':
       return applyRename(data, delta);
+    case 'updateParams':
+      return applyUpdateParams(data, delta);
     default:
       logger.warn(`Unknown delta operation: ${(delta as any).op}`);
       return data;

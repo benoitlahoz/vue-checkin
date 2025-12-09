@@ -42,14 +42,12 @@ const hasParams = (transformName: string) => {
   return transform?.params && transform.params.length > 0;
 };
 
-const handleParamChange = () => {
+const handleParamChange = (transformIndex: number) => {
   if (!node.value) return;
 
-  // 🟢 v4.0: Parameter changes are NOT re-recorded
-  // The delta operations were already recorded when transforms were added
-  // Changing params just updates the in-tree state, not the recipe
-  // To persist param changes, the user must re-add the transform or we need
-  // a dedicated "update params" operation (TODO for future)
+  // Enregistre le delta updateParams à chaque changement de paramètre
+  const t = node.value.transforms[transformIndex];
+  desk!.recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
 
   // Force re-computation by triggering propagation
   desk!.propagateTransform(node.value);
@@ -97,7 +95,7 @@ const getAvailableTransforms = () => {
               <TransformerParamInput
                 v-model="t.params![pi]"
                 :config="getParamConfig(t.name, pi)"
-                @change="handleParamChange()"
+                @change="handleParamChange(index)"
               />
             </div>
           </div>
