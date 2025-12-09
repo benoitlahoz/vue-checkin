@@ -24,32 +24,38 @@ const until =
   };
 
 // Compute intermediate value before last transform
-export const computeIntermediateValue = (node: ObjectNodeData): unknown => {
-  const transformsExceptLast = node.transforms.slice(0, -1);
-  return until(isStructuralResult)(transformsExceptLast, node.value);
+export const computeIntermediateValue = (node: ObjectNodeData, ignoreConditions = true): unknown => {
+  // For intermediate value, we need to apply transforms but respect conditions unless ignoring
+  if (node.transforms.length <= 1) return node.value;
+  
+  // Use computeStepValue for the second-to-last transform
+  return computeStepValue(node, node.transforms.length - 2, ignoreConditions);
 };
 
 // Compute value at specific step (value AFTER applying transforms up to and including index)
-export const computeStepValue = (node: ObjectNodeData, index: number): unknown => {
+export const computeStepValue = (node: ObjectNodeData, index: number, ignoreConditions = true): unknown => {
   const transformsUpToIndex = node.transforms.slice(0, index + 1);
 
   // 🔗 CONDITIONAL GROUPS: Evaluate conditions and execute transforms based on group membership
+  // ignoreConditions: if true, always execute transforms (for UI preview)
   let value = node.value;
   let activeConditionsMet = true;
   const evaluatedConditions: boolean[] = [];
 
   for (const t of transformsUpToIndex) {
     if (t.condition) {
-      // Evaluate the condition
+      // Evaluate the condition (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
       
-      // Add to active conditions
-      evaluatedConditions.push(conditionResult);
-      activeConditionsMet = evaluatedConditions.every(c => c);
+      if (!ignoreConditions) {
+        // Add to active conditions only if we're not ignoring them
+        evaluatedConditions.push(conditionResult);
+        activeConditionsMet = evaluatedConditions.every(c => c);
+      }
     } else {
-      // Regular transform - execute only if conditions are met
-      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      // Regular transform - execute only if conditions are met (or ignoring conditions)
+      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
       
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));
@@ -68,18 +74,19 @@ export const computeStepValue = (node: ObjectNodeData, index: number): unknown =
 };
 
 // Compute child transformed value (ignores structural transforms)
-export const computeChildTransformedValue = (child: ObjectNodeData): unknown => {
+export const computeChildTransformedValue = (child: ObjectNodeData, ignoreConditions = true): unknown => {
   if (child.transforms.length === 0) return child.value;
 
   logger.debug(
-    `[computeChildTransformedValue] Processing ${child.key}="${child.value}", transforms count=${child.transforms.length}`
+    `[computeChildTransformedValue] Processing ${child.key}="${child.value}", transforms count=${child.transforms.length}, ignoreConditions=${ignoreConditions}`
   );
 
   // 🔗 CONDITIONAL GROUPS: Process transforms with condition-based execution
   // - A condition starts a "group"
   // - All following non-condition transforms belong to that group
-  // - All transforms in a group execute if the condition(s) are met
+  // - All transforms in a group execute if the condition(s) are met (unless ignoreConditions=true)
   // - A new condition starts a new group (else if behavior)
+  // ignoreConditions: if true, always execute transforms (for UI preview)
   
   let value = child.value;
   let activeConditionsMet = true; // Track if current group's conditions are all met
@@ -87,21 +94,23 @@ export const computeChildTransformedValue = (child: ObjectNodeData): unknown => 
 
   for (const t of child.transforms) {
     if (t.condition) {
-      // This is a condition - evaluate it
+      // This is a condition - evaluate it (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
       
-      // Add to active conditions for this group
-      evaluatedConditions.push(conditionResult);
+      if (!ignoreConditions) {
+        // Add to active conditions for this group only if not ignoring
+        evaluatedConditions.push(conditionResult);
+        
+        // Update group state: ALL conditions must be true
+        activeConditionsMet = evaluatedConditions.every(c => c);
+      }
       
-      // Update group state: ALL conditions must be true
-      activeConditionsMet = evaluatedConditions.every(c => c);
-      
-      logger.debug(`[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}`);
+      logger.debug(`[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}, ignoring = ${ignoreConditions}`);
     } else {
       // This is a regular transform
-      // Only execute if no conditions, or all conditions in the group are met
-      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      // Only execute if ignoring conditions, or no conditions, or all conditions in the group are met
+      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
       
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));
@@ -131,7 +140,7 @@ export const computeChildTransformedValue = (child: ObjectNodeData): unknown => 
 };
 
 // Compute final transformed value (for objects/arrays with children, first rebuilds from children)
-export const computeFinalTransformedValue = (node: ObjectNodeData): unknown => {
+export const computeFinalTransformedValue = (node: ObjectNodeData, ignoreConditions = true): unknown => {
   // If no transforms, return the value
   if (!node.transforms || node.transforms.length === 0) return node.value;
 
@@ -146,33 +155,36 @@ export const computeFinalTransformedValue = (node: ObjectNodeData): unknown => {
       baseValue = children.reduce(
         (acc, child) => ({
           ...acc,
-          [child.key!]: computeChildTransformedValue(child),
+          [child.key!]: computeChildTransformedValue(child, ignoreConditions),
         }),
         {} as Record<string, any>
       );
     } else if (node.type === 'array') {
-      baseValue = children.map(computeChildTransformedValue);
+      baseValue = children.map(child => computeChildTransformedValue(child, ignoreConditions));
     }
   }
 
   // Apply transforms on the base value (respecting conditions and ignoring structural results)
   // 🔗 CONDITIONAL GROUPS: Execute transforms based on condition group membership
+  // ignoreConditions: if true, always execute transforms (for UI preview)
   let value = baseValue;
   let activeConditionsMet = true;
   const evaluatedConditions: boolean[] = [];
 
   for (const t of node.transforms) {
     if (t.condition) {
-      // Evaluate the condition
+      // Evaluate the condition (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
       
-      // Add to active conditions
-      evaluatedConditions.push(conditionResult);
-      activeConditionsMet = evaluatedConditions.every(c => c);
+      if (!ignoreConditions) {
+        // Add to active conditions only if not ignoring
+        evaluatedConditions.push(conditionResult);
+        activeConditionsMet = evaluatedConditions.every(c => c);
+      }
     } else {
-      // Regular transform - execute only if conditions are met
-      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      // Regular transform - execute only if ignoring conditions or conditions are met
+      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
       
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));

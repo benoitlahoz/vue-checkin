@@ -124,7 +124,7 @@ export interface ObjectTransformerContext {
     node?: ObjectNodeData
   ) => (Transform & { params: any[] }) | null;
   propagateTransform: (node: ObjectNodeData) => void;
-  computeStepValue: (node: ObjectNodeData, index: number) => any;
+  computeStepValue: (node: ObjectNodeData, index: number, ignoreConditions?: boolean) => any;
   // 🟢 OPTIMIZATION: Map-based transform lookup
   getTransformsByName: () => Map<string, Transform[]>;
   rebuildTransformIndex: () => void;
