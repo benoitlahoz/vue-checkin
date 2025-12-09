@@ -243,6 +243,7 @@ export const applyStepTransform = (
   }
 
   // Apply the transforms
+  desk.propagateTransform(node);
   if (node.parent) desk.propagateTransform(node.parent);
   desk.triggerTreeUpdate(); // Trigger reactivity
 };

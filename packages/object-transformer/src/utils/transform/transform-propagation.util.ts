@@ -24,16 +24,23 @@ const until =
   };
 
 // Compute intermediate value before last transform
-export const computeIntermediateValue = (node: ObjectNodeData, ignoreConditions = true): unknown => {
+export const computeIntermediateValue = (
+  node: ObjectNodeData,
+  ignoreConditions = true
+): unknown => {
   // For intermediate value, we need to apply transforms but respect conditions unless ignoring
   if (node.transforms.length <= 1) return node.value;
-  
+
   // Use computeStepValue for the second-to-last transform
   return computeStepValue(node, node.transforms.length - 2, ignoreConditions);
 };
 
 // Compute value at specific step (value AFTER applying transforms up to and including index)
-export const computeStepValue = (node: ObjectNodeData, index: number, ignoreConditions = true): unknown => {
+export const computeStepValue = (
+  node: ObjectNodeData,
+  index: number,
+  ignoreConditions = true
+): unknown => {
   const transformsUpToIndex = node.transforms.slice(0, index + 1);
 
   // 🔗 CONDITIONAL GROUPS: Evaluate conditions and execute transforms based on group membership
@@ -47,16 +54,17 @@ export const computeStepValue = (node: ObjectNodeData, index: number, ignoreCond
       // Evaluate the condition (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
-      
+
       if (!ignoreConditions) {
         // Add to active conditions only if we're not ignoring them
         evaluatedConditions.push(conditionResult);
-        activeConditionsMet = evaluatedConditions.every(c => c);
+        activeConditionsMet = evaluatedConditions.every((c) => c);
       }
     } else {
       // Regular transform - execute only if conditions are met (or ignoring conditions)
-      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
-      
+      const shouldExecute =
+        ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
+
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));
 
@@ -74,7 +82,10 @@ export const computeStepValue = (node: ObjectNodeData, index: number, ignoreCond
 };
 
 // Compute child transformed value (ignores structural transforms)
-export const computeChildTransformedValue = (child: ObjectNodeData, ignoreConditions = true): unknown => {
+export const computeChildTransformedValue = (
+  child: ObjectNodeData,
+  ignoreConditions = true
+): unknown => {
   if (child.transforms.length === 0) return child.value;
 
   logger.debug(
@@ -87,7 +98,7 @@ export const computeChildTransformedValue = (child: ObjectNodeData, ignoreCondit
   // - All transforms in a group execute if the condition(s) are met (unless ignoreConditions=true)
   // - A new condition starts a new group (else if behavior)
   // ignoreConditions: if true, always execute transforms (for UI preview)
-  
+
   let value = child.value;
   let activeConditionsMet = true; // Track if current group's conditions are all met
   const evaluatedConditions: boolean[] = []; // Track condition results for the current group
@@ -97,34 +108,41 @@ export const computeChildTransformedValue = (child: ObjectNodeData, ignoreCondit
       // This is a condition - evaluate it (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
-      
+
       if (!ignoreConditions) {
         // Add to active conditions for this group only if not ignoring
         evaluatedConditions.push(conditionResult);
-        
+
         // Update group state: ALL conditions must be true
-        activeConditionsMet = evaluatedConditions.every(c => c);
+        activeConditionsMet = evaluatedConditions.every((c) => c);
       }
-      
-      logger.debug(`[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}, ignoring = ${ignoreConditions}`);
+
+      logger.debug(
+        `[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}, ignoring = ${ignoreConditions}`
+      );
     } else {
       // This is a regular transform
       // Only execute if ignoring conditions, or no conditions, or all conditions in the group are met
-      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
-      
+      const shouldExecute =
+        ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
+
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));
-        
+
         // Ignore structural results
         if (!isStructuralResult(result)) {
           value = result;
         }
-        
-        logger.debug(`[computeChildTransformedValue] Transform "${t.name}" executed, value = ${value}`);
+
+        logger.debug(
+          `[computeChildTransformedValue] Transform "${t.name}" executed, value = ${value}`
+        );
       } else {
-        logger.debug(`[computeChildTransformedValue] Transform "${t.name}" skipped (conditions not met)`);
+        logger.debug(
+          `[computeChildTransformedValue] Transform "${t.name}" skipped (conditions not met)`
+        );
       }
-      
+
       // After a regular transform, if we had conditions, reset for next group
       // This allows: Condition1 -> Transform1 -> Transform2 -> Condition2 -> Transform3
       // Where Transform1 and Transform2 both depend on Condition1,
@@ -140,7 +158,10 @@ export const computeChildTransformedValue = (child: ObjectNodeData, ignoreCondit
 };
 
 // Compute final transformed value (for objects/arrays with children, first rebuilds from children)
-export const computeFinalTransformedValue = (node: ObjectNodeData, ignoreConditions = true): unknown => {
+export const computeFinalTransformedValue = (
+  node: ObjectNodeData,
+  ignoreConditions = true
+): unknown => {
   // If no transforms, return the value
   if (!node.transforms || node.transforms.length === 0) return node.value;
 
@@ -160,7 +181,7 @@ export const computeFinalTransformedValue = (node: ObjectNodeData, ignoreConditi
         {} as Record<string, any>
       );
     } else if (node.type === 'array') {
-      baseValue = children.map(child => computeChildTransformedValue(child, ignoreConditions));
+      baseValue = children.map((child) => computeChildTransformedValue(child, ignoreConditions));
     }
   }
 
@@ -176,16 +197,17 @@ export const computeFinalTransformedValue = (node: ObjectNodeData, ignoreConditi
       // Evaluate the condition (but may be ignored for preview)
       const conditionResult = t.condition(value, ...(t.params || []));
       t.conditionMet = conditionResult;
-      
+
       if (!ignoreConditions) {
         // Add to active conditions only if not ignoring
         evaluatedConditions.push(conditionResult);
-        activeConditionsMet = evaluatedConditions.every(c => c);
+        activeConditionsMet = evaluatedConditions.every((c) => c);
       }
     } else {
       // Regular transform - execute only if ignoring conditions or conditions are met
-      const shouldExecute = ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
-      
+      const shouldExecute =
+        ignoreConditions || evaluatedConditions.length === 0 || activeConditionsMet;
+
       if (shouldExecute) {
         const result = t.fn(value, ...(t.params || []));
 
@@ -420,18 +442,9 @@ export const handleStructuralSplit = (
 ): void => {
   if (!node.parent) return;
 
-  // 🔥 USER CHOICE: If condition was false, do NOT create split nodes
-  // Keep the original property as-is (user's choice to have non-conformant objects)
-  if (conditionMet === false) {
-    logger.debug(`[Split] Condition false - skipping split for ${node.key}`);
-    // Remove any existing split nodes from previous evaluations
-    if (node.parent.children) {
-      node.parent.children = node.parent.children.filter(
-        (child) => child.splitSourceId !== node.id
-      );
-    }
-    return;
-  }
+  // 🔥 ALWAYS create split nodes in UI for preview
+  // The condition will be evaluated when applying the recipe to real data
+  // We no longer skip creation based on conditionMet
 
   const baseKey = node.key || 'part';
   const normalizedParts = parts;
@@ -482,18 +495,31 @@ export const handleStructuralSplit = (
 
     // 🟢 RECORD INSERT for each created node
     // IMPORTANT: For model mode, don't record VALUES, record the TRANSFORM
+    // 🔥 ALWAYS record InsertOps with conditionStack (if any)
+    // The condition will be evaluated for each array element during recipe application
+
     if ((desk as any).recorder) {
-      console.log('[handleStructuralSplit] Recording inserts:');
-      console.log('  keys:', keys);
-      console.log('  transform:', transform);
+      // Build conditionStack from ALL preceding condition transforms
+      const conditionStack: Array<{ conditionName: string; conditionParams: any[] }> = [];
+
+      for (const t of node.transforms) {
+        // Stop when we reach the structural transform itself
+        if (t === transform) break;
+
+        // Collect all conditions that precede the structural transform
+        if (t.condition) {
+          conditionStack.push({
+            conditionName: t.name,
+            conditionParams: t.params || [],
+          });
+        }
+      }
 
       newNodes.forEach((newNode, idx) => {
         if (newNode.key) {
           // 🔥 KEY INSIGHT: Don't record the template value!
           // Record undefined value - applyInsert will reconstruct by applying the transform
           const keyInResult = keys ? keys[idx] : idx;
-
-          console.log(`[Recording] ${newNode.key} with keyInResult=${keyInResult}`);
 
           (desk as any).recorder.recordInsert(newNode.key, undefined, {
             sourceKey: node.key,
@@ -502,15 +528,11 @@ export const handleStructuralSplit = (
               params: transform?.params || [],
               resultKey: keyInResult, // ← Which part of the result to use
             },
+            conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
             description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
           });
         }
       });
-
-      console.log(
-        '[Recipe after inserts]:',
-        JSON.stringify((desk as any).recorder.getRecipe(), null, 2)
-      );
     }
 
     // 🟢 RECORD DELETE for source if removed
@@ -553,25 +575,37 @@ export const createPropagateTransform =
       const lastTransform = node.transforms.at(-1);
       if (!lastTransform) return;
 
-      // 🔥 CHAIN OF RESPONSIBILITY: Check if any preceding condition failed
-      // If there's a condition in the chain and it's false, don't execute structural
-      let shouldExecuteStructural = true;
-      let lastConditionMet: boolean | undefined;
+      // 🔥 Evaluate ALL conditions in the transform chain to set conditionMet
+      // This is needed before checking shouldExecuteStructural
+      let currentValue = node.value;
+      let allConditionsMet = true;
 
-      for (let i = node.transforms.length - 1; i >= 0; i--) {
-        const t = node.transforms[i];
-        if (t.conditionMet !== undefined) {
-          lastConditionMet = t.conditionMet;
-          // If any condition in the chain is false, don't execute structural
-          if (!t.conditionMet) {
-            shouldExecuteStructural = false;
+      for (const t of node.transforms) {
+        if (t.condition) {
+          // Evaluate the condition
+          const conditionResult = t.condition(currentValue, ...(t.params || []));
+          t.conditionMet = conditionResult;
+
+          // Track if all conditions in chain are met
+          if (!conditionResult) {
+            allConditionsMet = false;
           }
-          break; // Only check the last condition (Chain of Responsibility)
+        } else if (t.fn) {
+          // Apply non-structural transforms to get intermediate value
+          const result = t.fn(currentValue, ...(t.params || []));
+          if (!isStructuralResult(result)) {
+            currentValue = result;
+          }
         }
       }
 
+      // 🔥 For UI display: always execute structural transforms (ignoreConditions = true)
+      // The conditions will be properly evaluated when applying the recipe to real data
+      const isUIPreview = true; // Always show structural transforms in the tree for preview
+      const shouldExecuteStructural = isUIPreview || allConditionsMet;
+
       logger.debug(
-        `[createPropagateTransform] node.key=${node.key}, shouldExecuteStructural=${shouldExecuteStructural}, lastConditionMet=${lastConditionMet}`
+        `[createPropagateTransform] node.key=${node.key}, shouldExecuteStructural=${shouldExecuteStructural}, allConditionsMet=${allConditionsMet}, isUIPreview=${isUIPreview}`
       );
 
       const intermediateValue = computeIntermediateValue(node);
@@ -583,7 +617,7 @@ export const createPropagateTransform =
         isMultiPartAction(lastResult.action, desk) &&
         (lastResult.parts || lastResult.object) &&
         node.parent &&
-        shouldExecuteStructural // 🔥 Only execute if condition chain passed
+        shouldExecuteStructural // 🔥 Only execute if condition chain passed (always true in UI)
       ) {
         logger.debug(
           `[handleStructuralSplit] Executing split for node.key=${node.key}, node.value=${node.value}`
@@ -600,7 +634,7 @@ export const createPropagateTransform =
             lastResult.removeSource,
             desk,
             keys,
-            lastConditionMet,
+            allConditionsMet, // Pass the evaluated condition result
             lastTransform // ← Pass the transform
           );
         } else if (lastResult.parts) {
@@ -610,7 +644,7 @@ export const createPropagateTransform =
             lastResult.removeSource,
             desk,
             undefined,
-            lastConditionMet,
+            allConditionsMet, // Pass the evaluated condition result
             lastTransform // ← Pass the transform
           );
         }

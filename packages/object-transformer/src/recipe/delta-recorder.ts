@@ -54,7 +54,8 @@ export class DeltaRecorder {
     value: any,
     options?: {
       sourceKey?: string;
-      createdBy?: { transformName: string; params: any[] };
+      createdBy?: { transformName: string; params: any[]; resultKey?: string | number };
+      conditionStack?: Array<{ conditionName: string; conditionParams: any[] }>;
       description?: string;
     }
   ): number {
@@ -64,6 +65,7 @@ export class DeltaRecorder {
       value,
       sourceKey: options?.sourceKey,
       createdBy: options?.createdBy,
+      conditionStack: options?.conditionStack,
       metadata: {
         description: options?.description,
         timestamp: Date.now(),
@@ -251,6 +253,66 @@ export class DeltaRecorder {
 
     logger.debug(`[DeltaRecorder] UpdateParams recorded: ${key}[${transformIndex}]`, delta);
     return this.recipe.value.deltas.length - 1;
+  }
+
+  /**
+   * Update parameters of InsertOps created by a structural transform
+   * This is used when user changes parameters of a structural transform (Split, To Object, etc.)
+   *
+   * @param sourceKey - The key of the source property that was split
+   * @param transformName - Name of the structural transform
+   * @param newParams - New parameters to apply
+   */
+  updateStructuralInsertParams(sourceKey: string, transformName: string, newParams: any[]): void {
+    // Find all InsertOps that were created by this structural transform
+    for (const delta of this.recipe.value.deltas) {
+      if (
+        delta.op === 'insert' &&
+        delta.sourceKey === sourceKey &&
+        delta.createdBy?.transformName === transformName
+      ) {
+        // Update the params
+        delta.createdBy.params = newParams;
+        logger.debug(
+          `[DeltaRecorder] Updated InsertOp params: ${delta.key} (created from ${sourceKey})`,
+          delta
+        );
+      }
+    }
+
+    this.recipe.value.metadata.updatedAt = Date.now();
+  }
+
+  /**
+   * Update condition parameters in the conditionStack of all affected operations
+   * This is used when user changes parameters of a condition
+   *
+   * @param key - The key of the property where the condition is applied
+   * @param conditionName - Name of the condition
+   * @param newParams - New parameters to apply
+   */
+  updateConditionParams(key: string, conditionName: string, newParams: any[]): void {
+    // Find all TransformOps and InsertOps for this key and update their conditionStack
+    for (const delta of this.recipe.value.deltas) {
+      if (
+        (delta.op === 'transform' || delta.op === 'insert') &&
+        delta.key === key &&
+        delta.conditionStack
+      ) {
+        // Update the condition params in the stack
+        for (const condition of delta.conditionStack) {
+          if (condition.conditionName === conditionName) {
+            condition.conditionParams = newParams;
+            logger.debug(
+              `[DeltaRecorder] Updated condition params in ${delta.op}: ${delta.key}`,
+              condition
+            );
+          }
+        }
+      }
+    }
+
+    this.recipe.value.metadata.updatedAt = Date.now();
   }
 
   /**

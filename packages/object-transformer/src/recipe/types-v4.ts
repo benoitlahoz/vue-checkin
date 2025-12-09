@@ -40,6 +40,11 @@ export interface InsertOp {
     /** For structural transforms: which part of the result to use (key or index) */
     resultKey?: string | number;
   };
+  /** Stack of conditions that must all be true for this insert to apply */
+  conditionStack?: Array<{
+    conditionName: string;
+    conditionParams: any[];
+  }>;
   /** Optional: metadata for debugging */
   metadata?: {
     description?: string;

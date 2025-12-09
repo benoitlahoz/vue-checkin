@@ -136,6 +136,47 @@ const applyInsert = (
     return data;
   }
 
+  // Evaluate conditionStack if present
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms?.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition ${condition.conditionName} not found, skipping insert`);
+        return data;
+      }
+
+      // Get the value to check
+      const valueToCheck =
+        delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
+
+      console.log('[applyInsert] Checking condition:', {
+        conditionName: condition.conditionName,
+        params: condition.conditionParams,
+        valueToCheck,
+        key: delta.key,
+      });
+
+      // Apply condition - use the CONDITION function, not the transformation function
+      if (!conditionFn.condition) {
+        logger.warn(
+          `Transform ${condition.conditionName} has no condition function, skipping insert`
+        );
+        return data;
+      }
+
+      const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
+
+      console.log('[applyInsert] Condition result:', result);
+
+      if (!result) {
+        logger.debug(
+          `Condition ${condition.conditionName} failed for insert ${delta.key}, skipping`
+        );
+        return data;
+      }
+    }
+  }
+
   // Determine the value to insert
   let value = delta.value;
 
@@ -144,33 +185,18 @@ const applyInsert = (
     const sourceValue = sourceData[delta.sourceKey];
     const { transformName, params, resultKey } = delta.createdBy;
 
-    console.log('[applyInsert] Structural transform:', {
-      transformName,
-      params,
-      resultKey,
-      sourceValue,
-      hasTransforms: !!transforms,
-      transformsSize: transforms?.size,
-    });
-
     // Find the transform function
     const transformFn = transforms?.get(transformName);
-
-    console.log('[applyInsert] Transform found:', !!transformFn);
 
     if (transformFn) {
       // Apply the transform to get the structural result
       const result = transformFn.fn(sourceValue, ...(params || []));
-
-      console.log('[applyInsert] Transform result:', result);
 
       // Extract the value using resultKey
       if (result && typeof result === 'object' && result.__structuralChange) {
         if (result.object && resultKey !== undefined) {
           // For toObject: result.object = { key1: value1, key2: value2 }
           // resultKey is the KEY (string), not an index
-          console.log('[applyInsert] result.object:', result.object);
-          console.log('[applyInsert] resultKey:', resultKey, 'type:', typeof resultKey);
 
           if (typeof resultKey === 'string') {
             // Extract by key name
@@ -183,8 +209,6 @@ const applyInsert = (
               value = entry[1];
             }
           }
-
-          console.log('[applyInsert] Extracted value:', value);
         } else if (result.parts && typeof resultKey === 'number') {
           // For split: result.parts = [part1, part2, ...]
           value = result.parts[resultKey];
@@ -201,8 +225,6 @@ const applyInsert = (
       value = sourceValue;
     }
   }
-
-  console.log(`[applyInsert] Inserting ${delta.key} =`, value);
 
   // Insert the property
   return {
@@ -250,6 +272,13 @@ const applyTransform = (
     // Use sourceData for condition evaluation to get original values
     const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
 
+    console.log('[applyTransform] Checking conditions for transform:', {
+      transformName: delta.transformName,
+      key: delta.key,
+      conditionStack: delta.conditionStack,
+      evaluationData,
+    });
+
     for (const condition of delta.conditionStack) {
       const conditionFn = transforms.get(condition.conditionName);
       if (!conditionFn) {
@@ -266,8 +295,16 @@ const applyTransform = (
       const currentValue = evaluationData[delta.key];
       const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
 
+      console.log('[applyTransform] Condition result:', {
+        conditionName: condition.conditionName,
+        currentValue,
+        params: condition.conditionParams,
+        result: conditionResult,
+      });
+
       // If any condition is false, skip this transform
       if (!conditionResult) {
+        console.log('[applyTransform] Condition failed, skipping transform');
         return data;
       }
     }

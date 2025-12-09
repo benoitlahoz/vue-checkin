@@ -93,9 +93,7 @@ describe('UpdateParams Delta Operation', () => {
       const recipe = recorder.getRecipe();
 
       // Check that the second transform was updated
-      const transforms = recipe.deltas.filter(
-        (d) => d.op === 'transform' && d.key === 'age'
-      );
+      const transforms = recipe.deltas.filter((d) => d.op === 'transform' && d.key === 'age');
       expect(transforms).toHaveLength(2);
 
       const secondTransform = transforms[1];

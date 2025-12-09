@@ -48,9 +48,30 @@ const handleParamChange = (transformIndex: number) => {
   // Récupère les nouveaux paramètres depuis le node (déjà mis à jour par v-model)
   const t = node.value.transforms[transformIndex];
 
-  // Enregistre le delta updateParams pour mettre à jour la recette
-  // Cette opération met à jour les paramètres de l'opération TransformOp correspondante
-  (desk as any).recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
+  // 🔥 Conditions are NOT recorded as separate operations
+  // They are part of the conditionStack of following transforms
+  // So we update the conditionStack of affected operations
+  if (t.condition) {
+    // Update condition params in all affected operations
+    (desk as any).recorder.updateConditionParams(node.value.key, t.name, t.params);
+
+    // Just propagate to update the UI
+    desk!.propagateTransform(node.value);
+    if (node.value.parent) {
+      desk!.propagateTransform(node.value.parent);
+    }
+    return;
+  }
+
+  // Check if this is a structural transform
+  if (isStructuralTransform(transformIndex)) {
+    // For structural transforms, update the InsertOp params instead of creating UpdateParamsOp
+    const transformName = t.name;
+    (desk as any).recorder.updateStructuralInsertParams(node.value.key, transformName, t.params);
+  } else {
+    // For regular transforms, update the TransformOp params
+    (desk as any).recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
+  }
 
   // Force re-calcul des valeurs transformées
   desk!.propagateTransform(node.value);
