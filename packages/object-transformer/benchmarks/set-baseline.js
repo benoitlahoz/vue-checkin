@@ -6,9 +6,11 @@
  * Usage: node benchmarks/set-baseline.js [--force]
  */
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const currentPath = path.join(__dirname, 'performance.current.json');
 const baselinePath = path.join(__dirname, 'performance.baseline.json');

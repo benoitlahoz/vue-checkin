@@ -75,6 +75,11 @@ export interface DeleteOp {
   parentOpId?: string;
   /** Optional: store deleted value for potential undo */
   deletedValue?: any;
+  /** Stack of conditions that must all be true for this delete to apply */
+  conditionStack?: Array<{
+    conditionName: string;
+    conditionParams: any[];
+  }>;
   /** Optional: metadata */
   metadata?: {
     description?: string;

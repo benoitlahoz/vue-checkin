@@ -125,6 +125,7 @@ export class DeltaRecorder {
       parentKey?: string;
       parentOpId?: string;
       deletedValue?: any;
+      conditionStack?: Array<{ conditionName: string; conditionParams: any[] }>;
       description?: string;
     }
   ): string {
@@ -137,6 +138,7 @@ export class DeltaRecorder {
       parentKey: options?.parentKey,
       parentOpId: options?.parentOpId,
       deletedValue: options?.deletedValue,
+      conditionStack: options?.conditionStack,
       metadata: {
         description: options?.description,
         timestamp: Date.now(),

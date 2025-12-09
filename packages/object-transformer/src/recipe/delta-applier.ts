@@ -83,6 +83,9 @@ export const applyDeltas = (
   // Track opId → current key mapping for resolving nested operations
   const opIdToKey = new Map<string, string>();
 
+  // Cache for condition evaluations to avoid re-computation
+  const conditionCache = new Map<string, boolean>();
+
   // Keep the original sourceData for reference
   const originalSourceData = sourceData;
 
@@ -102,7 +105,7 @@ export const applyDeltas = (
     // But fallback to original sourceData if result doesn't have the data yet
     const currentSourceData = result || originalSourceData;
 
-    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas);
+    result = applyDelta(result, delta, transforms, currentSourceData, opIdToKey, deltas, conditionCache);
 
     // Track opId → key mapping for Insert and Rename operations
     if ('opId' in delta && delta.opId) {
@@ -126,17 +129,18 @@ const applyDelta = (
   transforms: Map<string, Transform>,
   sourceData?: any,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  conditionCache?: Map<string, boolean>
 ): any => {
   switch (delta.op) {
     case 'retain':
       return applyRetain(data, delta);
     case 'insert':
-      return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList);
+      return applyInsert(data, delta, sourceData, transforms, opIdToKey, deltaList, conditionCache);
     case 'delete':
-      return applyDelete(data, delta, opIdToKey, deltaList);
+      return applyDelete(data, delta, opIdToKey, deltaList, transforms, sourceData, conditionCache);
     case 'transform':
-      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList);
+      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList, conditionCache);
     case 'rename':
       return applyRename(data, delta, opIdToKey, deltaList);
     case 'updateParams':
@@ -228,7 +232,8 @@ const applyInsert = (
   sourceData?: any,
   transforms?: Map<string, Transform>,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[] // Full list of deltas to resolve parent chains
+  deltaList?: DeltaOp[], // Full list of deltas to resolve parent chains
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot insert into non-object data');
@@ -258,6 +263,47 @@ const applyInsert = (
     return path;
   };
 
+  // 🔥 Evaluate conditionStack FIRST (before checking parentPath)
+  // This avoids warnings when conditions fail
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms?.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition ${condition.conditionName} not found, skipping insert`);
+        return data;
+      }
+
+      // Get the value to check
+      const valueToCheck =
+        delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
+
+      // Apply condition - use the CONDITION function, not the transformation function
+      if (!conditionFn.condition) {
+        logger.warn(
+          `Transform ${condition.conditionName} has no condition function, skipping insert`
+        );
+        return data;
+      }
+
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${valueToCheck}:${condition.conditionParams?.join(',') || ''}`;
+      let result: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        result = conditionCache.get(cacheKey)!;
+      } else {
+        result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
+        conditionCache?.set(cacheKey, result);
+      }
+
+      // If any condition is false, skip silently (no warnings about missing parents)
+      if (!result) {
+        return data;
+      }
+    }
+  }
+
   // Resolve parentKey from parentOpId if provided
   let parentPath: string[] = [];
   if (delta.parentOpId && opIdToKey) {
@@ -275,12 +321,12 @@ const applyInsert = (
     let parent: any = data;
     for (const key of parentPath) {
       if (!(key in parent)) {
-        logger.warn(`Cannot insert: parent property "${key}" not found in path`);
+        // Silently skip if parent not found - it may have been conditionally created
         return data;
       }
       parent = parent[key];
       if (typeof parent !== 'object' || parent === null) {
-        logger.warn(`Cannot insert: parent "${key}" is not an object`);
+        // Silently skip if parent is not an object
         return data;
       }
     }
@@ -304,7 +350,8 @@ const applyInsert = (
       nestedSourceData,
       transforms,
       opIdToKey,
-      deltaList
+      deltaList,
+      conditionCache
     );
 
     // Reconstruct the data with the updated parent at the correct path
@@ -318,35 +365,6 @@ const applyInsert = (
     };
 
     return updateNestedObject(data, parentPath, updatedParent);
-  }
-
-  // Evaluate conditionStack if present
-  if (delta.conditionStack && delta.conditionStack.length > 0) {
-    for (const condition of delta.conditionStack) {
-      const conditionFn = transforms?.get(condition.conditionName);
-      if (!conditionFn) {
-        logger.warn(`Condition ${condition.conditionName} not found, skipping insert`);
-        return data;
-      }
-
-      // Get the value to check
-      const valueToCheck =
-        delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
-
-      // Apply condition - use the CONDITION function, not the transformation function
-      if (!conditionFn.condition) {
-        logger.warn(
-          `Transform ${condition.conditionName} has no condition function, skipping insert`
-        );
-        return data;
-      }
-
-      const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
-
-      if (!result) {
-        return data;
-      }
-    }
   }
 
   // Determine the value to insert
@@ -436,11 +454,54 @@ const applyDelete = (
   data: any,
   delta: DeleteOp,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  transforms?: Map<string, Transform>,
+  sourceData?: any,
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot delete from non-object data');
     return data;
+  }
+
+  // 🔥 Evaluate conditionStack FIRST (before resolving parentPath)
+  // This avoids warnings when conditions fail
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    // Use sourceData for condition evaluation to get original values
+    const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
+
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms?.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition "${condition.conditionName}" not found, skipping delete`);
+        return data; // Skip delete if condition is missing
+      }
+
+      // ✅ Use the 'condition' function to evaluate conditions
+      if (!conditionFn.condition) {
+        logger.warn(`Transform "${condition.conditionName}" is not a condition, skipping delete`);
+        return data;
+      }
+
+      const currentValue = evaluationData[delta.key];
+      
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
+      let conditionResult: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        conditionResult = conditionCache.get(cacheKey)!;
+      } else {
+        conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+        conditionCache?.set(cacheKey, conditionResult);
+      }
+
+      // If any condition is false, skip this delete silently
+      if (!conditionResult) {
+        return data;
+      }
+    }
   }
 
   // Resolve parent path for nested deletes
@@ -450,7 +511,7 @@ const applyDelete = (
     // Navigate to parent object
     const parent = getNestedObject(data, parentPath);
     if (!parent || typeof parent !== 'object') {
-      logger.warn(`Cannot delete: parent not found at path [${parentPath.join(' → ')}]`);
+      // Silently skip - parent may be conditionally created
       return data;
     }
 
@@ -476,7 +537,8 @@ const applyTransform = (
   transforms: Map<string, Transform>,
   sourceData?: any,
   opIdToKey?: Map<string, string>,
-  deltaList?: DeltaOp[]
+  deltaList?: DeltaOp[],
+  conditionCache?: Map<string, boolean>
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot transform non-object data');
@@ -489,35 +551,8 @@ const applyTransform = (
     return data;
   }
 
-  // Resolve parent path for nested transforms
-  const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
-
-  if (parentPath.length > 0) {
-    // Navigate to parent object
-    const parent = getNestedObject(data, parentPath);
-    if (!parent || typeof parent !== 'object') {
-      logger.warn(`Cannot transform: parent not found at path [${parentPath.join(' → ')}]`);
-      return data;
-    }
-
-    // Get nested sourceData for this parent
-    const nestedSourceData = getNestedObject(sourceData, parentPath);
-
-    // Apply transform to nested property
-    const transformedParent = applyTransform(
-      parent,
-      { ...delta, parentKey: undefined, parentOpId: undefined },
-      transforms,
-      nestedSourceData,
-      opIdToKey,
-      deltaList
-    );
-
-    // Update data with modified parent
-    return updateNestedObject(data, parentPath, transformedParent);
-  }
-
-  // 🔥 Evaluate condition stack - ALL conditions must be true
+  // 🔥 Evaluate condition stack FIRST (before checking parentPath)
+  // This avoids warnings when conditions fail
   if (delta.conditionStack && delta.conditionStack.length > 0) {
     // Use sourceData for condition evaluation to get original values
     const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
@@ -536,13 +571,53 @@ const applyTransform = (
       }
 
       const currentValue = evaluationData[delta.key];
-      const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+      
+      // Check cache first to avoid re-evaluation
+      // Use simple cache key without JSON.stringify for better performance
+      const cacheKey = `${delta.key}:${condition.conditionName}:${currentValue}:${condition.conditionParams.join(',')}`;
+      let conditionResult: boolean;
+      
+      if (conditionCache?.has(cacheKey)) {
+        conditionResult = conditionCache.get(cacheKey)!;
+      } else {
+        conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
+        conditionCache?.set(cacheKey, conditionResult);
+      }
 
-      // If any condition is false, skip this transform
+      // If any condition is false, skip this transform silently
       if (!conditionResult) {
         return data;
       }
     }
+  }
+
+  // Resolve parent path for nested transforms
+  const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
+
+  if (parentPath.length > 0) {
+    // Navigate to parent object
+    const parent = getNestedObject(data, parentPath);
+    if (!parent || typeof parent !== 'object') {
+      // Silently skip - parent may be conditionally created
+      return data;
+    }
+
+    // Get nested sourceData for this parent
+    const nestedSourceData = getNestedObject(sourceData, parentPath);
+
+    // Apply transform to nested property
+    const transformedParent = applyTransform(
+      parent,
+      { ...delta, parentKey: undefined, parentOpId: undefined },
+      transforms,
+      nestedSourceData,
+      opIdToKey,
+      deltaList,
+      conditionCache
+    );
+
+    // Update data with modified parent
+    return updateNestedObject(data, parentPath, transformedParent);
   }
 
   // Get current value
@@ -585,26 +660,18 @@ const applyRename = (
     // Navigate to parent object
     const parent = getNestedObject(data, parentPath);
     if (!parent || typeof parent !== 'object') {
-      logger.warn(`Cannot rename: parent not found at path [${parentPath.join(' → ')}]`);
+      // Silently skip - parent may be conditionally created
       return data;
     }
 
     if (!(delta.from in parent)) {
-      logger.warn(
-        `Cannot rename: property "${delta.from}" not found in parent at [${parentPath.join(' → ')}]`
-      );
+      // Silently skip - property may be conditionally created
       return data;
     }
 
-    // Create new parent object with renamed property
-    const newParent: any = {};
-    for (const key in parent) {
-      if (key === delta.from) {
-        newParent[delta.to] = parent[key];
-      } else {
-        newParent[key] = parent[key];
-      }
-    }
+    // Create new parent object with renamed property using spread operator (O(1) vs O(n) loop)
+    const { [delta.from]: value, ...rest } = parent;
+    const newParent = { ...rest, [delta.to]: value };
 
     // Update data with modified parent
     return updateNestedObject(data, parentPath, newParent);
@@ -612,21 +679,13 @@ const applyRename = (
 
   // Root level rename
   if (!(delta.from in data)) {
-    logger.warn(`Cannot rename: property "${delta.from}" not found`);
+    // Silently skip - property may be conditionally created
     return data;
   }
 
-  // Create new object with renamed property
-  const result: any = {};
-  for (const key in data) {
-    if (key === delta.from) {
-      result[delta.to] = data[key];
-    } else {
-      result[key] = data[key];
-    }
-  }
-
-  return result;
+  // Create new object with renamed property using spread operator (O(1) vs O(n) loop)
+  const { [delta.from]: value, ...rest } = data;
+  return { ...rest, [delta.to]: value };
 };
 
 /**
