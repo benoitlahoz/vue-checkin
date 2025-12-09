@@ -186,13 +186,13 @@ Combination of all above: rename, transform, delete, conditional, add.
 
 | Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples | vs Previous | vs Baseline |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Scaling: Small (10 items) | 62731.38 | 0.0159 | 0.0243 | 31366 | 🟢 +5.4% | 🔴 -84.2% |
-| Scaling: Medium (1,000 items) | 638.21 | 1.5669 | 2.1647 | 320 | ⚪ +2.9% | 🔴 -84.7% |
-| Scaling: Large (10,000 items) | 62.23 | 16.0684 | 19.5545 | 32 | ⚪ +3.1% | 🔴 -85.0% |
-| Complexity: Simple | 62.51 | 15.9983 | 19.3396 | 32 | ⚪ +3.4% | 🔴 -85.0% |
-| Complexity: Structural | 87.47 | 11.4324 | 14.9117 | 44 | ⚪ +1.8% | 🔴 -49.0% |
-| Complexity: Conditional | 65.00 | 15.3843 | 18.4948 | 33 | 🟢 +5.8% | 🔴 -86.4% |
-| Complexity: Heavy | 49.00 | 20.4091 | 23.1423 | 25 | 🟢 +5.8% | 🔴 -57.9% |
+| Scaling: Small (10 items) | 63139.49 | 0.0158 | 0.0237 | 31601 | ⚪ +0.7% | ⚪ +0.7% |
+| Scaling: Medium (1,000 items) | 639.82 | 1.5629 | 2.1464 | 320 | ⚪ +0.3% | ⚪ +0.3% |
+| Scaling: Large (10,000 items) | 62.33 | 16.0429 | 19.4590 | 32 | ⚪ +0.2% | ⚪ +0.2% |
+| Complexity: Simple | 59.92 | 16.6902 | 19.7079 | 30 | ⚪ -4.1% | ⚪ -4.1% |
+| Complexity: Structural | 85.91 | 11.6406 | 15.0250 | 43 | ⚪ -1.8% | ⚪ -1.8% |
+| Complexity: Conditional | 127.64 | 7.8347 | 8.4074 | 64 | 🟢 +96.4% | 🟢 +96.4% |
+| Complexity: Heavy | 79.27 | 12.6146 | 15.9290 | 40 | 🟢 +61.8% | 🟢 +61.8% |
 
 ### Previous Results
 
@@ -203,13 +203,13 @@ Combination of all above: rename, transform, delete, conditional, add.
 
 | Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples |
 | :--- | :--- | :--- | :--- | :--- |
-| Scaling: Small (10 items) | 59490.70 | 0.0168 | 0.0485 | 29746 |
-| Scaling: Medium (1,000 items) | 620.43 | 1.6118 | 2.3024 | 311 |
-| Scaling: Large (10,000 items) | 60.38 | 16.5619 | 20.0060 | 31 |
-| Complexity: Simple | 60.48 | 16.5348 | 19.9110 | 31 |
-| Complexity: Structural | 85.95 | 11.6350 | 15.2507 | 43 |
-| Complexity: Conditional | 61.45 | 16.2723 | 19.0610 | 31 |
-| Complexity: Heavy | 46.33 | 21.5863 | 25.0910 | 24 |
+| Scaling: Small (10 items) | 62731.38 | 0.0159 | 0.0243 | 31366 |
+| Scaling: Medium (1,000 items) | 638.21 | 1.5669 | 2.1647 | 320 |
+| Scaling: Large (10,000 items) | 62.23 | 16.0684 | 19.5545 | 32 |
+| Complexity: Simple | 62.51 | 15.9983 | 19.3396 | 32 |
+| Complexity: Structural | 87.47 | 11.4324 | 14.9117 | 44 |
+| Complexity: Conditional | 65.00 | 15.3843 | 18.4948 | 33 |
+| Complexity: Heavy | 49.00 | 20.4091 | 23.1423 | 25 |
 
 </details>
 
@@ -218,19 +218,19 @@ Combination of all above: rename, transform, delete, conditional, add.
 <details>
 <summary>View baseline benchmark results</summary>
 
-**Date:** 2025-12-06
-**Version:** v2.0.0
-**Description:** Baseline performance (Recipe v2.0.0 with operations)
+**Date:** 2025-12-09
+**Version:** v4.0.0
+**Description:** Baseline performance (manually set)
 
 | Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples |
 | :--- | :--- | :--- | :--- | :--- |
-| Scaling: Small (10 items) | 397319.54 | 0.0025 | 0.0034 | 198660 |
-| Scaling: Medium (1,000 items) | 4175.12 | 0.2395 | 0.3737 | 2088 |
-| Scaling: Large (10,000 items) | 414.78 | 2.4109 | 2.8942 | 208 |
-| Complexity: Simple | 417.81 | 2.3934 | 2.7787 | 209 |
-| Complexity: Structural | 171.63 | 5.8265 | 10.5822 | 86 |
-| Complexity: Conditional | 477.95 | 2.0923 | 2.5957 | 239 |
-| Complexity: Heavy | 116.29 | 8.5995 | 12.8735 | 59 |
+| Scaling: Small (10 items) | 62731.38 | 0.0159 | 0.0243 | 31366 |
+| Scaling: Medium (1,000 items) | 638.21 | 1.5669 | 2.1647 | 320 |
+| Scaling: Large (10,000 items) | 62.23 | 16.0684 | 19.5545 | 32 |
+| Complexity: Simple | 62.51 | 15.9983 | 19.3396 | 32 |
+| Complexity: Structural | 87.47 | 11.4324 | 14.9117 | 44 |
+| Complexity: Conditional | 65.00 | 15.3843 | 18.4948 | 33 |
+| Complexity: Heavy | 49.00 | 20.4091 | 23.1423 | 25 |
 
 </details>
 
@@ -238,9 +238,9 @@ Combination of all above: rename, transform, delete, conditional, add.
 
 **Scaling: Small (10 items)** is the fastest.
 
-- **98.29x** faster than *Scaling: Medium (1,000 items)*
-- **717.17x** faster than *Complexity: Structural*
-- **965.08x** faster than *Complexity: Conditional*
-- **1003.60x** faster than *Complexity: Simple*
-- **1007.99x** faster than *Scaling: Large (10,000 items)*
-- **1280.29x** faster than *Complexity: Heavy*
+- **98.68x** faster than *Scaling: Medium (1,000 items)*
+- **494.68x** faster than *Complexity: Conditional*
+- **734.98x** faster than *Complexity: Structural*
+- **796.48x** faster than *Complexity: Heavy*
+- **1012.94x** faster than *Scaling: Large (10,000 items)*
+- **1053.81x** faster than *Complexity: Simple*
