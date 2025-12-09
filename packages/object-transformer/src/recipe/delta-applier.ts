@@ -258,6 +258,37 @@ const applyInsert = (
     return path;
   };
 
+  // 🔥 Evaluate conditionStack FIRST (before checking parentPath)
+  // This avoids warnings when conditions fail
+  if (delta.conditionStack && delta.conditionStack.length > 0) {
+    for (const condition of delta.conditionStack) {
+      const conditionFn = transforms?.get(condition.conditionName);
+      if (!conditionFn) {
+        logger.warn(`Condition ${condition.conditionName} not found, skipping insert`);
+        return data;
+      }
+
+      // Get the value to check
+      const valueToCheck =
+        delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
+
+      // Apply condition - use the CONDITION function, not the transformation function
+      if (!conditionFn.condition) {
+        logger.warn(
+          `Transform ${condition.conditionName} has no condition function, skipping insert`
+        );
+        return data;
+      }
+
+      const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
+
+      // If any condition is false, skip silently (no warnings about missing parents)
+      if (!result) {
+        return data;
+      }
+    }
+  }
+
   // Resolve parentKey from parentOpId if provided
   let parentPath: string[] = [];
   if (delta.parentOpId && opIdToKey) {
@@ -318,35 +349,6 @@ const applyInsert = (
     };
 
     return updateNestedObject(data, parentPath, updatedParent);
-  }
-
-  // Evaluate conditionStack if present
-  if (delta.conditionStack && delta.conditionStack.length > 0) {
-    for (const condition of delta.conditionStack) {
-      const conditionFn = transforms?.get(condition.conditionName);
-      if (!conditionFn) {
-        logger.warn(`Condition ${condition.conditionName} not found, skipping insert`);
-        return data;
-      }
-
-      // Get the value to check
-      const valueToCheck =
-        delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
-
-      // Apply condition - use the CONDITION function, not the transformation function
-      if (!conditionFn.condition) {
-        logger.warn(
-          `Transform ${condition.conditionName} has no condition function, skipping insert`
-        );
-        return data;
-      }
-
-      const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
-
-      if (!result) {
-        return data;
-      }
-    }
   }
 
   // Determine the value to insert
