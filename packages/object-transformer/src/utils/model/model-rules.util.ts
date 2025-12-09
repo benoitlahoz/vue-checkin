@@ -118,6 +118,36 @@ export const applyRuleToObject = (
             if (rule.deleted) {
               (value as StructuralTransformResult).removeSource = true;
             }
+
+            // 🔥 v4.0: Record insert operations for nodes created by structural transforms
+            // Each created property is recorded with metadata tracking the transform that created it
+            if (desk.recorder && value.action === 'toObject' && value.object) {
+              Object.keys(value.object).forEach((objKey) => {
+                const newKey = `${key}_${objKey}`;
+                desk.recorder!.recordInsert(newKey, value.object![objKey], {
+                  createdBy: {
+                    transformName: 'To Object',
+                    params: [],
+                  },
+                  description: `Created by toObject transformation on ${key}`,
+                });
+              });
+            }
+
+            // Similarly for split transformations
+            if (desk.recorder && value.action === 'split' && Array.isArray(value.parts)) {
+              value.parts.forEach((part, index) => {
+                const newKey = `${key}_${index}`;
+                desk.recorder!.recordInsert(newKey, part, {
+                  createdBy: {
+                    transformName: 'Split',
+                    params: [],
+                  },
+                  description: `Created by split transformation on ${key}`,
+                });
+              });
+            }
+
             handler(current, key, value as StructuralTransformResult);
             wasStructural = true;
             break;

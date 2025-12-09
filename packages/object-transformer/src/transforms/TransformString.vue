@@ -28,7 +28,7 @@ const transforms: Transform[] = [
       let parts: string[];
       if (index > 0) {
         // Split at specific index
-        const allParts = v.split(delimiter);
+        const allParts = delimiter === '' ? Array.from(v) : v.split(delimiter);
         if (allParts.length <= index) {
           // Not enough parts, return all
           parts = allParts;
@@ -38,14 +38,14 @@ const transforms: Transform[] = [
         }
       } else {
         // Default: split all
-        parts = v.split(delimiter);
+        // Use Array.from for empty delimiter to properly handle Unicode characters (e.g., ć, é, 😀)
+        parts = delimiter === '' ? Array.from(v) : v.split(delimiter);
       }
 
       return {
         __structuralChange: true,
         action: 'split' as const,
         parts: parts,
-        removeSource: false,
       };
     },
   },
@@ -160,7 +160,6 @@ const transforms: Transform[] = [
         object: {
           object: { value: v },
         },
-        removeSource: false,
       };
     },
   },
@@ -245,7 +244,6 @@ const transforms: Transform[] = [
           __structuralChange: true,
           action: 'split' as const,
           parts: parts,
-          removeSource: false,
         };
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -272,12 +270,6 @@ onMounted(() => {
         const newKey = `${lastKey}_${index}`;
         current[newKey] = part;
       });
-
-      // Remove source if specified
-      if (result.removeSource) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete current[lastKey];
-      }
     },
     d
   );

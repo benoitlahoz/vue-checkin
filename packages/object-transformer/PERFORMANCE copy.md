@@ -1,6 +1,6 @@
 # Performance Benchmarks
 
-**Date:** 2025-12-09
+**Date:** 2025-12-06
 
 ## Benchmark Scenarios & Outputs
 
@@ -78,7 +78,6 @@ Renaming keys, deleting keys, adding static values.
 ```json
 {
   "id": 0,
-  "fullName": "user-0",
   "stats": {
     "score": 0
   },
@@ -87,6 +86,7 @@ Renaming keys, deleting keys, adding static values.
     "b",
     "c"
   ],
+  "fullName": "user-0",
   "processed": true
 }
 ```
@@ -168,11 +168,11 @@ Combination of all above: rename, transform, delete, conditional, add.
 ```json
 {
   "id": 0,
-  "fullName": "USER-0",
   "stats": {
     "score": 0,
     "level": 1
   },
+  "fullName": "USER-0",
   "processedAt": "2025-12-06"
 }
 ```
@@ -180,47 +180,116 @@ Combination of all above: rename, transform, delete, conditional, add.
 
 ---
 
-## Results
-
-### Current Results (vs 2025-12-09 and baseline)
-
-| Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples | vs Previous | vs Baseline |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Scaling: Small (10 items) | 64161.12 | 0.0156 | 0.0224 | 32081 | ⚪ +1.5% | 🔴 -83.9% |
-| Scaling: Medium (1,000 items) | 638.90 | 1.5652 | 2.3223 | 320 | ⚪ +0.9% | 🔴 -84.7% |
-| Scaling: Large (10,000 items) | 62.73 | 15.9420 | 19.0860 | 32 | ⚪ +2.2% | 🔴 -84.9% |
-| Complexity: Simple | 62.50 | 16.0013 | 19.4815 | 32 | ⚪ +1.4% | 🔴 -85.0% |
-| Complexity: Structural | 85.67 | 11.6734 | 15.1001 | 43 | ⚪ +2.9% | 🔴 -50.1% |
-| Complexity: Conditional | 64.53 | 15.4967 | 18.4885 | 33 | ⚪ +1.6% | 🔴 -86.5% |
-| Complexity: Heavy | 48.93 | 20.4360 | 28.0361 | 25 | ⚪ +3.3% | 🔴 -57.9% |
-
-### Previous Results
+### Structural Complex
+Advanced structural changes: splitting strings into multiple keys and flattening objects.
 
 <details>
-<summary>View previous benchmark results</summary>
+<summary>View Input Data</summary>
 
-**Date:** 2025-12-09
-
-| Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples |
-| :--- | :--- | :--- | :--- | :--- |
-| Scaling: Small (10 items) | 63230.50 | 0.0158 | 0.0233 | 31616 |
-| Scaling: Medium (1,000 items) | 633.26 | 1.5791 | 2.2690 | 317 |
-| Scaling: Large (10,000 items) | 61.39 | 16.2906 | 19.3817 | 31 |
-| Complexity: Simple | 61.63 | 16.2250 | 19.6753 | 31 |
-| Complexity: Structural | 83.23 | 12.0154 | 25.0125 | 42 |
-| Complexity: Conditional | 63.48 | 15.7523 | 18.6425 | 32 |
-| Complexity: Heavy | 47.36 | 21.1128 | 28.1714 | 24 |
-
+```json
+{
+  "id": 0,
+  "name": "user-0",
+  "stats": {
+    "score": 0,
+    "level": 1
+  },
+  "tags": [
+    "a",
+    "b",
+    "c"
+  ]
+}
+```
 </details>
 
-### Baseline Reference
+<details>
+<summary>View Output Data</summary>
+
+```json
+{
+  "id": 0,
+  "tags": [
+    "a",
+    "b",
+    "c"
+  ],
+  "name_0": "user",
+  "name_1": "0",
+  "stats_score": 0,
+  "stats_level": 1
+}
+```
+</details>
+
+---
+
+### Extreme (Deep Nested)
+Deeply nested object flattening, multiple renames, splits, and deletions.
 
 <details>
-<summary>View baseline benchmark results</summary>
+<summary>View Input Data</summary>
 
-**Date:** 2025-12-06
-**Version:** v2.0.0
-**Description:** Baseline performance (Recipe v2.0.0 with operations)
+```json
+{
+  "id": "user-0",
+  "profile": {
+    "personal": {
+      "firstName": "John0",
+      "lastName": "Doe0",
+      "age": 20
+    },
+    "contact": {
+      "email": "john0@example.com",
+      "address": {
+        "street": "0 Main St",
+        "city": "New York",
+        "country": "USA",
+        "zip": "10000"
+      }
+    }
+  },
+  "orders": {
+    "lastOrder": {
+      "id": "ord-0",
+      "total": 100
+    },
+    "totalSpent": 0
+  },
+  "metadata": {
+    "created": "2023-01-01",
+    "tags": "vip,active,premium"
+  }
+}
+```
+</details>
+
+<details>
+<summary>View Output Data</summary>
+
+```json
+{
+  "id": "user-0",
+  "orders": {
+    "lastOrder": {
+      "id": "ord-0",
+      "total": 100
+    },
+    "totalSpent": 0
+  },
+  "metadata": {
+    "tags_0": "vip",
+    "tags_1": "active",
+    "tags_2": "premium"
+  },
+  "migratedAt": "2025-12-06T17:25:48.555Z"
+}
+```
+</details>
+
+---
+
+## Results
 
 | Name | Ops/sec (Hz) | Mean (ms) | P99 (ms) | Samples |
 | :--- | :--- | :--- | :--- | :--- |
@@ -231,16 +300,18 @@ Combination of all above: rename, transform, delete, conditional, add.
 | Complexity: Structural | 171.63 | 5.8265 | 10.5822 | 86 |
 | Complexity: Conditional | 477.95 | 2.0923 | 2.5957 | 239 |
 | Complexity: Heavy | 116.29 | 8.5995 | 12.8735 | 59 |
-
-</details>
+| Complexity: Structural Complex | 71.60 | 13.9659 | 23.1670 | 36 |
+| Complexity: Extreme (Deep Nested) | 24.60 | 40.6559 | 46.8796 | 13 |
 
 ## Performance Comparison
 
 **Scaling: Small (10 items)** is the fastest.
 
-- **100.43x** faster than *Scaling: Medium (1,000 items)*
-- **748.98x** faster than *Complexity: Structural*
-- **994.29x** faster than *Complexity: Conditional*
-- **1022.86x** faster than *Scaling: Large (10,000 items)*
-- **1026.66x** faster than *Complexity: Simple*
-- **1311.20x** faster than *Complexity: Heavy*
+- **95.16x** faster than *Scaling: Medium (1,000 items)*
+- **831.30x** faster than *Complexity: Conditional*
+- **950.95x** faster than *Complexity: Simple*
+- **957.92x** faster than *Scaling: Large (10,000 items)*
+- **2314.97x** faster than *Complexity: Structural*
+- **3416.76x** faster than *Complexity: Heavy*
+- **5548.94x** faster than *Complexity: Structural Complex*
+- **16153.38x** faster than *Complexity: Extreme (Deep Nested)*

@@ -61,7 +61,7 @@ const stats = computed(() => {
   const recipe = transformerDesk.value.buildRecipe();
 
   // Count operations by type in Recipe v2
-  const transformations = recipe.operations.length;
+  const transformations = recipe.deltas.length;
 
   return {
     version: recipe.version,
@@ -243,12 +243,104 @@ const triggerTestError = async () => {
     }
   }
 };
+
+const exportRecipe = () => {
+  const desk = transformerRef.value?.desk as ObjectTransformerContext | undefined;
+  if (!desk) return;
+
+  const recipeJson = desk.exportRecipe();
+
+  // Copy to clipboard
+  navigator.clipboard
+    .writeText(recipeJson)
+    .then(() => {
+      toast.success('Recipe exported', {
+        description: 'Recipe JSON copied to clipboard',
+      });
+    })
+    .catch(() => {
+      toast.error('Export failed', {
+        description: 'Could not copy to clipboard',
+      });
+    });
+
+  // Also log to console
+  console.log('Exported recipe:', recipeJson);
+};
+
+const importRecipe = async () => {
+  const desk = transformerRef.value?.desk as ObjectTransformerContext | undefined;
+  if (!desk) return;
+
+  try {
+    const recipeJson = await navigator.clipboard.readText();
+    await desk.importRecipe(recipeJson);
+
+    toast.success('Recipe imported', {
+      description: 'Recipe successfully applied',
+    });
+  } catch (error) {
+    toast.error('Import failed', {
+      description: error instanceof Error ? error.message : 'Could not import recipe',
+    });
+  }
+};
+
+const testRecipe = () => {
+  const desk = transformerRef.value?.desk as ObjectTransformerContext | undefined;
+  if (!desk) return;
+
+  const recipe = desk.buildRecipe();
+  const originalData = desk.originalData.value;
+
+  // Apply recipe to original data
+  const result = desk.applyRecipe(originalData, recipe, originalData);
+
+  // Log the result
+  console.log('=== RECIPE TEST ===');
+  console.log('Recipe:', recipe);
+  console.log('Original data length:', originalData.length);
+  console.log('Result length:', result.length);
+
+  // Show first 5 results
+  console.log('First 5 results:');
+  result.slice(0, 5).forEach((item: any, idx: number) => {
+    console.log(
+      `[${idx}] name="${item.name || 'SPLIT'}", has name_0=${!!item.name_0}, has name_1=${!!item.name_1}`
+    );
+    console.log(`     Full:`, item);
+  });
+
+  console.log('==================');
+
+  toast.success('Recipe tested', {
+    description: 'Check console for detailed results',
+  });
+};
 </script>
 
 <template>
   <div class="h-164 overflow-hidden flex flex-col">
     <Sonner />
-    <div class="flex justify-end mb-2">
+    <div class="flex justify-end gap-2 mb-2">
+      <button
+        class="px-3 py-1 text-xs font-medium text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
+        @click="exportRecipe"
+      >
+        Export Recipe
+      </button>
+      <button
+        class="px-3 py-1 text-xs font-medium text-white bg-green-500 rounded hover:bg-green-600 transition-colors"
+        @click="importRecipe"
+      >
+        Import Recipe
+      </button>
+      <button
+        class="px-3 py-1 text-xs font-medium text-white bg-purple-500 rounded hover:bg-purple-600 transition-colors"
+        @click="testRecipe"
+      >
+        Test Recipe
+      </button>
       <button
         class="px-3 py-1 text-xs font-medium text-white bg-orange-500 rounded hover:bg-orange-600 transition-colors"
         @click="triggerTestError"

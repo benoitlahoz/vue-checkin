@@ -33,7 +33,7 @@ const stats = computed(() => {
 
   return {
     version: recipe.version,
-    transformations: recipe.operations.length,
+    transformations: recipe.deltas.length,
   };
 });
 

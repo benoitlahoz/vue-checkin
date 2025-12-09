@@ -34,6 +34,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "bench": "vitest bench --reporter=default --reporter=./benchmarks/markdown-reporter.ts",
+    "bench:baseline": "node benchmarks/set-baseline.js",
     "prepublishOnly": "cp ../../README.md ."
   },
   "keywords": [

@@ -1,47 +1,39 @@
 /**
- * Recipe System v2 - Public API
+ * Recipe System v4.0 - Public API
  *
- * Exports all recipe-related types and functions.
- * This is the new, functional, immutable recipe system.
+ * Delta-based recipe system inspired by Quill Delta.
+ * Sequential operations without fragile path-based addressing.
  */
 
-// Types
+// Types v4.0
 export type {
-  Path,
-  Operation,
+  DeltaOp,
+  RetainOp,
+  InsertOp,
+  DeleteOp,
   TransformOp,
   RenameOp,
-  DeleteOp,
-  AddOp,
   Recipe,
   RecipeMetadata,
   RecipeValidation,
-} from './types';
+  DeltaComposition,
+} from './types-v4';
 
-export { RECIPE_VERSION } from './types';
-
-// Immutable updates
-export { updateAt, deleteAt, renameAt, addAt, getAt, hasPath } from './immutable-update';
-
-// Operations
 export {
-  applyTransform,
-  applyRename,
-  applyDelete,
-  applyAdd,
-  applyOperation,
-  applyOperations,
-} from './operations';
+  isRetainOp,
+  isInsertOp,
+  isDeleteOp,
+  isTransformOp,
+  isRenameOp,
+  createRecipe,
+  validateRecipe,
+} from './types-v4';
 
-// Builder (tree-based - legacy)
-export { buildRecipe, exportRecipe, importRecipe } from './recipe-builder';
+// Delta Applier
+export { applyRecipe, applyDeltas, composeDeltas, transformDeltas } from './delta-applier';
 
-// Recorder (delta-based - new)
-export { createRecipeRecorder } from './recipe-recorder';
-export type { RecipeRecorder } from './recipe-recorder';
+// Delta Recorder
+export { DeltaRecorder, createRecorder } from './delta-recorder';
 
-// Applier
-export { applyRecipe, validateRecipe } from './recipe-applier';
-
-// Vue integration
-export { createReactiveRecipe } from './recipe-reactive';
+// Immutable updates (still useful)
+export { updateAt, deleteAt, renameAt, addAt, getAt, hasPath } from './immutable-update';

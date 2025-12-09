@@ -60,7 +60,8 @@ export const autoRenameKey = (parent: ObjectNodeData, base: string): string => {
 // Handle conflicts when restoring a soft deleted node
 export const handleRestoreConflict = (
   parent: ObjectNodeData,
-  restoredNode: ObjectNodeData
+  restoredNode: ObjectNodeData,
+  recorder?: any
 ): void => {
   if (!restoredNode.key || !parent.children) return;
 
@@ -87,6 +88,14 @@ export const handleRestoreConflict = (
     // This is important for the recipe system to track the rename correctly
     const conflictingMetadata = getKeyMetadata(conflictingNode);
     const currentKey = conflictingNode.key;
+
+    // 🟢 RECORD THE AUTO-RENAME OPERATION (v4.0 Delta)
+    if (recorder) {
+      recorder.recordRename(currentKey, newKey, {
+        autoRenamed: true,
+        description: `Auto-rename due to restore conflict with ${restoredNode.key}`,
+      });
+    }
 
     // Update the node's key to the new unique name
     conflictingNode.key = newKey;

@@ -28,7 +28,15 @@ const transforms: Transform[] = [
       if (typeof v !== 'string') return false;
       // If search is empty or not a string, condition is false
       if (!search || typeof search !== 'string') return false;
-      const result = v.includes(search);
+
+      // Normalize both strings to remove accents/diacritics for comparison
+      const normalize = (str: string) =>
+        str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+
+      const result = normalize(v).includes(normalize(search));
       const finalResult = not ? !result : result;
       return finalResult;
     },

@@ -4,7 +4,6 @@ import { useCheckIn } from 'vue-airport';
 import TransformerParamInput from './TransformParam.vue';
 import type { ObjectNodeData, ObjectTransformerContext } from '.';
 import { ObjectTransformerDeskKey, TransformSelect, filterTransformsByType, getNodeType } from '.';
-import { computePathFromNode } from './recipe/recipe-recorder';
 
 interface Props {
   nodeId: string;
@@ -43,26 +42,38 @@ const hasParams = (transformName: string) => {
   return transform?.params && transform.params.length > 0;
 };
 
-const handleParamChange = () => {
+const handleParamChange = (transformIndex: number) => {
   if (!node.value) return;
 
-  // 🟢 RECORD THE PARAMETER CHANGE
-  // When params change, record the complete transform state
-  const path = computePathFromNode(node.value, desk!.mode?.value);
-  if ((desk as any).recorder) {
-    const isModelMode = desk!.mode?.value === 'model';
-    const isTemplateRoot = path.length === 0;
+  // Récupère les nouveaux paramètres depuis le node (déjà mis à jour par v-model)
+  const t = node.value.transforms[transformIndex];
 
-    if (!isModelMode || !isTemplateRoot) {
-      const transforms = node.value.transforms.map((t) => ({
-        name: t.name,
-        params: t.params || [],
-      }));
-      (desk as any).recorder.recordSetTransforms(path, transforms);
+  // 🔥 Conditions are NOT recorded as separate operations
+  // They are part of the conditionStack of following transforms
+  // So we update the conditionStack of affected operations
+  if (t.condition) {
+    // Update condition params in all affected operations
+    (desk as any).recorder.updateConditionParams(node.value.key, t.name, t.params);
+
+    // Just propagate to update the UI
+    desk!.propagateTransform(node.value);
+    if (node.value.parent) {
+      desk!.propagateTransform(node.value.parent);
     }
+    return;
   }
 
-  // Force re-computation by triggering propagation
+  // Check if this is a structural transform
+  if (isStructuralTransform(transformIndex)) {
+    // For structural transforms, update the InsertOp params instead of creating UpdateParamsOp
+    const transformName = t.name;
+    (desk as any).recorder.updateStructuralInsertParams(node.value.key, transformName, t.params);
+  } else {
+    // For regular transforms, update the TransformOp params
+    (desk as any).recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
+  }
+
+  // Force re-calcul des valeurs transformées
   desk!.propagateTransform(node.value);
   if (node.value.parent) {
     desk!.propagateTransform(node.value.parent);
@@ -108,7 +119,7 @@ const getAvailableTransforms = () => {
               <TransformerParamInput
                 v-model="t.params![pi]"
                 :config="getParamConfig(t.name, pi)"
-                @change="handleParamChange()"
+                @change="handleParamChange(index)"
               />
             </div>
           </div>

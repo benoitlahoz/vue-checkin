@@ -22,7 +22,7 @@ import { createSelectionManagementMethods } from './selection-management.util';
 import { createRecipeOperationsMethods } from './recipe-operations.util';
 import { createModeManagementMethods } from './mode-management.util';
 import { findMostCompleteObject, analyzeArrayDifferences } from '../model/model-mode.util';
-import { applyRecipe } from '../../recipe/recipe-applier';
+import { applyRecipe } from '../../recipe/delta-applier';
 
 export interface CreateContextParams {
   initialData: any;
@@ -168,10 +168,10 @@ export function createTransformerContext(params: CreateContextParams): ObjectTra
     if (!currentTree) return analyzeArrayDifferences(originalDataRef.value);
 
     // Use imported recipe if available, otherwise use recorder's recipe
-    const recipe = recipeOps.importedRecipe.value || recipeOps.recorder.recipe.value;
+    const recipe = recipeOps.importedRecipe.value || recipeOps.recorder.getRecipe();
 
-    // If no operations, analyze original data
-    if (!recipe.operations || recipe.operations.length === 0) {
+    // If no deltas, analyze original data
+    if (!recipe.deltas || recipe.deltas.length === 0) {
       return analyzeArrayDifferences(originalDataRef.value);
     }
 
