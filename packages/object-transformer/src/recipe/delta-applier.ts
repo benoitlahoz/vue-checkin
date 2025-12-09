@@ -344,9 +344,6 @@ const applyInsert = (
       const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
 
       if (!result) {
-        logger.debug(
-          `Condition ${condition.conditionName} failed for insert ${delta.key}, skipping`
-        );
         return data;
       }
     }
@@ -649,7 +646,6 @@ const applyUpdateParams = (data: any, _delta: UpdateParamsOp): any => {
   //
   // The actual parameter update happens at the recipe building/editing stage,
   // not during application.
-  logger.debug('UpdateParams operation encountered during application (no-op)');
   return data;
 };
 

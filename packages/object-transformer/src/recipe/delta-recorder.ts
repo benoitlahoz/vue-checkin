@@ -107,7 +107,6 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Insert: ${key} (opId: ${opId})`, delta);
     return opId;
   }
 
@@ -147,7 +146,6 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Delete: ${key} (opId: ${opId})`, delta);
     return opId;
   }
 
@@ -194,7 +192,6 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Transform: ${key} -> ${transformName} (opId: ${opId})`, delta);
     return opId;
   }
 
@@ -235,7 +232,6 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] Rename: ${from} -> ${to} (opId: ${opId})`, delta);
     return opId;
   }
 
@@ -280,10 +276,6 @@ export class DeltaRecorder {
     if (targetDelta) {
       // Update the parameters of the existing TransformOp
       targetDelta.params = params;
-      logger.debug(
-        `[DeltaRecorder] Updated TransformOp params: ${key}[${transformIndex}]`,
-        targetDelta
-      );
     } else {
       logger.warn(
         `[DeltaRecorder] TransformOp not found for updateParams: ${key}[${transformIndex}]`
@@ -308,10 +300,6 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(
-      `[DeltaRecorder] UpdateParams recorded: ${key}[${transformIndex}] (opId: ${opId})`,
-      delta
-    );
     return opId;
   }
 
@@ -335,10 +323,6 @@ export class DeltaRecorder {
           delta.sourceKey === sourceKey &&
           delta.createdBy?.transformName === transformName
         )
-    );
-
-    logger.debug(
-      `[DeltaRecorder] Removed InsertOps for structural transform: ${transformName} on ${sourceKey}. New ones will be created by propagation.`
     );
 
     this.recipe.value.metadata.updatedAt = Date.now();
