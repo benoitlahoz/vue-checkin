@@ -77,6 +77,8 @@ export interface TransformOp {
   op: 'transform';
   /** Property key to transform */
   key: string;
+  /** Optional: parent key if transforming a nested property (e.g., 'name_object' for 'name_object.foo') */
+  parentKey?: string;
   /** Transform name */
   transformName: string;
   /** Transform parameters */
@@ -104,6 +106,8 @@ export interface RenameOp {
   from: string;
   /** New key */
   to: string;
+  /** Optional: parent key if renaming a nested property (e.g., 'name_object' for 'name_object.value') */
+  parentKey?: string;
   /** Optional: if this was an auto-rename to avoid conflicts */
   autoRenamed?: boolean;
   /** Optional: metadata */

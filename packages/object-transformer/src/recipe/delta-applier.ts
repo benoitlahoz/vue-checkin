@@ -77,8 +77,20 @@ export const applyDeltas = (
   // Clone the input to avoid mutations
   let result = JSON.parse(JSON.stringify(data));
 
+  // Track which structural inserts we've already applied
+  const appliedStructuralInserts = new Set<string>();
+
   // Apply each delta sequentially
   for (const delta of deltas) {
+    // Skip structural InsertOp if we've already applied it for this source
+    if (delta.op === 'insert' && delta.createdBy && delta.sourceKey) {
+      const insertKey = `${delta.sourceKey}:${delta.createdBy.transformName}`;
+      if (appliedStructuralInserts.has(insertKey)) {
+        continue; // Skip this insert, already applied
+      }
+      appliedStructuralInserts.add(insertKey);
+    }
+
     result = applyDelta(result, delta, transforms, sourceData);
   }
 
@@ -149,13 +161,6 @@ const applyInsert = (
       const valueToCheck =
         delta.sourceKey && sourceData ? sourceData[delta.sourceKey] : delta.value;
 
-      console.log('[applyInsert] Checking condition:', {
-        conditionName: condition.conditionName,
-        params: condition.conditionParams,
-        valueToCheck,
-        key: delta.key,
-      });
-
       // Apply condition - use the CONDITION function, not the transformation function
       if (!conditionFn.condition) {
         logger.warn(
@@ -165,8 +170,6 @@ const applyInsert = (
       }
 
       const result = conditionFn.condition(valueToCheck, ...(condition.conditionParams || []));
-
-      console.log('[applyInsert] Condition result:', result);
 
       if (!result) {
         logger.debug(
@@ -192,26 +195,39 @@ const applyInsert = (
       // Apply the transform to get the structural result
       const result = transformFn.fn(sourceValue, ...(params || []));
 
-      // Extract the value using resultKey
+      // 🔥 DYNAMIC STRUCTURAL INSERTS
+      // If this is a structural transform, we need to insert ALL parts, not just one
       if (result && typeof result === 'object' && result.__structuralChange) {
-        if (result.object && resultKey !== undefined) {
-          // For toObject: result.object = { key1: value1, key2: value2 }
-          // resultKey is the KEY (string), not an index
+        if (result.parts && Array.isArray(result.parts)) {
+          // This is a split operation - insert ALL parts dynamically
+          const allInserts: Record<string, any> = {};
 
-          if (typeof resultKey === 'string') {
-            // Extract by key name
-            value = result.object[resultKey];
-          } else {
-            // Extract by index (for compatibility)
-            const entries = Object.entries(result.object);
-            const entry = entries[resultKey as number];
-            if (entry) {
-              value = entry[1];
-            }
+          result.parts.forEach((part: any, index: number) => {
+            const partKey = delta.key.replace(/_\d+$/, `_${index}`);
+            allInserts[partKey] = part;
+          });
+
+          // Return data with ALL parts inserted at once
+          return {
+            ...data,
+            ...allInserts,
+          };
+        } else if (result.object && resultKey !== undefined) {
+          // For toObject: result.object = { key1: value1, key2: value2 }
+          // Insert ALL object properties dynamically
+          if (typeof result.object === 'object') {
+            const allInserts: Record<string, any> = {};
+
+            Object.entries(result.object).forEach(([key, val]) => {
+              const partKey = delta.key.replace(/_[^_]+$/, `_${key}`);
+              allInserts[partKey] = val;
+            });
+
+            return {
+              ...data,
+              ...allInserts,
+            };
           }
-        } else if (result.parts && typeof resultKey === 'number') {
-          // For split: result.parts = [part1, part2, ...]
-          value = result.parts[resultKey];
         }
       }
     } else {
@@ -267,17 +283,38 @@ const applyTransform = (
     return data;
   }
 
+  // If parentKey is specified, transform within the nested object
+  if (delta.parentKey) {
+    if (!(delta.parentKey in data)) {
+      logger.warn(`Cannot transform: parent property "${delta.parentKey}" not found`);
+      return data;
+    }
+
+    const parent = data[delta.parentKey];
+    if (typeof parent !== 'object' || parent === null) {
+      logger.warn(`Cannot transform: parent "${delta.parentKey}" is not an object`);
+      return data;
+    }
+
+    // Apply transform to nested property
+    const transformedParent = applyTransform(
+      parent,
+      { ...delta, parentKey: undefined }, // Remove parentKey to avoid infinite recursion
+      transforms,
+      sourceData?.[delta.parentKey]
+    );
+
+    // Return data with updated parent
+    return {
+      ...data,
+      [delta.parentKey]: transformedParent,
+    };
+  }
+
   // 🔥 Evaluate condition stack - ALL conditions must be true
   if (delta.conditionStack && delta.conditionStack.length > 0) {
     // Use sourceData for condition evaluation to get original values
     const evaluationData = sourceData && typeof sourceData === 'object' ? sourceData : data;
-
-    console.log('[applyTransform] Checking conditions for transform:', {
-      transformName: delta.transformName,
-      key: delta.key,
-      conditionStack: delta.conditionStack,
-      evaluationData,
-    });
 
     for (const condition of delta.conditionStack) {
       const conditionFn = transforms.get(condition.conditionName);
@@ -295,16 +332,8 @@ const applyTransform = (
       const currentValue = evaluationData[delta.key];
       const conditionResult = conditionFn.condition(currentValue, ...condition.conditionParams);
 
-      console.log('[applyTransform] Condition result:', {
-        conditionName: condition.conditionName,
-        currentValue,
-        params: condition.conditionParams,
-        result: conditionResult,
-      });
-
       // If any condition is false, skip this transform
       if (!conditionResult) {
-        console.log('[applyTransform] Condition failed, skipping transform');
         return data;
       }
     }
@@ -337,6 +366,42 @@ const applyRename = (data: any, delta: RenameOp): any => {
     return data;
   }
 
+  // If parentKey is specified, rename within the nested object
+  if (delta.parentKey) {
+    if (!(delta.parentKey in data)) {
+      logger.warn(`Cannot rename: parent property "${delta.parentKey}" not found`);
+      return data;
+    }
+
+    const parent = data[delta.parentKey];
+    if (typeof parent !== 'object' || parent === null) {
+      logger.warn(`Cannot rename: parent "${delta.parentKey}" is not an object`);
+      return data;
+    }
+
+    if (!(delta.from in parent)) {
+      logger.warn(`Cannot rename: property "${delta.from}" not found in "${delta.parentKey}"`);
+      return data;
+    }
+
+    // Create new parent object with renamed property
+    const newParent: any = {};
+    for (const key in parent) {
+      if (key === delta.from) {
+        newParent[delta.to] = parent[key];
+      } else {
+        newParent[key] = parent[key];
+      }
+    }
+
+    // Return data with updated parent
+    return {
+      ...data,
+      [delta.parentKey]: newParent,
+    };
+  }
+
+  // Standard rename at root level
   if (!(delta.from in data)) {
     logger.warn(`Cannot rename: property "${delta.from}" not found`);
     return data;

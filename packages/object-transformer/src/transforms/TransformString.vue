@@ -28,7 +28,7 @@ const transforms: Transform[] = [
       let parts: string[];
       if (index > 0) {
         // Split at specific index
-        const allParts = v.split(delimiter);
+        const allParts = delimiter === '' ? Array.from(v) : v.split(delimiter);
         if (allParts.length <= index) {
           // Not enough parts, return all
           parts = allParts;
@@ -38,7 +38,8 @@ const transforms: Transform[] = [
         }
       } else {
         // Default: split all
-        parts = v.split(delimiter);
+        // Use Array.from for empty delimiter to properly handle Unicode characters (e.g., ć, é, 😀)
+        parts = delimiter === '' ? Array.from(v) : v.split(delimiter);
       }
 
       return {

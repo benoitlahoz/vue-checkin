@@ -126,6 +126,7 @@ export class DeltaRecorder {
     transformName: string,
     params: any[] = [],
     options?: {
+      parentKey?: string;
       isCondition?: boolean;
       conditionStack?: Array<{ conditionName: string; conditionParams: any[] }>;
       description?: string;
@@ -134,6 +135,7 @@ export class DeltaRecorder {
     const delta: TransformOp = {
       op: 'transform',
       key,
+      parentKey: options?.parentKey,
       transformName,
       params,
       isCondition: options?.isCondition,
@@ -163,6 +165,7 @@ export class DeltaRecorder {
     from: string,
     to: string,
     options?: {
+      parentKey?: string;
       autoRenamed?: boolean;
       description?: string;
     }
@@ -171,6 +174,7 @@ export class DeltaRecorder {
       op: 'rename',
       from,
       to,
+      parentKey: options?.parentKey,
       autoRenamed: options?.autoRenamed,
       metadata: {
         description: options?.description,
@@ -259,26 +263,27 @@ export class DeltaRecorder {
    * Update parameters of InsertOps created by a structural transform
    * This is used when user changes parameters of a structural transform (Split, To Object, etc.)
    *
+   * Strategy: Remove all old InsertOps and let propagation create new ones with correct count
+   *
    * @param sourceKey - The key of the source property that was split
    * @param transformName - Name of the structural transform
-   * @param newParams - New parameters to apply
+   * @param newParams - New parameters to apply (unused - kept for API compatibility)
    */
-  updateStructuralInsertParams(sourceKey: string, transformName: string, newParams: any[]): void {
-    // Find all InsertOps that were created by this structural transform
-    for (const delta of this.recipe.value.deltas) {
-      if (
-        delta.op === 'insert' &&
-        delta.sourceKey === sourceKey &&
-        delta.createdBy?.transformName === transformName
-      ) {
-        // Update the params
-        delta.createdBy.params = newParams;
-        logger.debug(
-          `[DeltaRecorder] Updated InsertOp params: ${delta.key} (created from ${sourceKey})`,
-          delta
-        );
-      }
-    }
+  updateStructuralInsertParams(sourceKey: string, transformName: string, _newParams: any[]): void {
+    // Remove all InsertOps that were created by this structural transform
+    // The propagation will create new ones with the correct number of elements
+    this.recipe.value.deltas = this.recipe.value.deltas.filter(
+      (delta) =>
+        !(
+          delta.op === 'insert' &&
+          delta.sourceKey === sourceKey &&
+          delta.createdBy?.transformName === transformName
+        )
+    );
+
+    logger.debug(
+      `[DeltaRecorder] Removed InsertOps for structural transform: ${transformName} on ${sourceKey}. New ones will be created by propagation.`
+    );
 
     this.recipe.value.metadata.updatedAt = Date.now();
   }

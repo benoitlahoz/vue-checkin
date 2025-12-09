@@ -458,20 +458,24 @@ export const handleStructuralSplit = (
     existingSplitNodes.sort((a, b) => (a.splitIndex || 0) - (b.splitIndex || 0));
 
     // Reuse existing nodes by passing them to createSplitNodes
+    // Only pass as many existing nodes as we have parts
+    const reusableNodes = existingSplitNodes.slice(0, normalizedParts.length);
+
     const updatedNodes = createSplitNodes(
       normalizedParts,
       baseKey,
       node.parent,
       keys,
-      existingSplitNodes,
+      reusableNodes,
       node.id
     );
 
-    // Update children array: remove old split nodes and insert updated ones
+    // Update children array: remove ALL old split nodes and insert updated ones
+    // This handles the case where normalizedParts.length < existingSplitNodes.length
     const nonSplitChildren = node.parent.children!.filter((child) => {
       // Keep the source node
       if (child === node) return true;
-      // Remove nodes that were part of the split (they're in updatedNodes now)
+      // Remove ALL nodes that were part of the split (not just reused ones)
       return child.splitSourceId !== node.id;
     });
 
@@ -481,6 +485,43 @@ export const handleStructuralSplit = (
       ...updatedNodes,
       ...nonSplitChildren.slice(sourceIndex + 1),
     ];
+
+    // 🔥 Record new InsertOps for the updated split
+    // Old InsertOps were removed by updateStructuralInsertParams
+    if ((desk as any).recorder) {
+      // Build conditionStack from ALL preceding condition transforms
+      const conditionStack: Array<{ conditionName: string; conditionParams: any[] }> = [];
+
+      for (const t of node.transforms) {
+        // Stop when we reach the structural transform itself
+        if (t === transform) break;
+
+        // Collect all conditions that precede the structural transform
+        if (t.condition) {
+          conditionStack.push({
+            conditionName: t.name,
+            conditionParams: t.params || [],
+          });
+        }
+      }
+
+      updatedNodes.forEach((newNode, idx) => {
+        if (newNode.key) {
+          const keyInResult = keys ? keys[idx] : idx;
+
+          (desk as any).recorder.recordInsert(newNode.key, undefined, {
+            sourceKey: node.key,
+            createdBy: {
+              transformName: transform?.name || (keys ? 'To Object' : 'Split'),
+              params: transform?.params || [],
+              resultKey: keyInResult,
+            },
+            conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
+            description: `Created by ${keys ? 'toObject' : 'split'} transformation on ${node.key}`,
+          });
+        }
+      });
+    }
   } else {
     // First time creating split nodes
     const newNodes = createSplitNodes(

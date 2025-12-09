@@ -137,7 +137,17 @@ export const applyNodeTransform = (
         console.log('[applyNodeTransform] Built conditionStack:', conditionStack);
 
         // Record only the new transform (not all transforms in the array)
+        // Check if this node is a child of a structural object (e.g., created by To Object)
+        const parent = node.parent;
+        let parentKey: string | undefined;
+
+        if (parent && parent.splitSourceId !== undefined) {
+          // This parent was created by a structural transform
+          parentKey = parent.key;
+        }
+
         (desk as any).recorder.recordTransform(key, entry.name, entry.params || [], {
+          parentKey,
           isCondition: false, // Never true here
           conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
         });
@@ -232,7 +242,17 @@ export const applyStepTransform = (
           }
 
           // Record only the new transform (not all transforms in the array)
+          // Check if this node is a child of a structural object (e.g., created by To Object)
+          const parent = node.parent;
+          let parentKey: string | undefined;
+
+          if (parent && parent.splitSourceId !== undefined) {
+            // This parent was created by a structural transform
+            parentKey = parent.key;
+          }
+
           (desk as any).recorder.recordTransform(key, entry.name, entry.params || [], {
+            parentKey,
             isCondition: false,
             conditionStack: conditionStack.length > 0 ? conditionStack : undefined,
           });
