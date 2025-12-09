@@ -136,7 +136,7 @@ const applyDelta = (
     case 'delete':
       return applyDelete(data, delta, opIdToKey, deltaList);
     case 'transform':
-      return applyTransform(data, delta, transforms, sourceData, opIdToKey);
+      return applyTransform(data, delta, transforms, sourceData, opIdToKey, deltaList);
     case 'rename':
       return applyRename(data, delta, opIdToKey, deltaList);
     case 'updateParams':
@@ -471,13 +471,15 @@ const applyDelete = (
 
 /**
  * Apply transform operation - transform a property value
+ * Supports nested transforms via parentOpId
  */
 const applyTransform = (
   data: any,
   delta: TransformOp,
   transforms: Map<string, Transform>,
   sourceData?: any,
-  opIdToKey?: Map<string, string>
+  opIdToKey?: Map<string, string>,
+  deltaList?: DeltaOp[]
 ): any => {
   if (typeof data !== 'object' || data === null) {
     logger.warn('Cannot transform non-object data');
@@ -490,42 +492,32 @@ const applyTransform = (
     return data;
   }
 
-  // Resolve parentKey from parentOpId if provided
-  let parentKey = delta.parentKey;
-  if (delta.parentOpId && opIdToKey) {
-    const resolvedKey = opIdToKey.get(delta.parentOpId);
-    if (resolvedKey) {
-      parentKey = resolvedKey;
-    }
-  }
+  // Resolve parent path for nested transforms
+  const parentPath = resolveParentPath(delta.parentOpId, delta.parentKey, opIdToKey, deltaList);
 
-  // If parentKey is specified, transform within the nested object
-  if (parentKey) {
-    if (!(parentKey in data)) {
-      logger.warn(`Cannot transform: parent property "${parentKey}" not found`);
+  if (parentPath.length > 0) {
+    // Navigate to parent object
+    const parent = getNestedObject(data, parentPath);
+    if (!parent || typeof parent !== 'object') {
+      logger.warn(`Cannot transform: parent not found at path [${parentPath.join(' → ')}]`);
       return data;
     }
 
-    const parent = data[parentKey];
-    if (typeof parent !== 'object' || parent === null) {
-      logger.warn(`Cannot transform: parent "${parentKey}" is not an object`);
-      return data;
-    }
+    // Get nested sourceData for this parent
+    const nestedSourceData = getNestedObject(sourceData, parentPath);
 
     // Apply transform to nested property
     const transformedParent = applyTransform(
       parent,
       { ...delta, parentKey: undefined, parentOpId: undefined },
       transforms,
-      sourceData?.[parentKey],
-      opIdToKey
+      nestedSourceData,
+      opIdToKey,
+      deltaList
     );
 
-    // Return data with updated parent
-    return {
-      ...data,
-      [parentKey]: transformedParent,
-    };
+    // Update data with modified parent
+    return updateNestedObject(data, parentPath, transformedParent);
   }
 
   // 🔥 Evaluate condition stack - ALL conditions must be true
