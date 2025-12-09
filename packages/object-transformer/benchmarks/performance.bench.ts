@@ -7,8 +7,6 @@ const smallDataSimple = scenarios.find((s) => s.id === 'simple')!.dataGenerator(
 const mediumDataSimple = scenarios.find((s) => s.id === 'simple')!.dataGenerator(1000);
 const largeDataSimple = scenarios.find((s) => s.id === 'simple')!.dataGenerator(10000);
 
-const largeDataComplex = scenarios.find((s) => s.id === 'extreme')!.dataGenerator(10000);
-
 // 2. Define Benchmarks
 describe('Object Transformer Performance', () => {
   // Dataset Size Scaling (using Simple Recipe)
@@ -26,14 +24,8 @@ describe('Object Transformer Performance', () => {
 
   // Complexity Scaling (using Large Dataset)
   scenarios.forEach((scenario) => {
-    if (scenario.id === 'extreme') {
-      bench(`Complexity: ${scenario.name}`, () => {
-        applyRecipe(largeDataComplex, scenario.recipe, transforms);
-      });
-    } else {
-      bench(`Complexity: ${scenario.name}`, () => {
-        applyRecipe(largeDataSimple, scenario.recipe, transforms);
-      });
-    }
+    bench(`Complexity: ${scenario.name}`, () => {
+      applyRecipe(largeDataSimple, scenario.recipe, transforms);
+    });
   });
 });

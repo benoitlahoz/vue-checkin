@@ -1,0 +1,3 @@
+# Performance benchmark snapshots
+benchmarks/performance.current.json
+benchmarks/performance.previous.json
