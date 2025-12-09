@@ -1,5 +1,7 @@
 // Public types for @vue-airport/object-transformer
 import type { ComputedRef, InjectionKey, Ref } from 'vue';
+import type { DeltaRecorder } from './recipe/delta-recorder';
+import type { Recipe } from './recipe/types-v4';
 
 export type TransformerMode = 'object' | 'model';
 
@@ -155,12 +157,15 @@ export interface ObjectTransformerContext {
   getParamConfig: (transformName: string, paramIndex: number) => any;
   formatStepValue: (node: ObjectNodeData, index: number) => string;
   isStructuralTransform: (node: ObjectNodeData, transformIndex: number) => boolean;
-  // Recipe management (v2)
-  recipe: ComputedRef<any>; // Recipe from recipe/types.ts
-  buildRecipe: () => any;
-  applyRecipe: (data: any, recipe: any, sourceData?: any) => any;
+  // Recipe management (v4.0.0 - Delta-based)
+  recorder: DeltaRecorder; // Delta recorder for tracking all operations
+  importedRecipe: Ref<Recipe | null>; // Store imported recipe separately
+  recipe: ComputedRef<Recipe>; // Current recipe (from recorder)
+  buildRecipe: () => Recipe;
+  applyRecipe: (data: any, recipe: Recipe, sourceData?: any) => any;
   exportRecipe: () => string;
   importRecipe: (recipeJson: string) => void;
+  clearRecipe: () => void;
   // Model mode
   extractModelRules: () => any[];
   applyModelToAll: () => void;

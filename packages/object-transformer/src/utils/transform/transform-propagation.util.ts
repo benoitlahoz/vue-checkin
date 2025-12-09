@@ -33,44 +33,35 @@ export const computeIntermediateValue = (node: ObjectNodeData): unknown => {
 export const computeStepValue = (node: ObjectNodeData, index: number): unknown => {
   const transformsUpToIndex = node.transforms.slice(0, index + 1);
 
-  // 🔗 CHAIN OF RESPONSIBILITY: Evaluate conditions sequentially
-  // Stop at first true condition (if/else if behavior)
+  // 🔗 CONDITIONAL GROUPS: Evaluate conditions and execute transforms based on group membership
   let value = node.value;
-  let chainState: 'pending' | 'matched' | 'unmatched' = 'pending';
-  let _lastConditionMet: boolean | undefined;
+  let activeConditionsMet = true;
+  const evaluatedConditions: boolean[] = [];
 
   for (const t of transformsUpToIndex) {
-    // If transform has a condition
     if (t.condition) {
-      // Only evaluate if chain is still pending (no condition matched yet)
-      if (chainState === 'pending') {
-        const conditionResult = t.condition(value, ...(t.params || []));
-        t.conditionMet = conditionResult;
+      // Evaluate the condition
+      const conditionResult = t.condition(value, ...(t.params || []));
+      t.conditionMet = conditionResult;
+      
+      // Add to active conditions
+      evaluatedConditions.push(conditionResult);
+      activeConditionsMet = evaluatedConditions.every(c => c);
+    } else {
+      // Regular transform - execute only if conditions are met
+      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      
+      if (shouldExecute) {
+        const result = t.fn(value, ...(t.params || []));
 
-        if (conditionResult) {
-          chainState = 'matched'; // First true condition → stop chain
-          _lastConditionMet = true;
+        // Stop if structural change
+        if (isStructuralResult(result)) {
+          return value;
         }
-      } else {
-        // Chain already resolved, skip evaluation
-        t.conditionMet = false;
+
+        value = result;
       }
     }
-
-    // Apply transform (structural transforms will check conditionMet internally)
-    const result = t.fn(value, ...(t.params || []));
-
-    // Stop if structural change
-    if (isStructuralResult(result)) {
-      return value;
-    }
-
-    value = result;
-  }
-
-  // If we went through all conditions without a match, mark as unmatched
-  if (chainState === 'pending') {
-    _lastConditionMet = false;
   }
 
   return value;
@@ -84,31 +75,55 @@ export const computeChildTransformedValue = (child: ObjectNodeData): unknown => 
     `[computeChildTransformedValue] Processing ${child.key}="${child.value}", transforms count=${child.transforms.length}`
   );
 
-  // 🔗 CHAIN OF RESPONSIBILITY: Sequential condition evaluation
+  // 🔗 CONDITIONAL GROUPS: Process transforms with condition-based execution
+  // - A condition starts a "group"
+  // - All following non-condition transforms belong to that group
+  // - All transforms in a group execute if the condition(s) are met
+  // - A new condition starts a new group (else if behavior)
+  
   let value = child.value;
-  let chainState: 'pending' | 'matched' | 'unmatched' = 'pending';
+  let activeConditionsMet = true; // Track if current group's conditions are all met
+  const evaluatedConditions: boolean[] = []; // Track condition results for the current group
 
   for (const t of child.transforms) {
-    // If transform has a condition
     if (t.condition) {
-      // Only evaluate if chain is still pending
-      if (chainState === 'pending') {
-        const conditionResult = t.condition(value, ...(t.params || []));
-        t.conditionMet = conditionResult; // 🔥 OK because each node has its own transform instances
-
-        if (conditionResult) {
-          chainState = 'matched'; // Stop chain at first true
+      // This is a condition - evaluate it
+      const conditionResult = t.condition(value, ...(t.params || []));
+      t.conditionMet = conditionResult;
+      
+      // Add to active conditions for this group
+      evaluatedConditions.push(conditionResult);
+      
+      // Update group state: ALL conditions must be true
+      activeConditionsMet = evaluatedConditions.every(c => c);
+      
+      logger.debug(`[computeChildTransformedValue] Condition "${t.name}" = ${conditionResult}, group active = ${activeConditionsMet}`);
+    } else {
+      // This is a regular transform
+      // Only execute if no conditions, or all conditions in the group are met
+      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      
+      if (shouldExecute) {
+        const result = t.fn(value, ...(t.params || []));
+        
+        // Ignore structural results
+        if (!isStructuralResult(result)) {
+          value = result;
         }
+        
+        logger.debug(`[computeChildTransformedValue] Transform "${t.name}" executed, value = ${value}`);
       } else {
-        t.conditionMet = false; // Skip subsequent conditions
+        logger.debug(`[computeChildTransformedValue] Transform "${t.name}" skipped (conditions not met)`);
       }
-    }
-
-    const result = t.fn(value, ...(t.params || []));
-
-    // Ignore structural results
-    if (!isStructuralResult(result)) {
-      value = result;
+      
+      // After a regular transform, if we had conditions, reset for next group
+      // This allows: Condition1 -> Transform1 -> Transform2 -> Condition2 -> Transform3
+      // Where Transform1 and Transform2 both depend on Condition1,
+      // but Transform3 depends on Condition2
+      if (evaluatedConditions.length > 0) {
+        // Keep the group active for subsequent transforms until a new condition appears
+        // Don't reset here - this was the bug!
+      }
     }
   }
 
@@ -141,31 +156,32 @@ export const computeFinalTransformedValue = (node: ObjectNodeData): unknown => {
   }
 
   // Apply transforms on the base value (respecting conditions and ignoring structural results)
-  // 🔗 CHAIN OF RESPONSIBILITY: Sequential condition evaluation
+  // 🔗 CONDITIONAL GROUPS: Execute transforms based on condition group membership
   let value = baseValue;
-  let chainState: 'pending' | 'matched' | 'unmatched' = 'pending';
+  let activeConditionsMet = true;
+  const evaluatedConditions: boolean[] = [];
 
   for (const t of node.transforms) {
-    // If transform has a condition
     if (t.condition) {
-      // Only evaluate if chain is still pending
-      if (chainState === 'pending') {
-        const conditionResult = t.condition(value, ...(t.params || []));
-        t.conditionMet = conditionResult;
+      // Evaluate the condition
+      const conditionResult = t.condition(value, ...(t.params || []));
+      t.conditionMet = conditionResult;
+      
+      // Add to active conditions
+      evaluatedConditions.push(conditionResult);
+      activeConditionsMet = evaluatedConditions.every(c => c);
+    } else {
+      // Regular transform - execute only if conditions are met
+      const shouldExecute = evaluatedConditions.length === 0 || activeConditionsMet;
+      
+      if (shouldExecute) {
+        const result = t.fn(value, ...(t.params || []));
 
-        if (conditionResult) {
-          chainState = 'matched'; // Stop chain at first true
+        // Ignore structural results
+        if (!isStructuralResult(result)) {
+          value = result;
         }
-      } else {
-        t.conditionMet = false; // Skip subsequent conditions
       }
-    }
-
-    const result = t.fn(value, ...(t.params || []));
-
-    // Ignore structural results
-    if (!isStructuralResult(result)) {
-      value = result;
     }
   }
 

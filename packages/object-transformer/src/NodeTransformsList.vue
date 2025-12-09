@@ -45,11 +45,14 @@ const hasParams = (transformName: string) => {
 const handleParamChange = (transformIndex: number) => {
   if (!node.value) return;
 
-  // Enregistre le delta updateParams à chaque changement de paramètre
+  // Récupère les nouveaux paramètres depuis le node (déjà mis à jour par v-model)
   const t = node.value.transforms[transformIndex];
-  desk!.recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
 
-  // Force re-computation by triggering propagation
+  // Enregistre le delta updateParams pour mettre à jour la recette
+  // Cette opération met à jour les paramètres de l'opération TransformOp correspondante
+  (desk as any).recorder.recordUpdateParams(node.value.key, transformIndex, t.params);
+
+  // Force re-calcul des valeurs transformées
   desk!.propagateTransform(node.value);
   if (node.value.parent) {
     desk!.propagateTransform(node.value.parent);

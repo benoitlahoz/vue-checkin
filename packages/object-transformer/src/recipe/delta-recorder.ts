@@ -187,6 +187,11 @@ export class DeltaRecorder {
    * Record an update to transform parameters
    * This allows modifying parameters of an existing transform without re-recording
    *
+   * This method:
+   * 1. Finds the corresponding TransformOp in the recipe's deltas
+   * 2. Updates its parameters directly
+   * 3. Records an UpdateParamsOp for tracking/undo purposes
+   *
    * @param key - Property key where the transform is applied
    * @param transformIndex - Index of the transform in the node's transforms array
    * @param params - New parameters to apply
@@ -201,6 +206,35 @@ export class DeltaRecorder {
       description?: string;
     }
   ): number {
+    // Find the corresponding TransformOp in deltas
+    // We need to match by key and transform index
+    let transformCount = 0;
+    let targetDelta: TransformOp | null = null;
+
+    for (const delta of this.recipe.value.deltas) {
+      if (delta.op === 'transform' && delta.key === key) {
+        if (transformCount === transformIndex) {
+          targetDelta = delta;
+          break;
+        }
+        transformCount++;
+      }
+    }
+
+    if (targetDelta) {
+      // Update the parameters of the existing TransformOp
+      targetDelta.params = params;
+      logger.debug(
+        `[DeltaRecorder] Updated TransformOp params: ${key}[${transformIndex}]`,
+        targetDelta
+      );
+    } else {
+      logger.warn(
+        `[DeltaRecorder] TransformOp not found for updateParams: ${key}[${transformIndex}]`
+      );
+    }
+
+    // Record the UpdateParamsOp for tracking/history
     const delta: UpdateParamsOp = {
       op: 'updateParams',
       key,
@@ -215,7 +249,7 @@ export class DeltaRecorder {
     this.recipe.value.deltas.push(delta);
     this.recipe.value.metadata.updatedAt = Date.now();
 
-    logger.debug(`[DeltaRecorder] UpdateParams: ${key}[${transformIndex}]`, delta);
+    logger.debug(`[DeltaRecorder] UpdateParams recorded: ${key}[${transformIndex}]`, delta);
     return this.recipe.value.deltas.length - 1;
   }
 

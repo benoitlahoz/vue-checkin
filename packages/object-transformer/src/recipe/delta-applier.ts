@@ -13,6 +13,7 @@ import type {
   TransformOp,
   RenameOp,
   RetainOp,
+  UpdateParamsOp,
 } from './types-v4';
 import type { Transform } from '../types';
 import { logger } from '../utils/logger.util';
@@ -82,44 +83,6 @@ export const applyDeltas = (
   }
 
   return result;
-};
-
-/**
- * Apply updateParams operation - update parameters of an existing transform
- */
-const applyUpdateParams = (data: any, delta: import('./types-v4').UpdateParamsOp): any => {
-  if (typeof data !== 'object' || data === null) {
-    logger.warn('Cannot update params in non-object data');
-    return data;
-  }
-
-  // Defensive: If no transforms array, nothing to update
-  if (!data._transforms || !Array.isArray(data._transforms)) {
-    logger.warn('No _transforms array found on data, cannot update params');
-    return data;
-  }
-
-  // Defensive: If index out of bounds, do nothing
-  if (delta.transformIndex < 0 || delta.transformIndex >= data._transforms.length) {
-    logger.warn(`Transform index ${delta.transformIndex} out of bounds`);
-    return data;
-  }
-
-  // Clone transforms array to avoid mutation
-  const newTransforms = data._transforms.map((t: any, idx: number) => {
-    if (idx === delta.transformIndex) {
-      return {
-        ...t,
-        params: delta.params,
-      };
-    }
-    return t;
-  });
-
-  return {
-    ...data,
-    _transforms: newTransforms,
-  };
 };
 
 /**
@@ -353,6 +316,27 @@ const applyRename = (data: any, delta: RenameOp): any => {
   }
 
   return result;
+};
+
+/**
+ * Apply updateParams operation - update parameters of an existing transform
+ *
+ * This operation doesn't modify the data directly. Instead, it updates the parameters
+ * of a transform operation in the recipe. The actual transformation with new parameters
+ * will be applied when the corresponding transform delta is executed.
+ *
+ * This is a metadata operation that affects how subsequent operations are interpreted.
+ */
+const applyUpdateParams = (data: any, _delta: UpdateParamsOp): any => {
+  // UpdateParams is a metadata operation that modifies the recipe itself,
+  // not the data. When applying a recipe, this operation is effectively a no-op
+  // because the parameters have already been updated in the corresponding
+  // TransformOp delta before application.
+  //
+  // The actual parameter update happens at the recipe building/editing stage,
+  // not during application.
+  logger.debug('UpdateParams operation encountered during application (no-op)');
+  return data;
 };
 
 /**

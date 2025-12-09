@@ -110,11 +110,13 @@ export const applyNodeTransform = (
           allTransforms: node.transforms.map((t) => ({ name: t.name, isCondition: !!t.condition })),
         });
 
-        // Build condition stack: conditions since last non-condition transform
-        // When a condition appears after a normal transform, it starts a NEW conditional group
+        // Build condition stack: ALL conditions that precede this transform in the group
+        // A "group" is a sequence starting from a condition and continuing until a transform
+        // explicitly breaks the chain (which we don't have a mechanism for yet).
+        // All transforms following condition(s) inherit the full condition stack.
         const conditionStack: Array<{ conditionName: string; conditionParams: any[] }> = [];
 
-        // Iterate forward, collecting conditions until we hit a non-condition or reach entry
+        // Iterate forward, collecting ALL conditions that appear before this transform
         for (const t of node.transforms) {
           if (t === entry) {
             // We've reached the transform we're recording, stop
@@ -127,10 +129,9 @@ export const applyNodeTransform = (
               conditionName: t.name,
               conditionParams: t.params || [],
             });
-          } else {
-            // Found a non-condition transform, reset the stack (new group)
-            conditionStack.length = 0;
           }
+          // Don't reset on non-condition transforms - all transforms after conditions
+          // should be conditional until explicitly broken
         }
 
         console.log('[applyNodeTransform] Built conditionStack:', conditionStack);
@@ -213,10 +214,11 @@ export const applyStepTransform = (
         const isStructural = structuralTransformNames.includes(entry.name);
 
         if (!isStructural && !entry.condition) {
-          // Build condition stack: conditions since last non-condition transform
+          // Build condition stack: ALL conditions that precede this transform
+          // All transforms following condition(s) inherit the full condition stack
           const conditionStack: Array<{ conditionName: string; conditionParams: any[] }> = [];
 
-          // Iterate forward, collecting conditions until nextIndex (where entry is)
+          // Iterate forward, collecting ALL conditions until nextIndex (where entry is)
           for (let i = 0; i < nextIndex; i++) {
             const t = node.transforms[i];
             if (t.condition) {
@@ -224,9 +226,9 @@ export const applyStepTransform = (
                 conditionName: t.name,
                 conditionParams: t.params || [],
               });
-            } else {
-              conditionStack.length = 0; // Reset on non-condition
             }
+            // Don't reset on non-condition transforms - all transforms after conditions
+            // should be conditional until explicitly broken
           }
 
           // Record only the new transform (not all transforms in the array)
